@@ -170,6 +170,7 @@ export default function StudentHome() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={handleImageUpload}
               style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
             />
