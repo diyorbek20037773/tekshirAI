@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class ImageProcessor:
     """Daftar rasmlarini optimal holatga keltiradi."""
 
-    MAX_DIMENSION = 2000
+    MAX_DIMENSION = 1200
 
     def process(self, image_bytes: bytes) -> bytes:
         """
@@ -83,7 +83,7 @@ class ImageProcessor:
         lab = cv2.merge([l, a, b])
         img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
-        success, buffer = cv2.imencode('.jpeg', img, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        success, buffer = cv2.imencode('.jpeg', img, [cv2.IMWRITE_JPEG_QUALITY, 70])
         return buffer.tobytes()
 
     def _resize(self, img: np.ndarray) -> np.ndarray:
