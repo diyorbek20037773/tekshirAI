@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+# dist/ — faqat Python, frontend/dist emas
+build/
+*.egg
+venv/
+.venv/
+env/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+# frontend/dist/ — Railway uchun git da saqlanadi
+frontend/.env
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Images (uploaded)
+uploads/
+
+# Alembic
+alembic/versions/__pycache__/

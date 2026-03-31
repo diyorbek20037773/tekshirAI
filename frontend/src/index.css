@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Wheel Picker */
+.wheel-picker-scroll {
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.wheel-picker-scroll::-webkit-scrollbar {
+  display: none;
+}
+.wheel-picker-item {
+  scroll-snap-align: center;
+}
