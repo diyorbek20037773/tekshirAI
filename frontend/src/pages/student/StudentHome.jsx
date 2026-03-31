@@ -160,12 +160,16 @@ export default function StudentHome() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleImageUpload}
-              style={{ display: 'none' }}
+              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
             />
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = ''
+                  fileInputRef.current.click()
+                }
+              }}
               className="inline-flex items-center gap-2 bg-success-500 text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-success-600 transition active:scale-95"
             >
               <Camera className="w-5 h-5" />
