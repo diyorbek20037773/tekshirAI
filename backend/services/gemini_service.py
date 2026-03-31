@@ -147,26 +147,26 @@ Yuqoridagi rasmdagi uyga vazifa yechimini tekshir va JSON formatda natija qaytar
 
         for attempt in range(max_retries):
             try:
+                contents = [
+                    self.SYSTEM_PROMPT,
+                    {"mime_type": mime_type, "data": image_bytes},
+                    user_prompt,
+                ]
+                gen_config = genai.GenerationConfig(
+                    temperature=0.1,
+                    max_output_tokens=4096,
+                )
+
+                def _call():
+                    return model.generate_content(contents, generation_config=gen_config)
+
                 response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        model.generate_content,
-                        [
-                            self.SYSTEM_PROMPT,
-                            {
-                                "mime_type": mime_type,
-                                "data": image_bytes
-                            },
-                            user_prompt
-                        ],
-                        generation_config=genai.GenerationConfig(
-                            temperature=0.1,
-                            max_output_tokens=4096,
-                        ),
-                    ),
-                    timeout=30,  # 30 soniya timeout
+                    asyncio.to_thread(_call),
+                    timeout=45,
                 )
 
                 self.key_manager.record_usage()
+                logger.info(f"Gemini javob olindi: {len(response.text)} belgi")
                 result = self._extract_json(response.text)
 
                 if result.get("ocr_error"):

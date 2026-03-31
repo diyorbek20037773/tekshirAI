@@ -46,6 +46,7 @@ async def check_homework(
         try:
             processed_image = image_processor.process_light(image_bytes)
             mime_type = "image/jpeg"
+            logger.info(f"Preprocessing: {len(image_bytes)} -> {len(processed_image)} bytes")
         except Exception as e:
             logger.warning(f"Preprocessing xato: {e}")
             processed_image = image_bytes
