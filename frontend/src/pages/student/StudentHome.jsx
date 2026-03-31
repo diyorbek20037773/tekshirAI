@@ -56,6 +56,7 @@ export default function StudentHome() {
       formData.append('image', file)
       formData.append('subject', subject.toLowerCase())
       formData.append('grade', grade)
+      formData.append('telegram_id', telegramId || '0')
 
       const response = await fetch('/api/check/homework', {
         method: 'POST',

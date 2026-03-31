@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Users, BookCheck, TrendingUp, School, Clock, LogOut, ChevronRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { STUDENTS, SUBMISSIONS, TOPIC_ERRORS, CLASSROOMS } from '../../data/synthetic'
+import { SUBMISSIONS, TOPIC_ERRORS, CLASSROOMS } from '../../data/synthetic'
 
 function StatCard({ icon: Icon, title, value, color }) {
   const colors = {
@@ -32,7 +32,19 @@ export default function TeacherDashboard() {
   const teacherSubject = localStorage.getItem('teacherSubject') || 'Matematika'
   const teacherClass = localStorage.getItem('teacherClass') || '7-A'
 
+  const [realStudents, setRealStudents] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/users/students')
+      .then(r => r.json())
+      .then(data => setRealStudents(data.students || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
   const todaySubs = SUBMISSIONS.filter(s => s.date === '2026-03-29')
+  const totalStudents = realStudents.length
 
   const handleLogout = () => {
     localStorage.clear()
@@ -41,7 +53,6 @@ export default function TeacherDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
@@ -55,17 +66,46 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-5">
-        {/* Stat kartalar */}
         <div className="grid grid-cols-2 gap-3">
-          <StatCard icon={Users} title="O'quvchilar" value={STUDENTS.length} color="blue" />
+          <StatCard icon={Users} title="O'quvchilar" value={totalStudents} color="blue" />
           <StatCard icon={BookCheck} title="Bugun" value={`${todaySubs.length} tekshiruv`} color="green" />
-          <StatCard icon={TrendingUp} title="O'rtacha ball" value="83.3%" color="yellow" />
+          <StatCard icon={TrendingUp} title="O'rtacha ball"
+            value={totalStudents > 0 ? `${Math.round(realStudents.reduce((a, s) => a + s.avg_score, 0) / totalStudents)}%` : '—'}
+            color="yellow" />
           <StatCard icon={School} title="Sinflar" value={CLASSROOMS.length} color="purple" />
         </div>
 
-        {/* Sinflar ro'yxati */}
+        {/* Real o'quvchilar */}
+        {realStudents.length > 0 && (
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">O'quvchilar</h2>
+            <div className="space-y-2">
+              {realStudents.map(s => (
+                <Link key={s.id} to={`/teacher/student/${s.telegram_id}`}
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition border border-gray-100">
+                  <div>
+                    <p className="font-medium text-gray-700">{s.full_name}</p>
+                    <p className="text-xs text-gray-400">
+                      {s.grade ? `${s.grade}-sinf` : ''} {s.subject ? `| ${s.subject}` : ''} | {s.submission_count} vazifa
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${
+                      s.avg_score >= 80 ? 'text-success-500' : s.avg_score >= 60 ? 'text-accent-500' : 'text-danger-500'
+                    }`}>
+                      {s.avg_score > 0 ? `${s.avg_score}%` : '—'}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Demo sinflar */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <h2 className="text-base font-semibold text-gray-800 mb-3">Sinflar</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-3">Sinflar (demo)</h2>
           <div className="space-y-2">
             {CLASSROOMS.map(c => (
               <Link key={c.id} to={`/teacher/class/${c.id}`}
@@ -85,7 +125,7 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        {/* Mavzu xatolari chart */}
+        {/* Mavzu xatolari */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <h2 className="text-base font-semibold text-gray-800 mb-3">Mavzu bo'yicha xatolar</h2>
           <ResponsiveContainer width="100%" height={200}>
@@ -99,9 +139,9 @@ export default function TeacherDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Oxirgi tekshiruvlar */}
+        {/* Oxirgi tekshiruvlar (demo) */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <h2 className="text-base font-semibold text-gray-800 mb-3">Oxirgi tekshiruvlar</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-3">Oxirgi tekshiruvlar (demo)</h2>
           <div className="space-y-2">
             {SUBMISSIONS.slice(0, 6).map(sub => (
               <div key={sub.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">

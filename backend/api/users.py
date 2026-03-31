@@ -4,11 +4,13 @@ from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.database import get_db
 from backend.models.user import User, UserGameProfile
+from backend.models.submission import Submission
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -259,3 +261,138 @@ async def confirm_parent(data: ConfirmLink, db: AsyncSession = Depends(get_db)):
         child.pending_parent_id = None
         await db.flush()
         return {"status": "rejected", "message": "So'rov rad etildi"}
+
+
+# === O'qituvchi uchun ===
+
+@router.get("/students")
+async def get_all_students(db: AsyncSession = Depends(get_db)):
+    """Barcha o'quvchilar ro'yxati (o'qituvchi uchun)."""
+    result = await db.execute(
+        select(User).where(User.role == "student").order_by(User.created_at.desc())
+    )
+    students = result.scalars().all()
+
+    student_list = []
+    for s in students:
+        # Oxirgi submission va o'rtacha ball
+        sub_result = await db.execute(
+            select(
+                func.count(Submission.id).label("count"),
+                func.avg(Submission.score).label("avg_score"),
+            ).where(Submission.student_id == s.id, Submission.status == "completed")
+        )
+        stats = sub_result.one()
+
+        student_list.append({
+            "id": str(s.id),
+            "telegram_id": s.telegram_id,
+            "username": s.username,
+            "full_name": s.full_name,
+            "grade": s.grade,
+            "subject": s.subject,
+            "submission_count": stats.count or 0,
+            "avg_score": round(stats.avg_score or 0, 1),
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        })
+
+    return {"students": student_list, "total": len(student_list)}
+
+
+@router.get("/student/{telegram_id}/submissions")
+async def get_student_submissions(telegram_id: int, db: AsyncSession = Depends(get_db)):
+    """O'quvchining barcha submissionlari."""
+    user = await find_user_by_telegram_id(telegram_id, db)
+    if not user:
+        raise HTTPException(status_code=404, detail="O'quvchi topilmadi")
+
+    result = await db.execute(
+        select(Submission)
+        .where(Submission.student_id == user.id, Submission.status == "completed")
+        .order_by(Submission.created_at.desc())
+        .limit(50)
+    )
+    submissions = result.scalars().all()
+
+    return {
+        "student": {
+            "full_name": user.full_name,
+            "username": user.username,
+            "grade": user.grade,
+            "subject": user.subject,
+        },
+        "submissions": [
+            {
+                "id": str(sub.id),
+                "subject": sub.subject,
+                "grade": sub.grade,
+                "score": sub.score,
+                "total_problems": sub.total_problems,
+                "correct_count": sub.correct_count,
+                "incorrect_count": sub.incorrect_count,
+                "ai_result": sub.ai_result,
+                "created_at": sub.created_at.isoformat() if sub.created_at else None,
+            }
+            for sub in submissions
+        ],
+    }
+
+
+# === Ota-ona uchun ===
+
+@router.get("/child-data")
+async def get_child_data(parent_telegram_id: int, db: AsyncSession = Depends(get_db)):
+    """Ota-ona uchun — farzand ma'lumotlari + submissionlari."""
+    parent = await find_user_by_telegram_id(parent_telegram_id, db)
+    if not parent or parent.role != "parent":
+        raise HTTPException(status_code=404, detail="Ota-ona topilmadi")
+
+    # Farzandni topish (parent_id orqali)
+    result = await db.execute(
+        select(User).where(User.parent_id == parent.id, User.role == "student")
+    )
+    child = result.scalar_one_or_none()
+    if not child:
+        return {"linked": False, "message": "Farzand hali bog'lanmagan"}
+
+    # Farzandning submissionlari
+    sub_result = await db.execute(
+        select(Submission)
+        .where(Submission.student_id == child.id, Submission.status == "completed")
+        .order_by(Submission.created_at.desc())
+        .limit(20)
+    )
+    submissions = sub_result.scalars().all()
+
+    # Statistika
+    avg_score = sum(s.score or 0 for s in submissions) / len(submissions) if submissions else 0
+    weak_topics = set()
+    for sub in submissions:
+        if sub.ai_result and sub.ai_result.get("weak_topics"):
+            weak_topics.update(sub.ai_result["weak_topics"])
+
+    return {
+        "linked": True,
+        "child": {
+            "full_name": child.full_name,
+            "username": child.username,
+            "grade": child.grade,
+            "subject": child.subject,
+        },
+        "stats": {
+            "total_submissions": len(submissions),
+            "avg_score": round(avg_score, 1),
+            "weak_topics": list(weak_topics)[:5],
+        },
+        "submissions": [
+            {
+                "id": str(s.id),
+                "subject": s.subject,
+                "score": s.score,
+                "total_problems": s.total_problems,
+                "correct_count": s.correct_count,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+            }
+            for s in submissions
+        ],
+    }

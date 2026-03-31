@@ -1,10 +1,15 @@
-"""Rasm tekshirish API — Mini App dan rasm keladi, Gemini AI tekshiradi."""
+"""Rasm tekshirish API — Mini App dan rasm keladi, Gemini AI tekshiradi, DB ga saqlanadi."""
 
 import time
 import logging
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.database import get_db
+from backend.models.user import User
+from backend.models.submission import Submission
 from backend.services.gemini_service import GeminiService
 from backend.services.image_processor import ImageProcessor
 
@@ -21,15 +26,12 @@ async def check_homework(
     image: UploadFile = File(...),
     subject: str = Form(default="matematika"),
     grade: int = Form(default=7),
+    telegram_id: int = Form(default=0),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Rasm yuklash va Gemini AI bilan tekshirish.
-    Haqiqiy OCR + tekshiruv + tushuntirish — galyusinatsiyasiz.
-    """
     start_time = time.time()
 
     try:
-        # 1. Rasmni o'qish
         image_bytes = await image.read()
 
         if len(image_bytes) > 10 * 1024 * 1024:
@@ -38,19 +40,18 @@ async def check_homework(
                 content={"error": True, "error_message": "Rasm juda katta (max 10MB)"}
             )
 
-        logger.info(f"Rasm qabul qilindi: {len(image_bytes)} bytes, fan: {subject}, sinf: {grade}")
+        logger.info(f"Rasm qabul qilindi: {len(image_bytes)} bytes, fan: {subject}, sinf: {grade}, tg: {telegram_id}")
 
-        # 2. Image preprocessing — yengil (Gemini o'zi yaxshi OCR qiladi)
+        # Image preprocessing
         try:
             processed_image = image_processor.process_light(image_bytes)
             mime_type = "image/jpeg"
-            logger.info("Rasm preprocessing (light) muvaffaqiyatli")
         except Exception as e:
-            logger.warning(f"Preprocessing xato, original rasm ishlatiladi: {e}")
+            logger.warning(f"Preprocessing xato: {e}")
             processed_image = image_bytes
             mime_type = "image/jpeg"
 
-        # 3. GEMINI AI — haqiqiy tekshiruv (OCR + analiz + baho)
+        # Gemini AI tekshiruv
         ai_result = await gemini.check_homework(
             image_bytes=processed_image,
             subject=subject,
@@ -61,7 +62,6 @@ async def check_homework(
 
         processing_time = int((time.time() - start_time) * 1000)
 
-        # 4. Xato tekshirish
         if ai_result.get("ocr_error"):
             return JSONResponse(content={
                 "success": False,
@@ -81,11 +81,35 @@ async def check_homework(
                 }
             )
 
-        # 5. Muvaffaqiyatli natija
+        # DB ga submission saqlash
+        student_id = None
+        if telegram_id:
+            result = await db.execute(select(User).where(User.telegram_id == telegram_id))
+            user = result.scalar_one_or_none()
+            if user:
+                student_id = user.id
+
+        if student_id:
+            submission = Submission(
+                student_id=student_id,
+                subject=subject,
+                grade=grade,
+                ocr_raw_text=ai_result.get("ocr_text", ""),
+                ai_result=ai_result,
+                score=ai_result.get("score_percentage", 0),
+                total_problems=ai_result.get("total_problems", 0),
+                correct_count=ai_result.get("correct_count", 0),
+                incorrect_count=ai_result.get("incorrect_count", 0),
+                status="completed",
+                processing_duration_ms=processing_time,
+            )
+            db.add(submission)
+            await db.flush()
+            logger.info(f"Submission saqlandi: {submission.id}, student: {student_id}")
+
         logger.info(
             f"Tekshiruv yakunlandi: {processing_time}ms, "
-            f"ball: {ai_result.get('score_percentage', 0)}%, "
-            f"masalalar: {ai_result.get('total_problems', 0)}"
+            f"ball: {ai_result.get('score_percentage', 0)}%"
         )
 
         return JSONResponse(content={
