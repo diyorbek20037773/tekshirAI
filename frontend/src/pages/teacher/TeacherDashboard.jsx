@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Users, BookCheck, TrendingUp, School, Clock, LogOut, ChevronRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { SUBMISSIONS, TOPIC_ERRORS, CLASSROOMS } from '../../data/synthetic'
+import { getRandomTeacherQuote } from '../../data/quotes'
 
 function StatCard({ icon: Icon, title, value, color }) {
   const colors = {
@@ -45,6 +46,7 @@ export default function TeacherDashboard() {
 
   const todaySubs = SUBMISSIONS.filter(s => s.date === '2026-03-29')
   const totalStudents = realStudents.length
+  const [teacherQuote] = useState(() => getRandomTeacherQuote())
 
   const handleLogout = () => {
     localStorage.clear()
@@ -66,6 +68,12 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-5">
+        {/* Hikmatli so'z */}
+        <div className="bg-primary-50 rounded-xl px-4 py-3 border border-primary-100">
+          <p className="text-xs text-primary-700 italic">"{teacherQuote.text}"</p>
+          {teacherQuote.author && <p className="text-[10px] text-primary-400 mt-0.5">— {teacherQuote.author}</p>}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={Users} title="O'quvchilar" value={totalStudents} color="blue" />
           <StatCard icon={BookCheck} title="Bugun" value={`${todaySubs.length} tekshiruv`} color="green" />

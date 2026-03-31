@@ -1,0 +1,105 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Map Labels ── */
+.leaflet-tooltip.choropleth-label,
+.leaflet-tooltip.tuman-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-weight: 700;
+  color: #0f172a;
+  text-shadow:
+    0 0 6px rgba(255,255,255,0.95),
+    0 0 6px rgba(255,255,255,0.95),
+    0 0 3px rgba(255,255,255,0.95);
+  padding: 0 !important;
+}
+.leaflet-tooltip.choropleth-label { font-size: 11px; }
+.leaflet-tooltip.tuman-label { font-size: 10px; }
+
+/* ── Smooth GeoJSON hover ── */
+.leaflet-interactive {
+  transition: fill-opacity 0.3s ease, stroke-width 0.15s ease;
+}
+
+/* ── Pulsing animation for problem markers ── */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes pulse-dot {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.marker-pulse-red .leaflet-interactive {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Custom marker styles ── */
+.problem-marker {
+  position: relative;
+}
+.problem-marker::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #ef4444;
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* ── Leaflet popup override ── */
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+  min-width: 240px !important;
+}
+.leaflet-popup-tip {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+}
+
+/* ── Breadcrumb animation ── */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.breadcrumb-enter {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* ── Stats box glow ── */
+.stats-glow {
+  box-shadow:
+    0 4px 20px rgba(0,0,0,0.06),
+    0 0 0 1px rgba(255,255,255,0.8) inset;
+}
+
+/* ── Level indicator dots ── */
+@keyframes levelPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.level-active {
+  animation: levelPulse 2s ease-in-out infinite;
+}

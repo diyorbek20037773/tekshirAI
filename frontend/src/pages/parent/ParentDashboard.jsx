@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, TrendingUp, BookCheck, AlertCircle } from 'lucide-react'
 import { STUDENT_HISTORY } from '../../data/synthetic'
+import { getRandomParentQuote } from '../../data/quotes'
 
 export default function ParentDashboard() {
   const navigate = useNavigate()
@@ -10,6 +11,7 @@ export default function ParentDashboard() {
 
   const [childData, setChildData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [parentQuote] = useState(() => getRandomParentQuote())
 
   useEffect(() => {
     if (!telegramId || telegramId === '0') {
@@ -43,6 +45,12 @@ export default function ParentDashboard() {
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-4">
+
+        {/* Hikmatli so'z */}
+        <div className="bg-accent-50 rounded-xl px-4 py-3 border border-accent-100">
+          <p className="text-xs text-accent-700 italic">"{parentQuote.text}"</p>
+          {parentQuote.author && <p className="text-[10px] text-accent-400 mt-0.5">— {parentQuote.author}</p>}
+        </div>
 
         {loading ? (
           <div className="bg-white rounded-xl p-8 text-center">

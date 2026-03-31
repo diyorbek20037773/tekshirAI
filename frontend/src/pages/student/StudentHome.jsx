@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck } from 'lucide-react'
+import { getQuoteByScore, getDailyQuote, getRandomErrorMotivation, POINTS } from '../../data/quotes'
 
 export default function StudentHome() {
   const navigate = useNavigate()
@@ -9,7 +10,8 @@ export default function StudentHome() {
   const grade = localStorage.getItem('studentGrade') || 7
   const telegramId = localStorage.getItem('telegramId')
 
-  const fileInputRef = useRef(null)
+  const fileInputRef = useRef()
+  const dailyQuote = getDailyQuote()
 
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState(null)
@@ -93,7 +95,6 @@ export default function StudentHome() {
   const scorePercent = result?.score_percentage || 0
   const totalProblems = result?.total_problems || 0
   const correctCount = result?.correct_count || 0
-  const incorrectCount = result?.incorrect_count || 0
 
   const getEmoji = (score) => {
     if (score >= 90) return '🏆'
@@ -113,14 +114,22 @@ export default function StudentHome() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-success-500 to-success-600 px-4 py-5 text-white">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold">{name}</h1>
-            <p className="text-xs text-success-100">{grade}-sinf | {subject}</p>
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-lg font-bold">{name}</h1>
+              <p className="text-xs text-success-100">{grade}-sinf | {subject}</p>
+            </div>
+            <button onClick={handleLogout} className="p-2 text-white/70 hover:text-white">
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
-          <button onClick={handleLogout} className="p-2 text-white/70 hover:text-white">
-            <LogOut className="w-5 h-5" />
-          </button>
+          {dailyQuote && (
+            <div className="bg-white/15 rounded-lg px-3 py-2 mt-2">
+              <p className="text-xs text-white/90 italic">"{dailyQuote.text}"</p>
+              {dailyQuote.author && <p className="text-[10px] text-white/60 mt-0.5">— {dailyQuote.author}</p>}
+            </div>
+          )}
         </div>
       </div>
 
@@ -189,28 +198,39 @@ export default function StudentHome() {
         )}
 
         {/* === XATO === */}
-        {error && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-danger-200">
-            <div className="flex items-center gap-3 mb-3">
-              <AlertCircle className="w-8 h-8 text-danger-500 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-gray-800">Tekshirib bo'lmadi</p>
-                <p className="text-sm text-gray-600 mt-1">{error}</p>
+        {error && (() => {
+          const motivation = getRandomErrorMotivation()
+          return (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-danger-200">
+              <div className="flex items-center gap-3 mb-3">
+                <AlertCircle className="w-8 h-8 text-danger-500 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-gray-800">Tekshirib bo'lmadi</p>
+                  <p className="text-sm text-gray-600 mt-1">{error}</p>
+                </div>
               </div>
+              <div className="bg-accent-50 rounded-lg p-3 mb-3">
+                <p className="text-xs text-accent-700 italic">"{motivation.text}"</p>
+                {motivation.author && <p className="text-[10px] text-accent-500 mt-0.5">— {motivation.author}</p>}
+              </div>
+              <button onClick={resetUpload}
+                className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition">
+                <RotateCcw className="w-4 h-4" /> Qayta urinish
+              </button>
             </div>
-            <button onClick={resetUpload}
-              className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition mt-3">
-              <RotateCcw className="w-4 h-4" /> Qayta urinish
-            </button>
-          </div>
-        )}
+          )
+        })()}
 
         {/* === NATIJA === */}
-        {result && (
+        {result && (() => {
+          const quote = getQuoteByScore(scorePercent)
+          const xpEarned = correctCount * POINTS.correctProblem + (scorePercent >= 100 ? POINTS.perfectScore : 0)
+          return (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <div className="text-center mb-4">
               <span className="text-5xl">{getEmoji(scorePercent)}</span>
               <h2 className="text-xl font-bold text-gray-800 mt-2">{getStatus(scorePercent)}</h2>
+              <p className="text-sm text-success-600 font-medium mt-1">+{xpEarned} ball</p>
             </div>
 
             <div className="grid grid-cols-3 gap-2 mb-4">
@@ -288,12 +308,19 @@ export default function StudentHome() {
               </div>
             )}
 
+            {/* Hikmatli so'z */}
+            <div className="bg-success-50 rounded-xl p-3 mb-3 text-center">
+              <p className="text-xs text-success-700 italic">"{quote.text}"</p>
+              {quote.author && <p className="text-[10px] text-success-500 mt-0.5">— {quote.author}</p>}
+            </div>
+
             <button onClick={resetUpload}
               className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition">
               <RotateCcw className="w-4 h-4" /> Yangi vazifa tekshirish
             </button>
           </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )
