@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, BookCheck, TrendingUp, School, Clock, LogOut, ChevronRight } from 'lucide-react'
+import { Users, BookCheck, TrendingUp, School, Clock, LogOut, ChevronRight, Compass } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { SUBMISSIONS, TOPIC_ERRORS, CLASSROOMS } from '../../data/synthetic'
 import { getRandomTeacherQuote } from '../../data/quotes'
@@ -195,6 +195,59 @@ export default function TeacherDashboard() {
                 </Link>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* === KASB YO'NALISHI — O'quvchilar moyilligi === */}
+        {riskData && (riskData.green?.length > 0 || riskData.yellow?.length > 0) && (
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Compass className="w-5 h-5 text-purple-500" />
+              <h2 className="text-base font-semibold text-gray-800">Kasb moyilliklari</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              O'quvchilarning fan natijalariga qarab kasbiy yo'nalish tahlili
+            </p>
+            <div className="space-y-2">
+              {[...(riskData.green || []), ...(riskData.yellow || [])].slice(0, 5).map(s => {
+                // Fan natijalariga qarab oddiy kasb tavsiyasi
+                const subj = (s.subject || '').toLowerCase()
+                let career = { emoji: '📚', name: 'Turli yo\'nalishlar' }
+                if (subj.includes('matematik') || subj.includes('algebra') || subj.includes('geometr'))
+                  career = { emoji: '💻', name: 'IT / Muhandislik' }
+                else if (subj.includes('fizika'))
+                  career = { emoji: '⚙️', name: 'Muhandis / Fizik' }
+                else if (subj.includes('biolog') || subj.includes('kimyo'))
+                  career = { emoji: '🔬', name: 'Shifokor / Olim' }
+                else if (subj.includes('ona tili') || subj.includes('adabiyot'))
+                  career = { emoji: '✍️', name: 'Jurnalist / Advokat' }
+                else if (subj.includes('ingliz') || subj.includes('english'))
+                  career = { emoji: '🌍', name: 'Tarjimon / Diplomat' }
+                else if (subj.includes('tarix'))
+                  career = { emoji: '⚖️', name: 'Huquqshunos / Tarixchi' }
+                else if (subj.includes('informatika'))
+                  career = { emoji: '💻', name: 'Dasturchi / IT' }
+
+                return (
+                  <Link key={s.telegram_id} to={`/teacher/student/${s.telegram_id}`}
+                    className="flex items-center justify-between p-2.5 rounded-lg hover:bg-purple-50 transition border border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{career.emoji}</span>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">{s.name}</p>
+                        <p className="text-[10px] text-purple-500">{career.name}</p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                      s.avg_score >= 80 ? 'bg-success-50 text-success-600' : 'bg-accent-50 text-accent-600'
+                    }`}>{s.avg_score}%</span>
+                  </Link>
+                )
+              })}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2 text-center">
+              Har bir o'quvchining sahifasida batafsil kasb tahlili mavjud
+            </p>
           </div>
         )}
 

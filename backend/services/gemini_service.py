@@ -416,6 +416,120 @@ QOIDALAR:
             "problems": []
         }
 
+    # ============================================
+    # KASB BASHORAT TIZIMI
+    # O'quvchining fan natijalariga qarab kelajakdagi
+    # kasb yo'nalishlarini tavsiya qilish
+    # ============================================
+
+    CAREER_PREDICTION_PROMPT = """Sen O'zbekiston maktab o'quvchilari uchun professional kasbga yo'naltirish maslahatchisin.
+
+O'QUVCHI MA'LUMOTLARI:
+- Sinf: {grade}-sinf
+- Jami tekshiruvlar: {total_submissions}
+
+FAN BO'YICHA NATIJALAR:
+{subjects_summary}
+
+KUCHLI TOMONLAR: {strong_topics}
+ZAIF TOMONLAR: {weak_topics}
+
+VAZIFANG:
+O'quvchining fan bo'yicha natijalariga qarab, uning kelajakda qaysi kasb yo'nalishlariga moyilligi borligini tahlil qil.
+
+QOIDALAR:
+1. O'zbek tilida (lotin alifbosida) yoz
+2. "Bashorat" dema — "Qiziqarli yo'nalishlar" de
+3. Har bir tavsiya etilgan kasb uchun NEGA mos kelishini tushuntir
+4. Kamida 3 ta, ko'pi bilan 5 ta kasb tavsiya et
+5. Har bir kasb uchun ishonch darajasini 0-100 orasida ber
+6. Gender-neytral bo'l — barcha kasblar bola va qiz uchun teng
+7. O'zbekiston mehnat bozorini hisobga ol
+8. Motivatsion va rag'batlantiruvchi tonda yoz
+9. Zaif tomonlarni yaxshilash tavsiyasini ham ber
+10. Har bir kasb uchun qaysi fanlarga e'tibor berish kerakligini yoz
+
+JSON FORMAT (AYNAN SHU FORMATDA QAYTAR):
+{{
+    "career_directions": [
+        {{
+            "career_name": "<kasb nomi>",
+            "career_emoji": "<emoji>",
+            "match_score": <0-100>,
+            "reason": "<nega mos keladi — 1-2 gap>",
+            "key_subjects": ["<muhim fanlar>"],
+            "advice": "<nima qilish kerak — 1 gap>"
+        }}
+    ],
+    "overall_summary": "<umumiy xulosa — 2-3 gap>",
+    "improvement_plan": "<zaif tomonlarni yaxshilash rejasi — 2-3 gap>",
+    "motivation": "<rag'batlantiruvchi gap>"
+}}"""
+
+    async def predict_career(self, student_data: Dict) -> Dict:
+        """
+        O'quvchining fan natijalariga qarab kasbiy yo'nalishlarni bashorat qilish.
+        student_data: {{grade, total_submissions, subjects: {{name: avg_score}}, weak_topics, strong_topics}}
+        """
+        api_key = self.key_manager.get_current_key()
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(self.model_name)
+
+        # Fan natijalarini formatlash
+        subjects_summary = ""
+        for subj, score in student_data.get("subjects", {}).items():
+            subjects_summary += f"- {subj}: {score}%\n"
+
+        prompt = self.CAREER_PREDICTION_PROMPT.format(
+            grade=student_data.get("grade", 7),
+            total_submissions=student_data.get("total_submissions", 0),
+            subjects_summary=subjects_summary or "- Ma'lumot yetarli emas",
+            strong_topics=", ".join(student_data.get("strong_topics", [])) or "Hali aniqlanmagan",
+            weak_topics=", ".join(student_data.get("weak_topics", [])) or "Hali aniqlanmagan",
+        )
+
+        try:
+            gen_config = genai.GenerationConfig(
+                temperature=0.4,
+                max_output_tokens=2048,
+            )
+
+            def _call():
+                return model.generate_content(prompt, generation_config=gen_config)
+
+            response = await asyncio.wait_for(
+                asyncio.to_thread(_call),
+                timeout=30,
+            )
+            self.key_manager.record_usage()
+            result = self._extract_json(response.text)
+
+            if result.get("error"):
+                return {
+                    "error": True,
+                    "error_message": "AI javobini qayta ishlashda xatolik",
+                    "career_directions": [],
+                }
+
+            return result
+
+        except asyncio.TimeoutError:
+            return {
+                "error": True,
+                "error_message": "AI javob bermadi (timeout)",
+                "career_directions": [],
+            }
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                self.key_manager.rotate_key()
+                return await self.predict_career(student_data)
+            logger.error(f"Career prediction xatosi: {e}")
+            return {
+                "error": True,
+                "error_message": f"Xatolik: {str(e)[:200]}",
+                "career_directions": [],
+            }
+
     def get_api_stats(self) -> dict:
         """API kalitlar statistikasi."""
         return self.key_manager.get_stats()

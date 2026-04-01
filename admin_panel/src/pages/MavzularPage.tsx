@@ -5,7 +5,7 @@ import { generateFanStats, generateZaifMavzular } from '../data';
 import { interpolateColor } from '../utils/colors';
 import { formatNumber } from '../utils/format';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { BookOpen, AlertTriangle, Lightbulb, TrendingDown } from 'lucide-react';
+import { BookOpen, AlertTriangle, Lightbulb, TrendingDown, Compass } from 'lucide-react';
 
 const FAN_ICONS: Record<string, string> = {
   Matematika: '📐',
@@ -146,6 +146,81 @@ export default function MavzularPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* === KASB MOYILLIKLARI — fan natijalariga asoslangan === */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Compass size={18} className="text-purple-500" />
+            <h3 className="text-sm font-bold text-slate-700">Kasb moyilliklari tahlili</h3>
+          </div>
+          <p className="text-[11px] text-slate-400 mb-4">
+            Fan natijalariga asoslangan o'quvchilarning kasbiy yo'nalish moyilliklari (respublika bo'yicha)
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {(() => {
+              // Fan natijalariga qarab kasb moyilliklarini hisoblash
+              const careerMap: { name: string; emoji: string; subjects: string[]; score: number; trend: string }[] = [];
+              const fanScores: Record<string, number> = {};
+              for (const f of fanlar) fanScores[f.fan_nomi] = f.ortacha_ball;
+
+              const math = fanScores['Matematika'] || 0;
+              const phys = fanScores['Fizika'] || 0;
+              const chem = fanScores['Kimyo'] || 0;
+              const bio = fanScores['Biologiya'] || 0;
+              const info = fanScores['Informatika'] || 0;
+              const eng = fanScores['Ingliz tili'] || 0;
+              const ona = fanScores['Ona tili'] || 0;
+              const tarix = fanScores['Tarix'] || 0;
+
+              careerMap.push(
+                { name: 'IT / Dasturlash', emoji: '💻', subjects: ['Matematika', 'Informatika'], score: Math.round((math + info) / 2), trend: info > 70 ? 'yuqori' : 'o\'rtacha' },
+                { name: 'Tibbiyot', emoji: '🏥', subjects: ['Biologiya', 'Kimyo'], score: Math.round((bio + chem) / 2), trend: bio > 75 ? 'yuqori' : 'o\'rtacha' },
+                { name: 'Muhandislik', emoji: '⚙️', subjects: ['Fizika', 'Matematika'], score: Math.round((phys + math) / 2), trend: phys > 70 ? 'yuqori' : 'o\'rtacha' },
+                { name: 'Huquq / Diplomatiya', emoji: '⚖️', subjects: ['Tarix', 'Ona tili', 'Ingliz tili'], score: Math.round((tarix + ona + eng) / 3), trend: tarix > 70 ? 'yuqori' : 'o\'rtacha' },
+                { name: 'Iqtisod / Moliya', emoji: '📊', subjects: ['Matematika', 'Ingliz tili'], score: Math.round((math + eng) / 2), trend: math > 75 ? 'yuqori' : 'o\'rtacha' },
+              );
+
+              return careerMap.sort((a, b) => b.score - a.score).map(c => (
+                <div key={c.name} className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl border border-purple-100/50 p-4">
+                  <div className="text-center mb-2">
+                    <span className="text-3xl">{c.emoji}</span>
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 text-center">{c.name}</p>
+                  <p className="text-2xl font-black text-center mt-1" style={{ color: c.score >= 75 ? '#10b981' : c.score >= 60 ? '#f59e0b' : '#ef4444' }}>
+                    {c.score}%
+                  </p>
+                  <p className="text-[9px] text-slate-400 text-center mt-1">Moyillik darajasi</p>
+                  <div className="w-full h-1.5 bg-white rounded-full overflow-hidden mt-2">
+                    <div className="h-full rounded-full transition-all" style={{
+                      width: c.score + '%',
+                      backgroundColor: c.score >= 75 ? '#10b981' : c.score >= 60 ? '#f59e0b' : '#ef4444',
+                    }} />
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-1 mt-2">
+                    {c.subjects.map(s => (
+                      <span key={s} className="text-[8px] bg-white/80 text-purple-600 px-1.5 py-0.5 rounded-full">{s}</span>
+                    ))}
+                  </div>
+                  <div className="text-center mt-2">
+                    <span className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${
+                      c.trend === 'yuqori' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {c.trend === 'yuqori' ? '📈 Yuqori talab' : '📊 O\'rtacha talab'}
+                    </span>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+
+          <div className="mt-4 bg-purple-50 rounded-lg p-3 border border-purple-100">
+            <p className="text-[10px] text-purple-600">
+              💡 Bu ma'lumotlar o'quvchilarning fan bo'yicha natijalariga asoslangan umumiy tahlil.
+              Har bir o'quvchining individual kasb tavsiyasi ota-ona va o'qituvchi panelida mavjud.
+            </p>
           </div>
         </div>
 

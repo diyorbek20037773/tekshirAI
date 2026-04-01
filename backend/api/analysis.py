@@ -10,9 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.models.user import User
 from backend.models.submission import Submission
+from backend.services.gemini_service import GeminiService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
+
+gemini_service = GeminiService()
 
 
 def _risk_level(score: float) -> str:
@@ -231,4 +234,100 @@ async def get_classroom_risks(db: AsyncSession = Depends(get_db)):
             "yellow_advice": "Mashqni davom etsin, zaif mavzularga e'tibor bering",
             "red_advice": "Individual yondashuv kerak, ota-onani xabardor qiling",
         },
+    }
+
+
+@router.get("/career-prediction/{telegram_id}")
+async def get_career_prediction(telegram_id: int, db: AsyncSession = Depends(get_db)):
+    """O'quvchining fan natijalariga qarab kasbiy yo'nalish bashorati."""
+
+    # O'quvchini topish
+    result = await db.execute(select(User).where(User.telegram_id == telegram_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        return JSONResponse(status_code=404, content={"detail": "O'quvchi topilmadi"})
+
+    # Barcha submissionlarni olish
+    subs_result = await db.execute(
+        select(Submission)
+        .where(and_(Submission.student_id == user.id, Submission.status == "completed"))
+        .order_by(desc(Submission.created_at))
+        .limit(100)
+    )
+    submissions = subs_result.scalars().all()
+
+    # Minimum 5 ta submission kerak
+    if len(submissions) < 5:
+        return {
+            "ready": False,
+            "message": f"Kasb yo'nalishini aniqlash uchun kamida 5 ta tekshiruv kerak. Hozircha {len(submissions)} ta bor.",
+            "submissions_needed": 5 - len(submissions),
+            "career_directions": [],
+        }
+
+    # Fan bo'yicha o'rtacha ballarni hisoblash
+    subject_scores = defaultdict(list)
+    all_weak = []
+    all_strong = []
+
+    for sub in submissions:
+        subj = sub.subject or "matematika"
+        if sub.score is not None:
+            subject_scores[subj].append(sub.score)
+        ai = sub.ai_result
+        if ai:
+            all_weak.extend(ai.get("weak_topics", []))
+            # Kuchli mavzularni aniqlash
+            for p in ai.get("problems", []):
+                if p.get("score", 0) >= 1:
+                    all_strong.append(p.get("problem_text", "")[:50])
+
+    # Kamida 2 ta fan kerak yaxshi bashorat uchun
+    subjects_avg = {}
+    for subj, scores in subject_scores.items():
+        subjects_avg[subj] = round(sum(scores) / len(scores), 1)
+
+    if len(subjects_avg) < 2:
+        return {
+            "ready": False,
+            "message": "Kasb yo'nalishini aniqlash uchun kamida 2 ta fandan natija kerak.",
+            "current_subjects": list(subjects_avg.keys()),
+            "career_directions": [],
+        }
+
+    # Zaif va kuchli mavzularni saralash
+    weak_counts = defaultdict(int)
+    for t in all_weak:
+        weak_counts[t] += 1
+    top_weak = [t for t, _ in sorted(weak_counts.items(), key=lambda x: -x[1])[:5]]
+
+    strong_counts = defaultdict(int)
+    for t in all_strong:
+        strong_counts[t] += 1
+    top_strong = [t for t, _ in sorted(strong_counts.items(), key=lambda x: -x[1])[:5]]
+
+    # Gemini ga yuborish
+    student_data = {
+        "grade": user.grade or 7,
+        "total_submissions": len(submissions),
+        "subjects": subjects_avg,
+        "weak_topics": top_weak,
+        "strong_topics": top_strong,
+    }
+
+    prediction = await gemini_service.predict_career(student_data)
+
+    if prediction.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={"detail": prediction.get("error_message", "AI xatolik")},
+        )
+
+    return {
+        "ready": True,
+        "student_name": user.full_name,
+        "grade": user.grade,
+        "subjects_analyzed": subjects_avg,
+        "total_submissions": len(submissions),
+        **prediction,
     }
