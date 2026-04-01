@@ -307,21 +307,21 @@ QOIDALAR:
 - Emoji ishlat: ✅ ❌ 💡 📝 🎯"""
 
         try:
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.GenerationConfig(
-                    temperature=0.3,
-                    max_output_tokens=1024,
-                )
-            )
+            gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=1024)
+            def _call():
+                return model.generate_content(prompt, generation_config=gen_config)
+            response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=30)
             self.key_manager.record_usage()
             return response.text
+        except asyncio.TimeoutError:
+            return "AI javob bermadi (timeout). Qayta urinib ko'ring."
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 self.key_manager.rotate_key()
                 return await self.chat_about_problem(
                     problem_data, conversation_history, student_message, grade, subject
                 )
+            logger.error(f"Chat xatosi: {e}")
             return f"Javob olishda xatolik: {str(e)[:100]}"
 
     async def chat_about_topic(
@@ -355,25 +355,26 @@ QOIDALAR:
 - O'zbek tilida (lotin alifbosida) yoz
 - Oddiy, tushunarli tilda tushuntir
 - Hayotiy misollar bilan (bozor, sport, ovqat pishirish, pul hisoblash)
+- Savolga ANIQ javob ber, mavzudan chiqma
 - Qisqa va aniq javob ber (200 so'zdan oshmasin)
 - Emoji ishlat: ✅ ❌ 💡 📝 🎯"""
 
         try:
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.GenerationConfig(
-                    temperature=0.3,
-                    max_output_tokens=1024,
-                )
-            )
+            gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=1024)
+            def _call():
+                return model.generate_content(prompt, generation_config=gen_config)
+            response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=30)
             self.key_manager.record_usage()
             return response.text
+        except asyncio.TimeoutError:
+            return "AI javob bermadi (timeout). Qayta urinib ko'ring."
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 self.key_manager.rotate_key()
                 return await self.chat_about_topic(
                     topic, conversation_history, student_message, grade, subject
                 )
+            logger.error(f"Chat topic xatosi: {e}")
             return f"Javob olishda xatolik: {str(e)[:100]}"
 
     def _extract_json(self, text: str) -> Dict:

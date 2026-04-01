@@ -1,58 +1,59 @@
-import type { MetricType } from '../../types';
-import { METRIC_LABELS } from '../../types';
+import type { MapMetricType } from '../../types';
+import { MAP_METRIC_LABELS } from '../../types';
 import { Info } from 'lucide-react';
 import { useState } from 'react';
 
 interface Props {
-  metric: MetricType;
+  metric: MapMetricType;
 }
 
-const LEGENDS: Record<MetricType, {
+const LEGENDS: Record<MapMetricType, {
   colors: string[];
   labels: [string, string];
   description: string;
   items: { color: string; label: string; desc: string }[];
 }> = {
-  satisfaction: {
+  ortacha_ball: {
     colors: ['#dc2626', '#ef4444', '#f59e0b', '#84cc16', '#22c55e', '#15803d'],
     labels: ['0%', '100%'],
-    description: "Fuqarolar tekshiruvlari bo'yicha mamnuniyat darajasi",
+    description: "O'quvchilarning o'rtacha ball ko'rsatkichi",
     items: [
-      { color: '#15803d', label: 'A\'lo', desc: '70% dan yuqori — barcha va\'dalar bajarilgan' },
-      { color: '#22c55e', label: 'Yaxshi', desc: '60-70% — aksariyat va\'dalar bajarilgan' },
-      { color: '#f59e0b', label: "E'tiborga muhtoj", desc: '40-60% — muammolar mavjud' },
-      { color: '#ef4444', label: 'Nosoz', desc: '40% dan past — jiddiy muammolar' },
-      { color: '#94a3b8', label: 'Tekshirilmagan', desc: 'Hali fuqarolar tekshirmagan' },
+      { color: '#15803d', label: "A'lo", desc: "75% dan yuqori — a'lo natija" },
+      { color: '#22c55e', label: 'Yaxshi', desc: '65-75% — yaxshi daraja' },
+      { color: '#f59e0b', label: "O'rtacha", desc: "55-65% — o'rtacha, e'tiborga muhtoj" },
+      { color: '#ef4444', label: 'Past', desc: "55% dan past — jiddiy muammo" },
     ],
   },
-  problems: {
-    colors: ['#fee2e2', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#991b1b'],
-    labels: ['Kam', "Ko'p"],
-    description: "Aniqlangan muammolar soni — qanchalik to'q bo'lsa, shunchalik ko'p",
+  davomat: {
+    colors: ['#dc2626', '#ef4444', '#f59e0b', '#84cc16', '#22c55e', '#15803d'],
+    labels: ['0%', '100%'],
+    description: "O'quvchilar davomatining foiz ko'rsatkichi",
     items: [
-      { color: '#fee2e2', label: 'Kam', desc: 'Muammolar deyarli yo\'q' },
-      { color: '#ef4444', label: "O'rtacha", desc: 'Bir nechta muammo aniqlangan' },
-      { color: '#991b1b', label: "Ko'p", desc: 'Jiddiy e\'tibor talab etadi' },
+      { color: '#15803d', label: 'Yuqori', desc: '93%+ — ajoyib davomat' },
+      { color: '#22c55e', label: 'Yaxshi', desc: '88-93% — yaxshi' },
+      { color: '#f59e0b', label: "O'rtacha", desc: "83-88% — e'tiborga muhtoj" },
+      { color: '#ef4444', label: 'Past', desc: '83% dan past — muammoli' },
     ],
   },
-  inspections: {
+  ai_tekshiruvlar: {
     colors: ['#dbeafe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1e3a8a'],
     labels: ['Kam', "Ko'p"],
-    description: "Fuqarolar tekshiruvlari soni — faollik darajasi",
+    description: "TekshirAI orqali tekshirilgan vazifalar soni",
     items: [
-      { color: '#dbeafe', label: 'Kam faollik', desc: 'Fuqarolar kam tekshirgan' },
+      { color: '#dbeafe', label: 'Kam', desc: 'Platforma kam ishlatilmoqda' },
       { color: '#3b82f6', label: "O'rtacha", desc: 'Faollik mavjud' },
-      { color: '#1e3a8a', label: 'Yuqori faollik', desc: 'Eng ko\'p tekshirilgan' },
+      { color: '#1e3a8a', label: "Ko'p", desc: 'Eng faol hudud' },
     ],
   },
-  signals: {
-    colors: ['#fef3c7', '#fde68a', '#fbbf24', '#f59e0b', '#d97706', '#92400e'],
-    labels: ['Kam', "Ko'p"],
-    description: "Fuqarolar signallari soni",
+  sifat: {
+    colors: ['#dc2626', '#ef4444', '#f59e0b', '#84cc16', '#22c55e', '#15803d'],
+    labels: ['Past', "A'lo"],
+    description: "Umumiy ta'lim sifati darajasi",
     items: [
-      { color: '#fef3c7', label: 'Kam', desc: 'Signal deyarli yo\'q' },
-      { color: '#f59e0b', label: "O'rtacha", desc: 'Signallar mavjud' },
-      { color: '#92400e', label: "Ko'p", desc: 'Eng ko\'p signal' },
+      { color: '#15803d', label: "A'lo", desc: "Barcha ko'rsatkichlar yuqori" },
+      { color: '#22c55e', label: 'Yaxshi', desc: "Ko'rsatkichlar yaxshi" },
+      { color: '#f59e0b', label: "O'rtacha", desc: "Yaxshilash imkoniyati bor" },
+      { color: '#ef4444', label: 'Past', desc: 'Jiddiy chora-tadbirlar kerak' },
     ],
   },
 };
@@ -66,7 +67,6 @@ export default function MapLegend({ metric }: Props) {
       <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200/50 overflow-hidden"
         style={{ width: expanded ? 260 : 160 }}>
 
-        {/* Header */}
         <button onClick={() => setExpanded(!expanded)}
           className="w-full flex items-center gap-2 px-3.5 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors">
           <div className="w-5 h-5 rounded-md flex items-center justify-center"
@@ -74,7 +74,7 @@ export default function MapLegend({ metric }: Props) {
             <Info size={11} style={{ color: legend.colors[3] }} />
           </div>
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 text-left">
-            {METRIC_LABELS[metric]}
+            {MAP_METRIC_LABELS[metric]}
           </span>
           <svg className={`w-3 h-3 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
             fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +82,6 @@ export default function MapLegend({ metric }: Props) {
           </svg>
         </button>
 
-        {/* Gradient bar */}
         <div className="px-3.5 pb-2">
           <div className="flex rounded-lg overflow-hidden h-3 shadow-inner">
             {legend.colors.map((c, i) => (
@@ -95,15 +94,13 @@ export default function MapLegend({ metric }: Props) {
           </div>
         </div>
 
-        {/* Expanded detail */}
         {expanded && (
           <div className="px-3.5 pb-3 border-t border-slate-100 pt-2.5">
             <p className="text-[10px] text-slate-400 leading-relaxed mb-2.5">{legend.description}</p>
             <div className="space-y-1.5">
               {legend.items.map((item) => (
                 <div key={item.label} className="flex items-start gap-2">
-                  <span className="w-3 h-3 rounded-sm shrink-0 mt-0.5 shadow-sm"
-                    style={{ backgroundColor: item.color }} />
+                  <span className="w-3 h-3 rounded-sm shrink-0 mt-0.5 shadow-sm" style={{ backgroundColor: item.color }} />
                   <div>
                     <span className="text-[10px] font-bold text-slate-600">{item.label}</span>
                     <span className="text-[10px] text-slate-400 ml-1">— {item.desc}</span>

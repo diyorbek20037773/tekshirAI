@@ -1,17 +1,17 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import type { MapLevel, TileLayerType, ViloyatCollection, TumanCollection, ViloyatStats, TumanStats, MaktabData, MetricType, CategoryType } from '../../types';
-import { VILOYAT_NAME_TO_KOD, VILOYAT_KOD_TO_NAME, METRIC_LABELS, CATEGORY_LABELS } from '../../types';
-import { fetchViloyatlarGeoJSON, fetchTumanlarGeoJSON, fetchViloyatStats, fetchTumanStats } from '../../api/viloyatlar';
-import { fetchMaktablar } from '../../api/maktablar';
-import { enrichViloyatStats, enrichTumanStats, generateViloyatMetrics, generateTumanMetrics, generateSyntheticSchools } from '../../utils/synthetic';
+import type { MapLevel, TileLayerType, ViloyatCollection, TumanCollection, MapMetricType } from '../../types';
+import { VILOYAT_NAME_TO_KOD, MAP_METRIC_LABELS } from '../../types';
+import { fetchViloyatlarGeoJSON, fetchTumanlarGeoJSON } from '../../api/viloyatlar';
+import { generateViloyatStats, generateTumanStats } from '../../data';
 import ChoroplethViloyatLayer from './ChoroplethViloyatLayer';
 import ChoroplethTumanLayer from './ChoroplethTumanLayer';
-import AdminMaktablarLayer from './AdminMaktablarLayer';
+import TalimRegionPanel from './TalimRegionPanel';
 import MapLegend from './MapLegend';
-import RegionInfoPanel from './RegionInfoPanel';
-import { Layers, Search, ChevronLeft, Navigation, Map as MapIcon, Globe, Satellite } from 'lucide-react';
+import { Search, ChevronLeft, Navigation, Map as MapIcon, Globe, Satellite } from 'lucide-react';
+import { interpolateColor } from '../../utils/colors';
+import { formatNumber } from '../../utils/format';
 
 const UZ_CENTER: [number, number] = [41.3, 64.5];
 const UZ_ZOOM = 6;
@@ -25,25 +25,17 @@ const TILE_URLS: Record<TileLayerType, { url: string; attribution: string }> = {
 
 function MapController({ target }: { target: { center: [number, number]; zoom: number; bounds?: L.LatLngBounds } | null }) {
   const map = useMap();
-  const applied = useRef<string | null>(null);
   useEffect(() => {
     if (!target) return;
-    const key = JSON.stringify(target);
-    if (applied.current === key) return;
-    applied.current = key;
     if (target.bounds) map.flyToBounds(target.bounds, { padding: [30, 30], maxZoom: target.zoom, duration: 0.8 });
     else map.flyTo(target.center, target.zoom, { duration: 0.8 });
   }, [target, map]);
   return null;
 }
 
-export default function AdminMap() {
+export default function TalimMap() {
   const [viloyatlarGeo, setViloyatlarGeo] = useState<ViloyatCollection | null>(null);
   const [tumanlarGeo, setTumanlarGeo] = useState<TumanCollection | null>(null);
-  const [viloyatStats, setViloyatStats] = useState<ViloyatStats[]>([]);
-  const [tumanStats, setTumanStats] = useState<TumanStats[]>([]);
-  const [maktablar, setMaktablar] = useState<MaktabData[]>([]);
-  const [allMaktablar, setAllMaktablar] = useState<MaktabData[]>([]);
 
   const [level, setLevel] = useState<MapLevel>('country');
   const [selectedViloyat, setSelectedViloyat] = useState<string | null>(null);
@@ -54,77 +46,60 @@ export default function AdminMap() {
   const [mapTarget, setMapTarget] = useState<{ center: [number, number]; zoom: number; bounds?: L.LatLngBounds } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [metric, setMetric] = useState<MetricType>('satisfaction');
-  const [category, setCategory] = useState<CategoryType>('');
+  const [metric, setMetric] = useState<MapMetricType>('ortacha_ball');
   const [showPanel, setShowPanel] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  // Load all data
+  // Load GeoJSON
   useEffect(() => {
-    Promise.all([
-      fetchViloyatlarGeoJSON(),
-      fetchTumanlarGeoJSON(),
-      fetchViloyatStats().catch(() => []),
-      fetchMaktablar().catch(() => []),
-    ]).then(([vGeo, tGeo, vStats, allM]) => {
-      setViloyatlarGeo(vGeo);
-      setTumanlarGeo(tGeo);
-      setViloyatStats(enrichViloyatStats(vGeo, tGeo, vStats));
-      setAllMaktablar(allM);
-      setLoading(false);
-    });
+    Promise.all([fetchViloyatlarGeoJSON(), fetchTumanlarGeoJSON()])
+      .then(([vGeo, tGeo]) => {
+        setViloyatlarGeo(vGeo);
+        setTumanlarGeo(tGeo);
+        setLoading(false);
+      });
   }, []);
 
-  // Viloyat metrics
-  const viloyatMetrics = useMemo(() => {
-    if (!viloyatlarGeo) return new Map();
-    return generateViloyatMetrics(viloyatlarGeo, allMaktablar);
-  }, [viloyatlarGeo, allMaktablar]);
+  const viloyatStats = useMemo(() => generateViloyatStats(), []);
 
-  // Tuman metrics
-  const tumanMetrics = useMemo(() => {
-    if (!tumanlarGeo || !selectedViloyat) return new Map();
-    const filtered = selectedViloyatKod ? allMaktablar.filter(m => m.viloyat === selectedViloyatKod) : [];
-    return generateTumanMetrics(tumanlarGeo, selectedViloyat, filtered);
-  }, [tumanlarGeo, selectedViloyat, selectedViloyatKod, allMaktablar]);
+  const tumanStats = useMemo(() => {
+    if (!selectedViloyatKod || !tumanlarGeo) return [];
+    return generateTumanStats(selectedViloyatKod, tumanlarGeo);
+  }, [selectedViloyatKod, tumanlarGeo]);
 
-  // Search results
+  // Stats summary for bottom box
+  const statsSummary = useMemo(() => {
+    if (level === 'viloyat' && selectedViloyatKod) {
+      const v = viloyatStats.find(s => s.kod === selectedViloyatKod);
+      if (v) return { maktablar: v.maktablar_soni, oquvchilar: v.oquvchilar_soni, ball: v.ortacha_ball };
+    }
+    if (level === 'tuman' && selectedTuman) {
+      const t = tumanStats.find(s => s.nom === selectedTuman);
+      if (t) return { maktablar: t.maktablar_soni, oquvchilar: t.oquvchilar_soni, ball: t.ortacha_ball };
+    }
+    return {
+      maktablar: viloyatStats.reduce((s, v) => s + v.maktablar_soni, 0),
+      oquvchilar: viloyatStats.reduce((s, v) => s + v.oquvchilar_soni, 0),
+      ball: Math.round(viloyatStats.reduce((s, v) => s + v.ortacha_ball, 0) / viloyatStats.length),
+    };
+  }, [level, viloyatStats, selectedViloyatKod, selectedTuman, tumanStats]);
+
+  // Search
   const searchResults = useMemo(() => {
     if (!searchQuery.trim() || !viloyatlarGeo || !tumanlarGeo) return [];
     const q = searchQuery.toLowerCase();
     const results: { type: 'viloyat' | 'tuman'; name: string; parent?: string; kod?: string }[] = [];
-
     for (const f of viloyatlarGeo.features) {
-      if (f.properties.name.toLowerCase().includes(q)) {
+      if (f.properties.name.toLowerCase().includes(q))
         results.push({ type: 'viloyat', name: f.properties.name, kod: VILOYAT_NAME_TO_KOD[f.properties.name] });
-      }
     }
     for (const f of tumanlarGeo.features) {
-      if (f.properties.name.toLowerCase().includes(q)) {
+      if (f.properties.name.toLowerCase().includes(q))
         results.push({ type: 'tuman', name: f.properties.name, parent: f.properties.viloyat });
-      }
     }
     return results.slice(0, 8);
   }, [searchQuery, viloyatlarGeo, tumanlarGeo]);
-
-  // Stats summary
-  const statsSummary = useMemo(() => {
-    if (level === 'tuman') {
-      const checked = maktablar.filter(m => m.mamnuniyat_foizi !== null);
-      const avgSat = checked.length > 0 ? Math.round(checked.reduce((s, m) => s + (m.mamnuniyat_foizi || 0), 0) / checked.length) : 0;
-      return { total: maktablar.length, checked: checked.length, satisfaction: avgSat, problems: maktablar.reduce((s, m) => s + m.muammo, 0) };
-    }
-    if (level === 'viloyat' && selectedViloyatKod) {
-      const vm = viloyatMetrics.get(selectedViloyatKod);
-      if (vm) return { total: vm.total, checked: vm.checked, satisfaction: vm.satisfaction, problems: vm.problems };
-    }
-    let total = 0, checked = 0, sat = 0, probs = 0, cnt = 0;
-    for (const [, vm] of viloyatMetrics) {
-      total += vm.total; checked += vm.checked; sat += vm.satisfaction; probs += vm.problems; cnt++;
-    }
-    return { total, checked, satisfaction: cnt > 0 ? Math.round(sat / cnt) : 0, problems: probs };
-  }, [level, viloyatMetrics, selectedViloyatKod, maktablar]);
 
   const handleViloyatSelect = useCallback((viloyatName: string, viloyatKod: string) => {
     setSelectedViloyat(viloyatName);
@@ -139,12 +114,7 @@ export default function AdminMap() {
         setMapTarget({ center: bounds.getCenter() as unknown as [number, number], zoom: 9, bounds });
       }
     }
-    if (tumanlarGeo) {
-      fetchTumanStats(viloyatKod).catch(() => []).then(api => {
-        setTumanStats(enrichTumanStats(tumanlarGeo!, viloyatName, api));
-      });
-    }
-  }, [viloyatlarGeo, tumanlarGeo]);
+  }, [viloyatlarGeo]);
 
   const handleTumanSelect = useCallback((tumanName: string) => {
     setSelectedTuman(tumanName);
@@ -153,42 +123,37 @@ export default function AdminMap() {
     if (feature) {
       const geoLayer = L.geoJSON(feature);
       const bounds = geoLayer.getBounds();
-      setMapTarget({ center: bounds.getCenter() as unknown as [number, number], zoom: 13, bounds });
+      setMapTarget({ center: bounds.getCenter() as unknown as [number, number], zoom: 12, bounds });
     }
-    if (selectedViloyatKod) {
-      fetchMaktablar(selectedViloyatKod, tumanName, category).catch(() => []).then(apiSchools => {
-        if (feature && tumanlarGeo) {
-          setMaktablar(generateSyntheticSchools(feature, selectedViloyat || '', apiSchools));
-        } else {
-          setMaktablar(apiSchools);
-        }
-      });
-    }
-  }, [tumanlarGeo, selectedViloyat, selectedViloyatKod, category]);
+  }, [tumanlarGeo, selectedViloyat]);
 
   const handleBack = useCallback(() => {
     if (level === 'tuman') {
       setSelectedTuman(null);
-      setMaktablar([]);
       setLevel('viloyat');
       if (viloyatlarGeo && selectedViloyat) {
         const feature = viloyatlarGeo.features.find(f => f.properties.name === selectedViloyat);
         if (feature) {
           const geoLayer = L.geoJSON(feature);
-          const bounds = geoLayer.getBounds();
-          setMapTarget({ center: bounds.getCenter() as unknown as [number, number], zoom: 9, bounds });
+          setMapTarget({ center: geoLayer.getBounds().getCenter() as unknown as [number, number], zoom: 9, bounds: geoLayer.getBounds() });
         }
       }
     } else if (level === 'viloyat') {
       setSelectedViloyat(null);
       setSelectedViloyatKod(null);
       setSelectedTuman(null);
-      setTumanStats([]);
-      setMaktablar([]);
       setLevel('country');
       setMapTarget({ center: UZ_CENTER, zoom: UZ_ZOOM });
     }
   }, [level, viloyatlarGeo, selectedViloyat]);
+
+  const handleGoHome = useCallback(() => {
+    setSelectedViloyat(null);
+    setSelectedViloyatKod(null);
+    setSelectedTuman(null);
+    setLevel('country');
+    setMapTarget({ center: UZ_CENTER, zoom: UZ_ZOOM });
+  }, []);
 
   const handleSearchSelect = useCallback((item: { type: string; name: string; parent?: string; kod?: string }) => {
     setShowSearch(false);
@@ -203,16 +168,6 @@ export default function AdminMap() {
       setTimeout(() => handleTumanSelect(item.name), 300);
     }
   }, [handleViloyatSelect, handleTumanSelect, level, selectedViloyat]);
-
-  const handleGoHome = useCallback(() => {
-    setSelectedViloyat(null);
-    setSelectedViloyatKod(null);
-    setSelectedTuman(null);
-    setTumanStats([]);
-    setMaktablar([]);
-    setLevel('country');
-    setMapTarget({ center: UZ_CENTER, zoom: UZ_ZOOM });
-  }, []);
 
   const tile = TILE_URLS[tileLayer];
 
@@ -232,7 +187,7 @@ export default function AdminMap() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {/* ───── MAP ───── */}
+      {/* MAP */}
       <div className="flex-1 relative">
         <MapContainer
           center={UZ_CENTER} zoom={UZ_ZOOM} maxBounds={UZ_BOUNDS}
@@ -244,21 +199,25 @@ export default function AdminMap() {
           <MapController target={mapTarget} />
 
           {level === 'country' && viloyatlarGeo && (
-            <ChoroplethViloyatLayer geojson={viloyatlarGeo} stats={viloyatStats} metric={metric} viloyatMetrics={viloyatMetrics} allMaktablar={allMaktablar} onSelect={handleViloyatSelect} />
+            <ChoroplethViloyatLayer geojson={viloyatlarGeo} viloyatStats={viloyatStats} metric={metric} onSelect={handleViloyatSelect} />
           )}
-          {level === 'viloyat' && viloyatlarGeo && tumanlarGeo && selectedViloyat && (
-            <ChoroplethTumanLayer viloyatGeo={viloyatlarGeo} tumanlarGeo={tumanlarGeo} viloyatName={selectedViloyat} stats={tumanStats} metric={metric} tumanMetrics={tumanMetrics} onSelect={handleTumanSelect} />
-          )}
-          {level === 'tuman' && tumanlarGeo && selectedTuman && selectedViloyat && (
-            <AdminMaktablarLayer tumanlarGeo={tumanlarGeo} tumanName={selectedTuman} viloyatName={selectedViloyat} maktablar={maktablar} />
+          {(level === 'viloyat' || level === 'tuman') && viloyatlarGeo && tumanlarGeo && selectedViloyat && selectedViloyatKod && (
+            <ChoroplethTumanLayer
+              viloyatGeo={viloyatlarGeo}
+              tumanlarGeo={tumanlarGeo}
+              viloyatName={selectedViloyat}
+              tumanStats={tumanStats}
+              metric={metric}
+              onSelect={handleTumanSelect}
+              selectedTuman={selectedTuman}
+            />
           )}
         </MapContainer>
 
-        {/* ── NAVIGATION BAR (top) ── */}
+        {/* NAVIGATION BAR */}
         <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center gap-3 pointer-events-none">
           {/* Breadcrumb */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-1.5 py-1.5 flex items-center gap-1 pointer-events-auto breadcrumb-enter">
-            {/* Home button */}
             <button onClick={handleGoHome} title="Bosh sahifa"
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                 level === 'country' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600'
@@ -273,7 +232,6 @@ export default function AdminMap() {
                 <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-
                 <button onClick={level === 'tuman' ? handleBack : undefined} title={selectedViloyat || ''}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                     level === 'viloyat'
@@ -296,7 +254,6 @@ export default function AdminMap() {
               </>
             )}
 
-            {/* Back button */}
             {level !== 'country' && (
               <>
                 <div className="w-px h-5 bg-slate-200 mx-0.5" />
@@ -328,7 +285,6 @@ export default function AdminMap() {
             ))}
           </div>
 
-          {/* Spacer */}
           <div className="flex-1" />
 
           {/* Search */}
@@ -372,9 +328,8 @@ export default function AdminMap() {
           </div>
         </div>
 
-        {/* ── RIGHT CONTROLS ── */}
+        {/* RIGHT CONTROLS */}
         <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-2">
-          {/* Tile layer */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 p-1.5 flex flex-col gap-1">
             {([
               { key: 'map' as TileLayerType, icon: MapIcon, label: 'Xarita' },
@@ -390,7 +345,6 @@ export default function AdminMap() {
             ))}
           </div>
 
-          {/* GPS */}
           <button onClick={() => {
             navigator.geolocation.getCurrentPosition(
               pos => setMapTarget({ center: [pos.coords.latitude, pos.coords.longitude], zoom: 13 }),
@@ -401,21 +355,21 @@ export default function AdminMap() {
           </button>
         </div>
 
-        {/* ── STATS BOX ── */}
+        {/* STATS BOX */}
         <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 stats-glow overflow-hidden">
           <div className="px-4 py-3 flex items-center gap-4">
-            {/* Satisfaction donut */}
+            {/* Score donut */}
             <div className="relative w-14 h-14 shrink-0">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
                 <circle cx="22" cy="22" r="18" fill="none" stroke="#f1f5f9" strokeWidth="4" />
                 <circle cx="22" cy="22" r="18" fill="none"
-                  stroke={statsSummary.satisfaction >= 70 ? '#22c55e' : statsSummary.satisfaction >= 40 ? '#f59e0b' : '#ef4444'}
-                  strokeWidth="4" strokeDasharray={`${statsSummary.satisfaction * 1.131} 113.1`} strokeLinecap="round"
+                  stroke={interpolateColor(statsSummary.ball, 100)}
+                  strokeWidth="4" strokeDasharray={`${statsSummary.ball * 1.131} 113.1`} strokeLinecap="round"
                   style={{ transition: 'stroke-dasharray 0.8s ease' }} />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-sm font-black text-slate-800 leading-none">{statsSummary.satisfaction}%</span>
-                <span className="text-[7px] text-slate-400 font-medium">mamnuniyat</span>
+                <span className="text-sm font-black text-slate-800 leading-none">{statsSummary.ball}%</span>
+                <span className="text-[7px] text-slate-400 font-medium">o'rt. ball</span>
               </div>
             </div>
 
@@ -425,31 +379,26 @@ export default function AdminMap() {
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{regionLabel}</p>
               <div className="flex gap-3">
                 <div>
-                  <p className="text-base font-black text-slate-800 leading-tight">{statsSummary.total.toLocaleString()}</p>
-                  <p className="text-[8px] text-slate-400 font-medium">ob'yekt</p>
+                  <p className="text-base font-black text-slate-800 leading-tight">{formatNumber(statsSummary.maktablar)}</p>
+                  <p className="text-[8px] text-slate-400 font-medium">maktab</p>
                 </div>
                 <div>
-                  <p className="text-base font-black text-emerald-600 leading-tight">{statsSummary.checked.toLocaleString()}</p>
-                  <p className="text-[8px] text-emerald-400 font-medium">tekshirilgan</p>
-                </div>
-                <div>
-                  <p className="text-base font-black text-red-500 leading-tight">{statsSummary.problems.toLocaleString()}</p>
-                  <p className="text-[8px] text-red-400 font-medium">muammo</p>
+                  <p className="text-base font-black text-blue-600 leading-tight">{formatNumber(statsSummary.oquvchilar)}</p>
+                  <p className="text-[8px] text-blue-400 font-medium">o'quvchi</p>
                 </div>
               </div>
             </div>
           </div>
-          {/* Micro progress bar at bottom */}
           <div className="h-1 bg-slate-100 flex">
-            <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: statsSummary.satisfaction + '%' }} />
-            <div className="h-full bg-red-400 transition-all duration-700" style={{ width: (100 - statsSummary.satisfaction) + '%' }} />
+            <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: statsSummary.ball + '%' }} />
+            <div className="h-full bg-red-400 transition-all duration-700" style={{ width: (100 - statsSummary.ball) + '%' }} />
           </div>
         </div>
 
-        {/* ── LEGEND ── */}
+        {/* LEGEND */}
         <MapLegend metric={metric} />
 
-        {/* ── Toggle panel ── */}
+        {/* Toggle panel */}
         <button onClick={() => setShowPanel(!showPanel)}
           className="absolute top-1/2 -translate-y-1/2 z-[999] bg-white/90 backdrop-blur-md rounded-l-2xl shadow-lg border border-r-0 border-white/50 p-2 hover:bg-white transition-all cursor-pointer group"
           style={{ right: showPanel ? '320px' : '0px', transition: 'right 0.3s ease' }}>
@@ -457,54 +406,32 @@ export default function AdminMap() {
         </button>
       </div>
 
-      {/* ───── SIDEBAR PANEL ───── */}
+      {/* SIDEBAR PANEL */}
       <div className={`bg-white border-l border-slate-200 flex flex-col overflow-hidden transition-all duration-300 ${showPanel ? 'w-80' : 'w-0'}`}>
         <div className="flex flex-col overflow-y-auto min-w-[320px]">
-          {/* Filters */}
+          {/* Metric filter */}
           <div className="p-4 border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
-            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Layers size={12} />
-              Filtrlar
-            </h3>
-            <div className="space-y-2.5">
-              <div>
-                <label className="text-[10px] text-slate-400 font-medium mb-1 block">Kategoriya</label>
-                <div className="flex flex-wrap gap-1">
-                  {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                    <button key={k} onClick={() => setCategory(k as CategoryType)}
-                      className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all cursor-pointer ${
-                        category === k ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}>
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-400 font-medium mb-1 block">Ko'rsatkich</label>
-                <div className="flex flex-wrap gap-1">
-                  {(Object.keys(METRIC_LABELS) as MetricType[]).map(k => (
-                    <button key={k} onClick={() => setMetric(k)}
-                      className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all cursor-pointer ${
-                        metric === k ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}>
-                      {METRIC_LABELS[k]}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Ko'rsatkich</h3>
+            <div className="flex flex-wrap gap-1">
+              {(Object.keys(MAP_METRIC_LABELS) as MapMetricType[]).map(k => (
+                <button key={k} onClick={() => setMetric(k)}
+                  className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all cursor-pointer ${
+                    metric === k ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}>
+                  {MAP_METRIC_LABELS[k]}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Region info */}
-          <RegionInfoPanel
+          <TalimRegionPanel
             level={level}
             viloyatName={selectedViloyat}
+            viloyatKod={selectedViloyatKod}
             tumanName={selectedTuman}
-            maktablar={level === 'tuman' ? maktablar : []}
-            viloyatMetrics={viloyatMetrics}
-            tumanMetrics={tumanMetrics}
-            selectedViloyatKod={selectedViloyatKod}
+            viloyatStats={viloyatStats}
+            tumanStats={tumanStats}
             metric={metric}
           />
         </div>
