@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { GraduationCap, BookOpen, Users } from 'lucide-react'
+import { GraduationCap, BookOpen, Users, Building2 } from 'lucide-react'
 
 export default function RoleSelect() {
   const navigate = useNavigate()
@@ -66,6 +66,22 @@ export default function RoleSelect() {
               <p className="text-sm text-gray-500">Farzandingiz natijalarini kuzating</p>
             </div>
           </button>
+
+          {/* Xalq ta'limi vazirligi */}
+          <a
+            href="https://tekshiraixalqtalimistatusi-production.up.railway.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-white rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] block"
+          >
+            <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-7 h-7 text-purple-600" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-lg font-semibold text-gray-800">Xalq ta'limi vazirligi</h3>
+              <p className="text-sm text-gray-500">Umumiy ta'lim tizimi monitoringi</p>
+            </div>
+          </a>
         </div>
 
         <p className="text-center text-white/50 text-xs mt-8">

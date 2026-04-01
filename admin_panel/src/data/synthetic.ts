@@ -1,10 +1,11 @@
 import type {
   ViloyatTalimStats, TumanTalimStats, FanStatistika,
   ZaifMavzu, ViloyatMuammo, UmumiyKPI, SifatDarajasi,
-  TumanCollection,
+  TumanCollection, TumanFeature, MaktabData, SinfData, OquvchiData,
 } from '../types';
 import { VILOYAT_KOD_TO_NAME } from '../types';
-import { VILOYAT_DATA, FANLAR, FAN_MAVZULARI, MUAMMO_SHABLONLARI } from './constants';
+import { VILOYAT_DATA, FANLAR, FAN_MAVZULARI, MUAMMO_SHABLONLARI,
+  ERKAK_ISMLAR, AYOL_ISMLAR, FAMILIYALAR, SINF_HARFLAR } from './constants';
 
 /* ── Seeded PRNG ── */
 function seededRandom(seed: number) {
@@ -315,6 +316,217 @@ export function generateMuammolar(): ViloyatMuammo[] {
 
   _muammoCache = muammolar;
   return muammolar;
+}
+
+/* ── Point-in-polygon (geo) ── */
+function pointInPolygon(lat: number, lng: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const yi = ring[i][0], xi = ring[i][1];
+    const yj = ring[j][0], xj = ring[j][1];
+    if ((yi > lng) !== (yj > lng) && lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function outerRings(feature: TumanFeature): number[][][] {
+  const g = feature.geometry as any;
+  if (g.type === 'Polygon') return [g.coordinates[0]];
+  if (g.type === 'MultiPolygon') return g.coordinates.map((p: number[][][]) => p[0]);
+  return [];
+}
+
+/* ── Maktab generatori ── */
+const _maktabCache = new Map<string, MaktabData[]>();
+
+export function generateMaktablar(
+  tumanName: string,
+  viloyatName: string,
+  viloyatKod: string,
+  tumanlarGeo?: TumanCollection,
+): MaktabData[] {
+  const key = viloyatKod + '/' + tumanName;
+  const cached = _maktabCache.get(key);
+  if (cached) return cached;
+
+  const rand = seededRandom(hashStr(key + 'maktablar'));
+  const count = 35 + Math.floor(rand() * 30); // 35-65 maktab
+
+  // Get tuman stats for base values
+  const tStats = generateTumanStats(viloyatKod, tumanlarGeo);
+  const tumanStat = tStats.find(t => t.nom === tumanName);
+  const baseBall = tumanStat?.ortacha_ball ?? 65;
+  const baseDavomat = tumanStat?.davomat_foizi ?? 90;
+
+  // Find geographic bounds from GeoJSON
+  let ring: number[][] | null = null;
+  let minLat = 40, maxLat = 42, minLng = 63, maxLng = 66;
+
+  if (tumanlarGeo) {
+    const feature = tumanlarGeo.features.find(
+      f => f.properties.name === tumanName && f.properties.viloyat === viloyatName
+    );
+    if (feature) {
+      const rings = outerRings(feature);
+      if (rings.length > 0) {
+        ring = rings.reduce((a, b) => {
+          const areaA = Math.abs(a.reduce((s, c, i) => {
+            const j = (i + 1) % a.length;
+            return s + (a[j][0] + c[0]) * (a[j][1] - c[1]);
+          }, 0) / 2);
+          const areaB = Math.abs(b.reduce((s, c, i) => {
+            const j = (i + 1) % b.length;
+            return s + (b[j][0] + c[0]) * (b[j][1] - c[1]);
+          }, 0) / 2);
+          return areaA > areaB ? a : b;
+        });
+        minLat = Infinity; maxLat = -Infinity; minLng = Infinity; maxLng = -Infinity;
+        for (const c of ring) {
+          if (c[0] < minLng) minLng = c[0];
+          if (c[0] > maxLng) maxLng = c[0];
+          if (c[1] < minLat) minLat = c[1];
+          if (c[1] > maxLat) maxLat = c[1];
+        }
+        const padLat = (maxLat - minLat) * 0.1;
+        const padLng = (maxLng - minLng) * 0.1;
+        minLat += padLat; maxLat -= padLat;
+        minLng += padLng; maxLng -= padLng;
+      }
+    }
+  }
+
+  const maktablar: MaktabData[] = [];
+  let tries = 0;
+
+  while (maktablar.length < count && tries < count * 100) {
+    tries++;
+    const lat = minLat + rand() * (maxLat - minLat);
+    const lng = minLng + rand() * (maxLng - minLng);
+
+    if (ring && !pointInPolygon(lat, lng, ring)) continue;
+
+    const idx = maktablar.length + 1;
+    const ball = Math.max(30, Math.min(98, Math.round(baseBall + (rand() - 0.5) * 25)));
+    const davomat = Math.max(70, Math.min(99, Math.round(baseDavomat + (rand() - 0.5) * 15)));
+    const oquvchilar = Math.round(200 + rand() * 800);
+    const oqituvchilar = Math.round(oquvchilar / (12 + rand() * 8));
+    const sinflar = Math.round(11 + rand() * 20); // 11-31 sinf
+    const ai = Math.round(oquvchilar * (0.1 + rand() * 0.3));
+
+    maktablar.push({
+      id: hashStr(key + idx) % 1000000,
+      nom: `${idx}-sonli umumta'lim maktabi`,
+      raqam: idx,
+      lat, lng,
+      viloyat: viloyatName,
+      tuman: tumanName,
+      oquvchilar_soni: oquvchilar,
+      oqituvchilar_soni: oqituvchilar,
+      sinflar_soni: sinflar,
+      ortacha_ball: ball,
+      davomat_foizi: davomat,
+      ai_tekshiruvlar: ai,
+      sifat_darajasi: getSifat(ball),
+    });
+  }
+
+  _maktabCache.set(key, maktablar);
+  return maktablar;
+}
+
+/* ── Sinf generatori ── */
+const _sinfCache = new Map<string, SinfData[]>();
+
+export function generateSinflar(maktabId: number, maktabBall: number): SinfData[] {
+  const key = 'sinf_' + maktabId;
+  const cached = _sinfCache.get(key);
+  if (cached) return cached;
+
+  const rand = seededRandom(hashStr(key));
+  const sinflar: SinfData[] = [];
+  let id = 0;
+
+  for (let sinf = 1; sinf <= 11; sinf++) {
+    const harfCount = sinf <= 4 ? 3 + Math.floor(rand() * 2) : 2 + Math.floor(rand() * 2); // 1-4 sinf: 3-4, 5-11: 2-3
+    for (let h = 0; h < harfCount && h < SINF_HARFLAR.length; h++) {
+      id++;
+      const harf = SINF_HARFLAR[h];
+      const oquvchilar = Math.round(25 + rand() * 15); // 25-40
+      const ball = Math.max(25, Math.min(100, Math.round(maktabBall + (rand() - 0.5) * 20)));
+      const davomat = Math.max(70, Math.min(99, Math.round(88 + (rand() - 0.5) * 16)));
+      const ai = Math.round(oquvchilar * (0.1 + rand() * 0.4));
+
+      // Sinf rahbari
+      const isMale = rand() > 0.65;
+      const ismlar = isMale ? ERKAK_ISMLAR : AYOL_ISMLAR;
+      const ism = ismlar[Math.floor(rand() * ismlar.length)];
+      const fam = FAMILIYALAR[Math.floor(rand() * FAMILIYALAR.length)];
+      const rahbar = isMale ? `${ism} ${fam}` : `${ism} ${fam}a`;
+
+      sinflar.push({
+        id: maktabId * 1000 + id,
+        nom: `${sinf}-${harf}`,
+        sinf_raqami: sinf,
+        harf,
+        oquvchilar_soni: oquvchilar,
+        ortacha_ball: ball,
+        davomat_foizi: davomat,
+        ai_tekshiruvlar: ai,
+        sinf_rahbari: rahbar,
+      });
+    }
+  }
+
+  _sinfCache.set(key, sinflar);
+  return sinflar;
+}
+
+/* ── O'quvchi generatori ── */
+const _oquvchiCache = new Map<string, OquvchiData[]>();
+
+export function generateOquvchilar(sinfId: number, sinfBall: number, count: number): OquvchiData[] {
+  const key = 'oquv_' + sinfId;
+  const cached = _oquvchiCache.get(key);
+  if (cached) return cached;
+
+  const rand = seededRandom(hashStr(key));
+  const oquvchilar: OquvchiData[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const isMale = rand() > 0.48;
+    const ismlar = isMale ? ERKAK_ISMLAR : AYOL_ISMLAR;
+    const ism = ismlar[Math.floor(rand() * ismlar.length)];
+    const fam = FAMILIYALAR[Math.floor(rand() * FAMILIYALAR.length)];
+    const familiya = isMale ? fam : fam + 'a';
+
+    const ball = Math.max(15, Math.min(100, Math.round(sinfBall + (rand() - 0.5) * 35)));
+    const davomat = Math.max(60, Math.min(100, Math.round(90 + (rand() - 0.5) * 25)));
+    const ai = Math.round(rand() * 50);
+
+    const kuchli = FANLAR[Math.floor(rand() * FANLAR.length)];
+    let zaif = FANLAR[Math.floor(rand() * FANLAR.length)];
+    if (zaif === kuchli) zaif = FANLAR[(FANLAR.indexOf(zaif) + 1) % FANLAR.length];
+
+    oquvchilar.push({
+      id: sinfId * 100 + i,
+      ism,
+      familiya,
+      ortacha_ball: ball,
+      davomat_foizi: davomat,
+      ai_tekshiruvlar: ai,
+      eng_kuchli_fan: kuchli,
+      eng_zaif_fan: zaif,
+      is_premium: rand() < 0.08,
+      streak_days: Math.floor(rand() * 30),
+      level: Math.min(7, 1 + Math.floor(ball / 15)),
+    });
+  }
+
+  // Sort by familiya
+  oquvchilar.sort((a, b) => a.familiya.localeCompare(b.familiya));
+
+  _oquvchiCache.set(key, oquvchilar);
+  return oquvchilar;
 }
 
 /* ── KPI ── */

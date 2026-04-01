@@ -117,6 +117,32 @@ export const FAN_MAVZULARI: Record<string, string[]> = {
   ],
 };
 
+/* ── O'zbek ismlari ── */
+export const ERKAK_ISMLAR = [
+  'Jasur', 'Sardor', 'Bobur', 'Sherzod', 'Asilbek', 'Dilshod', 'Bekzod',
+  'Ulugbek', 'Otabek', 'Nodir', 'Abdulloh', 'Sanjar', 'Islom', 'Firdavs',
+  'Javohir', 'Behruz', 'Kamol', 'Shamsiddin', 'Doniyor', 'Eldor',
+  'Husan', 'Ibrohim', 'Mirzo', 'Ravshan', 'Temur', 'Umid', 'Valijon',
+  'Xurshid', 'Yoqub', 'Zafar', 'Akbar', 'Bahrom', 'Davron', 'Erkin',
+];
+
+export const AYOL_ISMLAR = [
+  'Madina', 'Gulnora', 'Nilufar', 'Shahlo', 'Zulfiya', 'Mohira', 'Dilnoza',
+  'Kamola', 'Sevinch', 'Barno', 'Aziza', 'Dilorom', 'Feruza', 'Gavhar',
+  'Hulkar', 'Iroda', 'Jamila', 'Komila', 'Lobar', 'Munira', 'Nafisa',
+  'Ozoda', 'Parvin', 'Robiya', 'Sarvinoz', 'Tamara', 'Umida', 'Vasila',
+];
+
+export const FAMILIYALAR = [
+  'Karimov', 'Rahimov', 'Aliyev', 'Toshmatov', 'Ergashev', 'Mirzayev',
+  'Xolmatov', 'Nurmatov', 'Sobirov', 'Qodirov', 'Umarov', 'Abdullayev',
+  'Botirov', 'Djurayev', 'Eshmatov', 'Fayzullayev', 'Ganiyev', 'Hamidov',
+  'Ismoilov', 'Jurayev', 'Komilov', 'Latipov', 'Mahmudov', 'Nazarov',
+  'Olimov', 'Pulatov', 'Rustamov', 'Salimov', 'Tursunov', 'Yuldashev',
+];
+
+export const SINF_HARFLAR = ['A', 'B', 'C', 'D'] as const;
+
 /* ── Viloyat muammolari shablonlari ── */
 export const MUAMMO_SHABLONLARI = [
   {

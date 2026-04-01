@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import type { MapLevel, TileLayerType, ViloyatCollection, TumanCollection, MapMetricType } from '../../types';
+import type { MapLevel, TileLayerType, ViloyatCollection, TumanCollection, MapMetricType, MaktabData } from '../../types';
 import { VILOYAT_NAME_TO_KOD, MAP_METRIC_LABELS } from '../../types';
 import { fetchViloyatlarGeoJSON, fetchTumanlarGeoJSON } from '../../api/viloyatlar';
-import { generateViloyatStats, generateTumanStats } from '../../data';
+import { generateViloyatStats, generateTumanStats, generateMaktablar } from '../../data';
 import ChoroplethViloyatLayer from './ChoroplethViloyatLayer';
 import ChoroplethTumanLayer from './ChoroplethTumanLayer';
+import MaktablarLayer from './MaktablarLayer';
 import TalimRegionPanel from './TalimRegionPanel';
 import MapLegend from './MapLegend';
 import { Search, ChevronLeft, Navigation, Map as MapIcon, Globe, Satellite } from 'lucide-react';
@@ -41,6 +42,7 @@ export default function TalimMap() {
   const [selectedViloyat, setSelectedViloyat] = useState<string | null>(null);
   const [selectedViloyatKod, setSelectedViloyatKod] = useState<string | null>(null);
   const [selectedTuman, setSelectedTuman] = useState<string | null>(null);
+  const [selectedMaktab, setSelectedMaktab] = useState<MaktabData | null>(null);
 
   const [tileLayer, setTileLayer] = useState<TileLayerType>('map');
   const [mapTarget, setMapTarget] = useState<{ center: [number, number]; zoom: number; bounds?: L.LatLngBounds } | null>(null);
@@ -51,7 +53,6 @@ export default function TalimMap() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  // Load GeoJSON
   useEffect(() => {
     Promise.all([fetchViloyatlarGeoJSON(), fetchTumanlarGeoJSON()])
       .then(([vGeo, tGeo]) => {
@@ -68,24 +69,31 @@ export default function TalimMap() {
     return generateTumanStats(selectedViloyatKod, tumanlarGeo);
   }, [selectedViloyatKod, tumanlarGeo]);
 
-  // Stats summary for bottom box
+  // Maktablar for selected tuman
+  const maktablar = useMemo(() => {
+    if (!selectedTuman || !selectedViloyat || !selectedViloyatKod) return [];
+    return generateMaktablar(selectedTuman, selectedViloyat, selectedViloyatKod, tumanlarGeo || undefined);
+  }, [selectedTuman, selectedViloyat, selectedViloyatKod, tumanlarGeo]);
+
   const statsSummary = useMemo(() => {
+    if (level === 'maktab' && selectedMaktab) {
+      return { maktablar: 1, oquvchilar: selectedMaktab.oquvchilar_soni, ball: selectedMaktab.ortacha_ball };
+    }
+    if ((level === 'tuman') && selectedTuman) {
+      const t = tumanStats.find(s => s.nom === selectedTuman);
+      if (t) return { maktablar: t.maktablar_soni, oquvchilar: t.oquvchilar_soni, ball: t.ortacha_ball };
+    }
     if (level === 'viloyat' && selectedViloyatKod) {
       const v = viloyatStats.find(s => s.kod === selectedViloyatKod);
       if (v) return { maktablar: v.maktablar_soni, oquvchilar: v.oquvchilar_soni, ball: v.ortacha_ball };
-    }
-    if (level === 'tuman' && selectedTuman) {
-      const t = tumanStats.find(s => s.nom === selectedTuman);
-      if (t) return { maktablar: t.maktablar_soni, oquvchilar: t.oquvchilar_soni, ball: t.ortacha_ball };
     }
     return {
       maktablar: viloyatStats.reduce((s, v) => s + v.maktablar_soni, 0),
       oquvchilar: viloyatStats.reduce((s, v) => s + v.oquvchilar_soni, 0),
       ball: Math.round(viloyatStats.reduce((s, v) => s + v.ortacha_ball, 0) / viloyatStats.length),
     };
-  }, [level, viloyatStats, selectedViloyatKod, selectedTuman, tumanStats]);
+  }, [level, viloyatStats, selectedViloyatKod, selectedTuman, tumanStats, selectedMaktab]);
 
-  // Search
   const searchResults = useMemo(() => {
     if (!searchQuery.trim() || !viloyatlarGeo || !tumanlarGeo) return [];
     const q = searchQuery.toLowerCase();
@@ -105,31 +113,48 @@ export default function TalimMap() {
     setSelectedViloyat(viloyatName);
     setSelectedViloyatKod(viloyatKod);
     setSelectedTuman(null);
+    setSelectedMaktab(null);
     setLevel('viloyat');
     if (viloyatlarGeo) {
       const feature = viloyatlarGeo.features.find(f => f.properties.name === viloyatName);
       if (feature) {
         const geoLayer = L.geoJSON(feature);
-        const bounds = geoLayer.getBounds();
-        setMapTarget({ center: bounds.getCenter() as unknown as [number, number], zoom: 9, bounds });
+        setMapTarget({ center: geoLayer.getBounds().getCenter() as unknown as [number, number], zoom: 9, bounds: geoLayer.getBounds() });
       }
     }
   }, [viloyatlarGeo]);
 
   const handleTumanSelect = useCallback((tumanName: string) => {
     setSelectedTuman(tumanName);
+    setSelectedMaktab(null);
     setLevel('tuman');
     const feature = tumanlarGeo?.features.find(f => f.properties.name === tumanName && f.properties.viloyat === selectedViloyat);
     if (feature) {
       const geoLayer = L.geoJSON(feature);
-      const bounds = geoLayer.getBounds();
-      setMapTarget({ center: bounds.getCenter() as unknown as [number, number], zoom: 12, bounds });
+      setMapTarget({ center: geoLayer.getBounds().getCenter() as unknown as [number, number], zoom: 12, bounds: geoLayer.getBounds() });
     }
   }, [tumanlarGeo, selectedViloyat]);
 
+  const handleMaktabSelect = useCallback((maktab: MaktabData) => {
+    setSelectedMaktab(maktab);
+    setLevel('maktab');
+    setMapTarget({ center: [maktab.lat, maktab.lng], zoom: 15 });
+  }, []);
+
   const handleBack = useCallback(() => {
-    if (level === 'tuman') {
+    if (level === 'maktab') {
+      setSelectedMaktab(null);
+      setLevel('tuman');
+      if (tumanlarGeo && selectedTuman && selectedViloyat) {
+        const feature = tumanlarGeo.features.find(f => f.properties.name === selectedTuman && f.properties.viloyat === selectedViloyat);
+        if (feature) {
+          const geoLayer = L.geoJSON(feature);
+          setMapTarget({ center: geoLayer.getBounds().getCenter() as unknown as [number, number], zoom: 12, bounds: geoLayer.getBounds() });
+        }
+      }
+    } else if (level === 'tuman') {
       setSelectedTuman(null);
+      setSelectedMaktab(null);
       setLevel('viloyat');
       if (viloyatlarGeo && selectedViloyat) {
         const feature = viloyatlarGeo.features.find(f => f.properties.name === selectedViloyat);
@@ -142,15 +167,17 @@ export default function TalimMap() {
       setSelectedViloyat(null);
       setSelectedViloyatKod(null);
       setSelectedTuman(null);
+      setSelectedMaktab(null);
       setLevel('country');
       setMapTarget({ center: UZ_CENTER, zoom: UZ_ZOOM });
     }
-  }, [level, viloyatlarGeo, selectedViloyat]);
+  }, [level, viloyatlarGeo, tumanlarGeo, selectedViloyat, selectedTuman]);
 
   const handleGoHome = useCallback(() => {
     setSelectedViloyat(null);
     setSelectedViloyatKod(null);
     setSelectedTuman(null);
+    setSelectedMaktab(null);
     setLevel('country');
     setMapTarget({ center: UZ_CENTER, zoom: UZ_ZOOM });
   }, []);
@@ -170,6 +197,8 @@ export default function TalimMap() {
   }, [handleViloyatSelect, handleTumanSelect, level, selectedViloyat]);
 
   const tile = TILE_URLS[tileLayer];
+  const LEVELS: MapLevel[] = ['country', 'viloyat', 'tuman', 'maktab'];
+  const LEVEL_LABELS: Record<MapLevel, string> = { country: 'Mamlakat', viloyat: 'Viloyat', tuman: 'Tuman', maktab: 'Maktab' };
 
   if (loading) {
     return (
@@ -182,12 +211,12 @@ export default function TalimMap() {
     );
   }
 
-  const regionLabel = level === 'tuman' ? selectedTuman?.replace(/ [Tt]umani/g, '') :
+  const regionLabel = level === 'maktab' && selectedMaktab ? selectedMaktab.nom :
+    level === 'tuman' ? selectedTuman?.replace(/ [Tt]umani/g, '') :
     level === 'viloyat' ? selectedViloyat?.replace(' viloyati', '').replace(' shahar', '') : "O'zbekiston";
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {/* MAP */}
       <div className="flex-1 relative">
         <MapContainer
           center={UZ_CENTER} zoom={UZ_ZOOM} maxBounds={UZ_BOUNDS}
@@ -201,22 +230,22 @@ export default function TalimMap() {
           {level === 'country' && viloyatlarGeo && (
             <ChoroplethViloyatLayer geojson={viloyatlarGeo} viloyatStats={viloyatStats} metric={metric} onSelect={handleViloyatSelect} />
           )}
-          {(level === 'viloyat' || level === 'tuman') && viloyatlarGeo && tumanlarGeo && selectedViloyat && selectedViloyatKod && (
+          {(level === 'viloyat') && viloyatlarGeo && tumanlarGeo && selectedViloyat && selectedViloyatKod && (
             <ChoroplethTumanLayer
-              viloyatGeo={viloyatlarGeo}
-              tumanlarGeo={tumanlarGeo}
-              viloyatName={selectedViloyat}
-              tumanStats={tumanStats}
-              metric={metric}
-              onSelect={handleTumanSelect}
-              selectedTuman={selectedTuman}
+              viloyatGeo={viloyatlarGeo} tumanlarGeo={tumanlarGeo} viloyatName={selectedViloyat}
+              tumanStats={tumanStats} metric={metric} onSelect={handleTumanSelect} selectedTuman={selectedTuman}
+            />
+          )}
+          {(level === 'tuman' || level === 'maktab') && tumanlarGeo && selectedTuman && selectedViloyat && (
+            <MaktablarLayer
+              tumanlarGeo={tumanlarGeo} tumanName={selectedTuman} viloyatName={selectedViloyat}
+              maktablar={maktablar} onSelectMaktab={handleMaktabSelect}
             />
           )}
         </MapContainer>
 
         {/* NAVIGATION BAR */}
         <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center gap-3 pointer-events-none">
-          {/* Breadcrumb */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-1.5 py-1.5 flex items-center gap-1 pointer-events-auto breadcrumb-enter">
             <button onClick={handleGoHome} title="Bosh sahifa"
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
@@ -227,29 +256,31 @@ export default function TalimMap() {
               </svg>
             </button>
 
-            {level !== 'country' && (
+            {level !== 'country' && selectedViloyat && (
               <>
-                <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <button onClick={level === 'tuman' ? handleBack : undefined} title={selectedViloyat || ''}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    level === 'viloyat'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600 cursor-pointer'
-                  }`}>
-                  {selectedViloyat?.replace(' viloyati', '').replace(' shahar', '').replace(' Respublikasi', '') || ''}
+                <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <button onClick={level !== 'viloyat' ? () => { setSelectedTuman(null); setSelectedMaktab(null); setLevel('viloyat'); if (viloyatlarGeo) { const f = viloyatlarGeo.features.find(x => x.properties.name === selectedViloyat); if (f) { const gl = L.geoJSON(f); setMapTarget({ center: gl.getBounds().getCenter() as unknown as [number, number], zoom: 9, bounds: gl.getBounds() }); } } } : undefined}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${level === 'viloyat' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600 cursor-pointer'}`}>
+                  {selectedViloyat.replace(' viloyati', '').replace(' shahar', '').replace(' Respublikasi', '')}
                 </button>
               </>
             )}
 
-            {level === 'tuman' && selectedTuman && (
+            {(level === 'tuman' || level === 'maktab') && selectedTuman && (
               <>
-                <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 text-white shadow-sm">
+                <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <button onClick={level === 'maktab' ? () => { setSelectedMaktab(null); setLevel('tuman'); } : undefined}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${level === 'tuman' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600 cursor-pointer'}`}>
                   {selectedTuman.replace(/ [Tt]umani/g, '')}
+                </button>
+              </>
+            )}
+
+            {level === 'maktab' && selectedMaktab && (
+              <>
+                <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 text-white shadow-sm">
+                  {selectedMaktab.raqam}-maktab
                 </span>
               </>
             )}
@@ -257,9 +288,7 @@ export default function TalimMap() {
             {level !== 'country' && (
               <>
                 <div className="w-px h-5 bg-slate-200 mx-0.5" />
-                <button onClick={handleBack}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer"
-                  title="Orqaga">
+                <button onClick={handleBack} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer" title="Orqaga">
                   <ChevronLeft size={16} />
                 </button>
               </>
@@ -268,17 +297,17 @@ export default function TalimMap() {
 
           {/* Level indicator */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-3 py-2 pointer-events-auto flex items-center gap-2">
-            {(['country', 'viloyat', 'tuman'] as MapLevel[]).map((l, i) => (
+            {LEVELS.map((l, i) => (
               <div key={l} className="flex items-center gap-2">
-                {i > 0 && <div className={`w-4 h-0.5 rounded-full ${i <= ['country', 'viloyat', 'tuman'].indexOf(level) ? 'bg-blue-400' : 'bg-slate-200'}`} />}
+                {i > 0 && <div className={`w-4 h-0.5 rounded-full ${i <= LEVELS.indexOf(level) ? 'bg-blue-400' : 'bg-slate-200'}`} />}
                 <div className={`flex items-center gap-1.5 ${l === level ? '' : 'opacity-40'}`}>
                   <div className={`w-2.5 h-2.5 rounded-full border-2 ${
                     l === level ? 'bg-blue-600 border-blue-600 level-active' :
-                    ['country', 'viloyat', 'tuman'].indexOf(l) < ['country', 'viloyat', 'tuman'].indexOf(level) ? 'bg-blue-400 border-blue-400' :
+                    LEVELS.indexOf(l) < LEVELS.indexOf(level) ? 'bg-blue-400 border-blue-400' :
                     'bg-transparent border-slate-300'
                   }`} />
                   <span className={`text-[10px] font-semibold hidden sm:inline ${l === level ? 'text-slate-700' : 'text-slate-400'}`}>
-                    {l === 'country' ? 'Mamlakat' : l === 'viloyat' ? 'Viloyat' : 'Tuman'}
+                    {LEVEL_LABELS[l]}
                   </span>
                 </div>
               </div>
@@ -305,8 +334,7 @@ export default function TalimMap() {
                     {searchResults.map((r, i) => (
                       <button key={i} onClick={() => handleSearchSelect(r)}
                         className="w-full text-left px-3.5 py-2.5 hover:bg-blue-50 transition-colors flex items-center gap-2.5 cursor-pointer border-b border-slate-50 last:border-0">
-                        <span className={`text-[10px] w-5 h-5 rounded-md flex items-center justify-center font-bold ${
-                          r.type === 'viloyat' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        <span className={`text-[10px] w-5 h-5 rounded-md flex items-center justify-center font-bold ${r.type === 'viloyat' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
                           {r.type === 'viloyat' ? 'V' : 'T'}
                         </span>
                         <div>
@@ -344,7 +372,6 @@ export default function TalimMap() {
               </button>
             ))}
           </div>
-
           <button onClick={() => {
             navigator.geolocation.getCurrentPosition(
               pos => setMapTarget({ center: [pos.coords.latitude, pos.coords.longitude], zoom: 13 }),
@@ -358,7 +385,6 @@ export default function TalimMap() {
         {/* STATS BOX */}
         <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 stats-glow overflow-hidden">
           <div className="px-4 py-3 flex items-center gap-4">
-            {/* Score donut */}
             <div className="relative w-14 h-14 shrink-0">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
                 <circle cx="22" cy="22" r="18" fill="none" stroke="#f1f5f9" strokeWidth="4" />
@@ -372,9 +398,7 @@ export default function TalimMap() {
                 <span className="text-[7px] text-slate-400 font-medium">o'rt. ball</span>
               </div>
             </div>
-
             <div className="h-10 w-px bg-slate-200/70" />
-
             <div>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{regionLabel}</p>
               <div className="flex gap-3">
@@ -395,10 +419,8 @@ export default function TalimMap() {
           </div>
         </div>
 
-        {/* LEGEND */}
         <MapLegend metric={metric} />
 
-        {/* Toggle panel */}
         <button onClick={() => setShowPanel(!showPanel)}
           className="absolute top-1/2 -translate-y-1/2 z-[999] bg-white/90 backdrop-blur-md rounded-l-2xl shadow-lg border border-r-0 border-white/50 p-2 hover:bg-white transition-all cursor-pointer group"
           style={{ right: showPanel ? '320px' : '0px', transition: 'right 0.3s ease' }}>
@@ -409,22 +431,22 @@ export default function TalimMap() {
       {/* SIDEBAR PANEL */}
       <div className={`bg-white border-l border-slate-200 flex flex-col overflow-hidden transition-all duration-300 ${showPanel ? 'w-80' : 'w-0'}`}>
         <div className="flex flex-col overflow-y-auto min-w-[320px]">
-          {/* Metric filter */}
-          <div className="p-4 border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
-            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Ko'rsatkich</h3>
-            <div className="flex flex-wrap gap-1">
-              {(Object.keys(MAP_METRIC_LABELS) as MapMetricType[]).map(k => (
-                <button key={k} onClick={() => setMetric(k)}
-                  className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all cursor-pointer ${
-                    metric === k ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                  }`}>
-                  {MAP_METRIC_LABELS[k]}
-                </button>
-              ))}
+          {level !== 'maktab' && (
+            <div className="p-4 border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Ko'rsatkich</h3>
+              <div className="flex flex-wrap gap-1">
+                {(Object.keys(MAP_METRIC_LABELS) as MapMetricType[]).map(k => (
+                  <button key={k} onClick={() => setMetric(k)}
+                    className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all cursor-pointer ${
+                      metric === k ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    }`}>
+                    {MAP_METRIC_LABELS[k]}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Region info */}
           <TalimRegionPanel
             level={level}
             viloyatName={selectedViloyat}
@@ -432,7 +454,10 @@ export default function TalimMap() {
             tumanName={selectedTuman}
             viloyatStats={viloyatStats}
             tumanStats={tumanStats}
+            maktablar={maktablar}
+            selectedMaktab={selectedMaktab}
             metric={metric}
+            onSelectMaktab={handleMaktabSelect}
           />
         </div>
       </div>

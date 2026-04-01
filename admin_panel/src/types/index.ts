@@ -19,7 +19,7 @@ export type ViloyatCollection = FeatureCollection<Geometry, ViloyatProperties>;
 export type TumanCollection = FeatureCollection<Geometry, TumanProperties>;
 
 /* ── Map types ── */
-export type MapLevel = 'country' | 'viloyat' | 'tuman';
+export type MapLevel = 'country' | 'viloyat' | 'tuman' | 'maktab';
 export type TileLayerType = 'map' | 'satellite' | 'hybrid';
 export type MapMetricType = 'ortacha_ball' | 'davomat' | 'ai_tekshiruvlar' | 'sifat';
 
@@ -110,6 +110,51 @@ export interface UmumiyKPI {
   ai_tekshiruvlar: number;
   premium_users: number;
   tejangan_vaqt: number;
+}
+
+/* ── Maktab, Sinf, O'quvchi tiplari ── */
+
+export interface MaktabData {
+  id: number;
+  nom: string;
+  raqam: number;         // maktab raqami (1-sonli, 25-sonli...)
+  lat: number;
+  lng: number;
+  viloyat: string;
+  tuman: string;
+  oquvchilar_soni: number;
+  oqituvchilar_soni: number;
+  sinflar_soni: number;
+  ortacha_ball: number;
+  davomat_foizi: number;
+  ai_tekshiruvlar: number;
+  sifat_darajasi: SifatDarajasi;
+}
+
+export interface SinfData {
+  id: number;
+  nom: string;           // "5-A", "7-B"
+  sinf_raqami: number;   // 1-11
+  harf: string;          // A, B, C, D
+  oquvchilar_soni: number;
+  ortacha_ball: number;
+  davomat_foizi: number;
+  ai_tekshiruvlar: number;
+  sinf_rahbari: string;
+}
+
+export interface OquvchiData {
+  id: number;
+  ism: string;
+  familiya: string;
+  ortacha_ball: number;
+  davomat_foizi: number;
+  ai_tekshiruvlar: number;
+  eng_kuchli_fan: string;
+  eng_zaif_fan: string;
+  is_premium: boolean;
+  streak_days: number;
+  level: number;
 }
 
 /* ── Metric labels ── */

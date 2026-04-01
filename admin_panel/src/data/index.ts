@@ -4,6 +4,9 @@ export {
   generateFanStats,
   generateZaifMavzular,
   generateMuammolar,
+  generateMaktablar,
+  generateSinflar,
+  generateOquvchilar,
   getKPI,
 } from './synthetic';
 
