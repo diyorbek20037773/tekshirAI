@@ -1,7 +1,6 @@
 import type { MapMetricType } from '../../types';
 import { MAP_METRIC_LABELS } from '../../types';
 import { Info } from 'lucide-react';
-import { useState } from 'react';
 
 interface Props {
   metric: MapMetricType;
@@ -60,15 +59,12 @@ const LEGENDS: Record<MapMetricType, {
 
 export default function MapLegend({ metric }: Props) {
   const legend = LEGENDS[metric];
-  const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="absolute bottom-20 right-4 z-[1000]">
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200/50 overflow-hidden"
-        style={{ width: expanded ? 260 : 160 }}>
+    <div className="absolute bottom-16 right-2 sm:bottom-20 sm:right-4 z-[1000]">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200/50 overflow-hidden w-[200px] sm:w-[260px]">
 
-        <button onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center gap-2 px-3.5 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors">
+        <div className="flex items-center gap-2 px-3.5 py-2.5">
           <div className="w-5 h-5 rounded-md flex items-center justify-center"
             style={{ backgroundColor: legend.colors[3] + '20' }}>
             <Info size={11} style={{ color: legend.colors[3] }} />
@@ -76,11 +72,7 @@ export default function MapLegend({ metric }: Props) {
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 text-left">
             {MAP_METRIC_LABELS[metric]}
           </span>
-          <svg className={`w-3 h-3 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
-            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+        </div>
 
         <div className="px-3.5 pb-2">
           <div className="flex rounded-lg overflow-hidden h-3 shadow-inner">
@@ -94,22 +86,20 @@ export default function MapLegend({ metric }: Props) {
           </div>
         </div>
 
-        {expanded && (
-          <div className="px-3.5 pb-3 border-t border-slate-100 pt-2.5">
-            <p className="text-[10px] text-slate-400 leading-relaxed mb-2.5">{legend.description}</p>
-            <div className="space-y-1.5">
-              {legend.items.map((item) => (
-                <div key={item.label} className="flex items-start gap-2">
-                  <span className="w-3 h-3 rounded-sm shrink-0 mt-0.5 shadow-sm" style={{ backgroundColor: item.color }} />
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-600">{item.label}</span>
-                    <span className="text-[10px] text-slate-400 ml-1">— {item.desc}</span>
-                  </div>
+        <div className="px-3.5 pb-3 border-t border-slate-100 pt-2.5">
+          <p className="text-[10px] text-slate-400 leading-relaxed mb-2.5">{legend.description}</p>
+          <div className="space-y-1.5">
+            {legend.items.map((item) => (
+              <div key={item.label} className="flex items-start gap-2">
+                <span className="w-3 h-3 rounded-sm shrink-0 mt-0.5 shadow-sm" style={{ backgroundColor: item.color }} />
+                <div>
+                  <span className="text-[10px] font-bold text-slate-600">{item.label}</span>
+                  <span className="text-[10px] text-slate-400 ml-1">— {item.desc}</span>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ function KPIItem({ icon: Icon, label, raw, suffix, color, divider }: typeof item
 
 export default function KPIBar() {
   return (
-    <div className="grid grid-cols-4 xl:grid-cols-8 gap-2 p-4 bg-slate-50 border-b border-slate-200">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-8 gap-2 p-3 sm:p-4 bg-slate-50 border-b border-slate-200">
       {items.map(item => (
         <KPIItem key={item.label} {...item} />
       ))}

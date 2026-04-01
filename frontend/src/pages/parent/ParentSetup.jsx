@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, ArrowLeft, CheckCircle, Search, Loader2 } from 'lucide-react'
 import WheelPicker from '../../components/WheelPicker'
+import { STUDENTS } from '../../data/synthetic'
 
 const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({
   value: i + 1,
@@ -31,18 +32,32 @@ export default function ParentSetup() {
     setNotFound(false)
     setError('')
 
-    try {
-      const cleaned = childUsername.replace('@', '').trim()
-      const res = await fetch(`/api/users/search?username=${encodeURIComponent(cleaned)}`)
-      const data = await res.json()
+    const cleaned = childUsername.replace('@', '').trim().toLowerCase()
 
+    try {
+      // Avval API dan qidirish
+      const res = await fetch(`/api/users/search?username=${encodeURIComponent(cleaned)}`)
       if (res.ok) {
+        const data = await res.json()
         setFoundChild(data)
-      } else {
-        setNotFound(true)
+        setSearching(false)
+        return
       }
-    } catch (err) {
-      setError('Server bilan bog\'lanib bo\'lmadi')
+    } catch {}
+
+    // API da topilmasa — sintetik datadan qidirish (demo uchun)
+    const demoChild = STUDENTS.find(s => s.username.toLowerCase() === cleaned)
+    if (demoChild) {
+      setFoundChild({
+        id: demoChild.id,
+        full_name: demoChild.name,
+        username: demoChild.username,
+        grade: demoChild.grade,
+        role: 'student',
+        _demo: true,
+      })
+    } else {
+      setNotFound(true)
     }
     setSearching(false)
   }
@@ -50,6 +65,19 @@ export default function ParentSetup() {
   const confirmChild = async () => {
     setLinking(true)
     setError('')
+
+    // Demo farzand — to'g'ridan-to'g'ri dashboardga
+    if (foundChild._demo) {
+      setLinked(true)
+      localStorage.setItem('parentName', parentName)
+      localStorage.setItem('childName', foundChild.full_name)
+      localStorage.setItem('childUsername', foundChild.username)
+      localStorage.setItem('childGrade', foundChild.grade || childGrade)
+      localStorage.setItem('childId', foundChild.id)
+      localStorage.setItem('telegramId', telegramId || '0')
+      setTimeout(() => navigate('/parent'), 1500)
+      return
+    }
 
     try {
       // Avval ota-onani ro'yxatdan o'tkazish
@@ -149,7 +177,7 @@ export default function ParentSetup() {
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-2">
-                Farzandingiz avval o'quvchi sifatida ro'yxatdan o'tishi kerak
+                Demo: aziz_t, dilnoza_r, gulnora_s, bobur_a, sardor_u
               </p>
             </div>
 

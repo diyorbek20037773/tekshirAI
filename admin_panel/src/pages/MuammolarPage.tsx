@@ -44,11 +44,11 @@ export default function MuammolarPage() {
       <TopBar title="Muammolar" subtitle="Viloyat muammolari va tavsiyalar" />
       <KPIBar />
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Distribution */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4">
           {/* 4 cards */}
-          <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: "A'lo sifat", count: distribution.alo, color: '#15803d', bg: 'from-emerald-50 to-green-50', icon: CheckCircle },
               { label: 'Yaxshi', count: distribution.yaxshi, color: '#22c55e', bg: 'from-green-50 to-lime-50', icon: CheckCircle },

@@ -46,9 +46,9 @@ export default function ReytingPage() {
       <TopBar title="Reyting" subtitle="Viloyatlar bo'yicha ta'lim sifati" />
       <KPIBar />
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Top 5 & Worst */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* TOP 5 */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <div className="flex items-center gap-2 mb-4">

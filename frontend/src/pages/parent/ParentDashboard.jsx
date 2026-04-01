@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, TrendingUp, BookCheck, AlertCircle } from 'lucide-react'
-import { STUDENT_HISTORY } from '../../data/synthetic'
+import { STUDENTS, STUDENT_HISTORY, TOPIC_ERRORS } from '../../data/synthetic'
 import { getRandomParentQuote } from '../../data/quotes'
 import RiskDashboard from '../../components/RiskDashboard'
 
@@ -9,6 +9,10 @@ export default function ParentDashboard() {
   const navigate = useNavigate()
   const parentName = localStorage.getItem('parentName') || 'Ota-ona'
   const telegramId = localStorage.getItem('telegramId')
+  const childId = localStorage.getItem('childId')
+  const childNameLS = localStorage.getItem('childName')
+  const childUsername = localStorage.getItem('childUsername')
+  const childGrade = localStorage.getItem('childGrade')
 
   const [childData, setChildData] = useState(null)
   const [childAnalysis, setChildAnalysis] = useState(null)
@@ -16,25 +20,85 @@ export default function ParentDashboard() {
   const [parentQuote] = useState(() => getRandomParentQuote())
 
   useEffect(() => {
-    if (!telegramId || telegramId === '0') {
-      setLoading(false)
+    // Real data olishga harakat
+    if (telegramId && telegramId !== '0') {
+      fetch(`/api/users/child-data?parent_telegram_id=${telegramId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data?.linked) {
+            setChildData(data)
+            if (data.child?.telegram_id) {
+              fetch(`/api/analysis/student/${data.child.telegram_id}`)
+                .then(r => r.json())
+                .then(a => { if (a.total_submissions > 0) setChildAnalysis(a) })
+                .catch(() => {})
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false))
       return
     }
-    fetch(`/api/users/child-data?parent_telegram_id=${telegramId}`)
-      .then(r => r.json())
-      .then(data => {
-        setChildData(data)
-        // Agar farzand bog'langan bo'lsa, tahlilni ham yuklash
-        if (data?.linked && data?.child?.telegram_id) {
-          fetch(`/api/analysis/student/${data.child.telegram_id}`)
-            .then(r => r.json())
-            .then(analysis => { if (analysis.total_submissions > 0) setChildAnalysis(analysis) })
-            .catch(() => {})
-        }
+
+    // Demo farzand — sintetik datadan
+    if (childId) {
+      const demoChild = STUDENTS.find(s => s.id === childId)
+      if (demoChild) {
+        setChildData({
+          linked: true,
+          child: {
+            full_name: demoChild.name,
+            username: demoChild.username,
+            grade: demoChild.grade,
+          },
+          stats: {
+            total_submissions: STUDENT_HISTORY.length,
+            avg_score: demoChild.avgScore,
+            weak_topics: TOPIC_ERRORS.slice(0, 3).map(t => t.topic),
+          },
+          submissions: STUDENT_HISTORY.map((s) => ({
+            id: s.id,
+            subject: s.subject,
+            score: s.score,
+            total_problems: s.totalProblems || 5,
+            correct_count: s.correctCount || Math.round(s.score / 20),
+            created_at: s.date,
+          })),
+        })
+        // Demo risk analysis
+        setChildAnalysis({
+          overall_score: demoChild.avgScore,
+          risk_level: demoChild.avgScore >= 80 ? 'green' : demoChild.avgScore >= 50 ? 'yellow' : 'red',
+          risk_label: demoChild.avgScore >= 80 ? 'Yaxshi o\'zlashtiryapti' : demoChild.avgScore >= 50 ? 'O\'rtacha, mashq kerak' : 'Qo\'shimcha tayyorlik kerak',
+          total_submissions: STUDENT_HISTORY.length,
+          subjects: {
+            [demoChild.subject.toLowerCase()]: {
+              avg_score: demoChild.avgScore,
+              risk: demoChild.avgScore >= 80 ? 'green' : 'yellow',
+              risk_label: demoChild.avgScore >= 80 ? 'Yaxshi' : 'O\'rtacha',
+              total_submissions: STUDENT_HISTORY.length,
+              topics: {},
+              weak_topics: TOPIC_ERRORS.slice(0, 2).map(t => t.topic),
+              strong_topics: ['Tenglamalar', 'Arifmetika'],
+            }
+          },
+          recommendation: demoChild.avgScore >= 80
+            ? 'Ajoyib natija! Murakkabroq masalalar bilan bilimini mustahkamlang.'
+            : 'Kasrlar va foizlar mavzusiga ko\'proq e\'tibor bering.',
+        })
+      }
+    } else if (childNameLS) {
+      // localStorage dan minimal data
+      setChildData({
+        linked: true,
+        child: { full_name: childNameLS, username: childUsername, grade: Number(childGrade) || 7 },
+        stats: { total_submissions: 0, avg_score: 0, weak_topics: [] },
+        submissions: [],
       })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [telegramId])
+    }
+
+    setLoading(false)
+  }, [telegramId, childId])
 
   const handleLogout = () => {
     localStorage.clear()

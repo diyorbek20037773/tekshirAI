@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Map, Trophy, BookOpen, AlertTriangle, School, Users, GraduationCap, Clock, Activity, Sparkles, BarChart3, Zap } from 'lucide-react';
+import { Map, Trophy, BookOpen, AlertTriangle, School, Users, GraduationCap, Clock, Activity, Sparkles, BarChart3, Zap, X } from 'lucide-react';
 import { getKPI } from '../../data';
 import { formatNumber } from '../../utils/format';
 
@@ -23,12 +23,23 @@ const kpiItems = [
   { icon: Clock, label: 'Tejangan', value: formatNumber(kpi.tejangan_vaqt) + ' soat', color: '#14b8a6' },
 ];
 
-export default function Sidebar() {
+interface Props {
+  onClose?: () => void;
+}
+
+export default function Sidebar({ onClose }: Props) {
   return (
-    <aside className="w-60 bg-slate-900 text-white flex flex-col shrink-0">
-      <div className="px-5 py-5 border-b border-slate-700/50">
-        <h1 className="text-lg font-bold tracking-tight">TekshirAI</h1>
-        <p className="text-[11px] text-slate-400 mt-0.5">Xalq ta'limi vazirligi</p>
+    <aside className="w-60 bg-slate-900 text-white flex flex-col shrink-0 h-full">
+      <div className="px-5 py-5 border-b border-slate-700/50 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold tracking-tight">TekshirAI</h1>
+          <p className="text-[11px] text-slate-400 mt-0.5">Xalq ta'limi vazirligi</p>
+        </div>
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden p-1 text-slate-400 hover:text-white cursor-pointer">
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       <nav className="py-3 px-3 space-y-1">
@@ -37,6 +48,7 @@ export default function Sidebar() {
             key={to}
             to={to}
             end={to === '/'}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive

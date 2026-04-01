@@ -245,8 +245,8 @@ export default function TalimMap() {
         </MapContainer>
 
         {/* NAVIGATION BAR */}
-        <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center gap-3 pointer-events-none">
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-1.5 py-1.5 flex items-center gap-1 pointer-events-auto breadcrumb-enter">
+        <div className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-[1000] flex items-center gap-2 sm:gap-3 pointer-events-none">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-1.5 py-1.5 flex items-center gap-1 pointer-events-auto breadcrumb-enter max-w-[calc(100vw-80px)] overflow-x-auto">
             <button onClick={handleGoHome} title="Bosh sahifa"
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                 level === 'country' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600'
@@ -296,7 +296,7 @@ export default function TalimMap() {
           </div>
 
           {/* Level indicator */}
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-3 py-2 pointer-events-auto flex items-center gap-2">
+          <div className="hidden sm:flex bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-3 py-2 pointer-events-auto items-center gap-2">
             {LEVELS.map((l, i) => (
               <div key={l} className="flex items-center gap-2">
                 {i > 0 && <div className={`w-4 h-0.5 rounded-full ${i <= LEVELS.indexOf(level) ? 'bg-blue-400' : 'bg-slate-200'}`} />}
@@ -319,7 +319,7 @@ export default function TalimMap() {
           {/* Search */}
           <div className="pointer-events-auto">
             {showSearch ? (
-              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 w-72 overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 w-64 sm:w-72 overflow-hidden">
                 <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-slate-100">
                   <Search size={14} className="text-slate-400 shrink-0" />
                   <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
@@ -357,7 +357,7 @@ export default function TalimMap() {
         </div>
 
         {/* RIGHT CONTROLS */}
-        <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-2">
+        <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 z-[1000] flex flex-col gap-2">
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 p-1.5 flex flex-col gap-1">
             {([
               { key: 'map' as TileLayerType, icon: MapIcon, label: 'Xarita' },
@@ -383,7 +383,7 @@ export default function TalimMap() {
         </div>
 
         {/* STATS BOX */}
-        <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 stats-glow overflow-hidden">
+        <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 stats-glow overflow-hidden max-w-[200px] sm:max-w-none">
           <div className="px-4 py-3 flex items-center gap-4">
             <div className="relative w-14 h-14 shrink-0">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
@@ -422,15 +422,33 @@ export default function TalimMap() {
         <MapLegend metric={metric} />
 
         <button onClick={() => setShowPanel(!showPanel)}
-          className="absolute top-1/2 -translate-y-1/2 z-[999] bg-white/90 backdrop-blur-md rounded-l-2xl shadow-lg border border-r-0 border-white/50 p-2 hover:bg-white transition-all cursor-pointer group"
+          className="hidden lg:block absolute top-1/2 -translate-y-1/2 z-[999] bg-white/90 backdrop-blur-md rounded-l-2xl shadow-lg border border-r-0 border-white/50 p-2 hover:bg-white transition-all cursor-pointer group"
           style={{ right: showPanel ? '320px' : '0px', transition: 'right 0.3s ease' }}>
           <ChevronLeft size={14} className={`text-slate-400 group-hover:text-blue-600 transition-all ${showPanel ? '' : 'rotate-180'}`} />
         </button>
+        {/* Mobile panel toggle */}
+        {!showPanel && (
+          <button onClick={() => setShowPanel(true)}
+            className="lg:hidden absolute bottom-2 left-1/2 -translate-x-1/2 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-4 py-2 cursor-pointer">
+            <span className="text-xs font-medium text-slate-600">Ma'lumotlar ↑</span>
+          </button>
+        )}
       </div>
 
-      {/* SIDEBAR PANEL */}
-      <div className={`bg-white border-l border-slate-200 flex flex-col overflow-hidden transition-all duration-300 ${showPanel ? 'w-80' : 'w-0'}`}>
-        <div className="flex flex-col overflow-y-auto min-w-[320px]">
+      {/* SIDEBAR PANEL — desktop: right side, mobile: bottom sheet */}
+      {showPanel && <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={() => setShowPanel(false)} />}
+      <div className={`
+        fixed bottom-0 left-0 right-0 z-50 lg:static lg:z-auto
+        bg-white border-t lg:border-t-0 lg:border-l border-slate-200
+        flex flex-col overflow-hidden transition-all duration-300
+        ${showPanel ? 'max-h-[70vh] lg:max-h-none lg:w-80' : 'max-h-0 lg:max-h-none lg:w-0'}
+        rounded-t-2xl lg:rounded-none
+      `}>
+        <div className="flex flex-col overflow-y-auto lg:min-w-[320px]">
+          {/* Mobile drag handle */}
+          <div className="lg:hidden flex justify-center py-2 shrink-0">
+            <div className="w-10 h-1 bg-slate-300 rounded-full" />
+          </div>
           {level !== 'maktab' && (
             <div className="p-4 border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Ko'rsatkich</h3>

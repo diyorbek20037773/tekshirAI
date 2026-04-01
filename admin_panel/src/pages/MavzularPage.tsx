@@ -34,8 +34,8 @@ export default function MavzularPage() {
       <TopBar title="Mavzular" subtitle="Fan va mavzu tahlili" />
       <KPIBar />
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           {/* Fan cards — 2/3 */}
           <div className="xl:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export default function MavzularPage() {
         {/* Chart */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-bold text-slate-700 mb-4">Fanlar bo'yicha o'rtacha ball (taqqoslash)</h3>
-          <div className="h-72">
+          <div className="h-64 sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 80, right: 30 }}>
                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
