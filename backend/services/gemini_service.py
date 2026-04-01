@@ -324,6 +324,58 @@ QOIDALAR:
                 )
             return f"Javob olishda xatolik: {str(e)[:100]}"
 
+    async def chat_about_topic(
+        self,
+        topic: str,
+        conversation_history: List[Dict],
+        student_message: str,
+        grade: int = 7,
+        subject: str = "matematika"
+    ) -> str:
+        """Umumiy mavzu haqida suhbat (masalasiz)."""
+        api_key = self.key_manager.get_current_key()
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(self.model_name)
+
+        history_text = ""
+        for msg in conversation_history:
+            role = "O'quvchi" if msg["role"] == "student" else "AI o'qituvchi"
+            history_text += f"{role}: {msg['text']}\n"
+
+        prompt = f"""Sen sabr-toqatli o'zbek o'qituvchisan. O'quvchi {grade}-sinf, {subject} fani.
+
+MAVZU: {topic}
+
+OLDINGI SUHBAT:
+{history_text}
+
+O'QUVCHI SAVOLI: {student_message}
+
+QOIDALAR:
+- O'zbek tilida (lotin alifbosida) yoz
+- Oddiy, tushunarli tilda tushuntir
+- Hayotiy misollar bilan (bozor, sport, ovqat pishirish, pul hisoblash)
+- Qisqa va aniq javob ber (200 so'zdan oshmasin)
+- Emoji ishlat: ✅ ❌ 💡 📝 🎯"""
+
+        try:
+            response = model.generate_content(
+                prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.3,
+                    max_output_tokens=1024,
+                )
+            )
+            self.key_manager.record_usage()
+            return response.text
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                self.key_manager.rotate_key()
+                return await self.chat_about_topic(
+                    topic, conversation_history, student_message, grade, subject
+                )
+            return f"Javob olishda xatolik: {str(e)[:100]}"
+
     def _extract_json(self, text: str) -> Dict:
         """Gemini javobidan JSON ajratib olish (3 usul bilan)."""
         # 1. To'g'ridan-to'g'ri parse

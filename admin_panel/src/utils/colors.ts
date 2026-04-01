@@ -1,17 +1,19 @@
-import type { MetricType } from '../types';
+import type { MapMetricType } from '../types';
 
-export function getHealthColor(foiz: number | null): string {
-  if (foiz === null) return '#94a3b8';
-  if (foiz >= 70) return '#22c55e';
-  if (foiz >= 40) return '#f59e0b';
+export function getScoreColor(ball: number | null): string {
+  if (ball === null) return '#94a3b8';
+  if (ball >= 75) return '#15803d';
+  if (ball >= 65) return '#22c55e';
+  if (ball >= 55) return '#f59e0b';
   return '#ef4444';
 }
 
-export function getHealthLabel(foiz: number | null): string {
-  if (foiz === null) return 'Tekshirilmagan';
-  if (foiz >= 70) return 'Yaxshi';
-  if (foiz >= 40) return "E'tiborga muhtoj";
-  return 'Nosoz';
+export function getScoreLabel(ball: number | null): string {
+  if (ball === null) return "Ma'lumot yo'q";
+  if (ball >= 75) return "A'lo";
+  if (ball >= 65) return 'Yaxshi';
+  if (ball >= 55) return "O'rtacha";
+  return 'Past';
 }
 
 function lerp(a: number, b: number, t: number): number {
@@ -54,31 +56,16 @@ export function interpolateColor(value: number, max: number = 100): string {
   return rgbToHex(lerp(r0, r1, localT), lerp(g0, g1, localT), lerp(b0, b1, localT));
 }
 
-export function getMetricColor(value: number, max: number, metric: MetricType): string {
-  if (metric === 'satisfaction') {
+export function getMetricColor(value: number, max: number, metric: MapMetricType): string {
+  if (metric === 'ortacha_ball' || metric === 'sifat') {
     return interpolateColor(value, max);
   }
-  if (metric === 'problems') {
-    const t = max === 0 ? 0 : Math.min(1, value / max);
-    const [r0, g0, b0] = hexToRgb('#fecaca');
-    const [r1, g1, b1] = hexToRgb('#991b1b');
-    return rgbToHex(lerp(r0, r1, t), lerp(g0, g1, t), lerp(b0, b1, t));
+  if (metric === 'davomat') {
+    return interpolateColor(value, max);
   }
-  if (metric === 'inspections') {
-    const t = max === 0 ? 0 : Math.min(1, value / max);
-    const [r0, g0, b0] = hexToRgb('#dbeafe');
-    const [r1, g1, b1] = hexToRgb('#1e3a8a');
-    return rgbToHex(lerp(r0, r1, t), lerp(g0, g1, t), lerp(b0, b1, t));
-  }
-  // signals
+  // ai_tekshiruvlar — ko'k gradient
   const t = max === 0 ? 0 : Math.min(1, value / max);
-  const [r0, g0, b0] = hexToRgb('#fef3c7');
-  const [r1, g1, b1] = hexToRgb('#92400e');
+  const [r0, g0, b0] = hexToRgb('#dbeafe');
+  const [r1, g1, b1] = hexToRgb('#1e3a8a');
   return rgbToHex(lerp(r0, r1, t), lerp(g0, g1, t), lerp(b0, b1, t));
 }
-
-export const HOLAT_COLORS: Record<string, string> = {
-  kutilmoqda: '#f59e0b',
-  korib_chiqilmoqda: '#3b82f6',
-  hal_qilindi: '#22c55e',
-};

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X } from 'lucide-react'
 import { getQuoteByScore, getDailyQuote, getRandomErrorMotivation, POINTS } from '../../data/quotes'
+import RiskDashboard from '../../components/RiskDashboard'
+import AiChat from '../../components/AiChat'
 
 export default function StudentHome() {
   const navigate = useNavigate()
@@ -16,6 +18,17 @@ export default function StudentHome() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [processingTime, setProcessingTime] = useState(0)
+  const [analysis, setAnalysis] = useState(null)
+  const [lastSubmissionId, setLastSubmissionId] = useState(null)
+
+  // Bilim tahlilini yuklash
+  useEffect(() => {
+    if (!telegramId || telegramId === '0') return
+    fetch(`/api/analysis/student/${telegramId}`)
+      .then(r => r.json())
+      .then(data => { if (data.total_submissions > 0) setAnalysis(data) })
+      .catch(() => {})
+  }, [telegramId, result]) // result o'zgarganda qayta yuklash
 
   // Kamera state
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -362,6 +375,20 @@ export default function StudentHome() {
           </div>
           )
         })()}
+        {/* === BILIM TAHLILI (Risk Dashboard) === */}
+        {analysis && (
+          <RiskDashboard
+            analysis={analysis}
+            title="Mening bilimlarim"
+          />
+        )}
+
+        {/* === AI CHAT === */}
+        <AiChat
+          telegramId={telegramId}
+          submissionId={lastSubmissionId}
+          topic={subject}
+        />
       </div>
     </div>
   )

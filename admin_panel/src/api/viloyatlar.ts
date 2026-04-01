@@ -1,13 +1,4 @@
-import { apiFetch } from './client';
-import type { ViloyatStats, TumanStats, ViloyatCollection, TumanCollection } from '../types';
-
-export function fetchViloyatStats(): Promise<ViloyatStats[]> {
-  return apiFetch<ViloyatStats[]>('/viloyatlar/');
-}
-
-export function fetchTumanStats(viloyatKod: string): Promise<TumanStats[]> {
-  return apiFetch<TumanStats[]>(`/tumanlari/?viloyat=${viloyatKod}`);
-}
+import type { ViloyatCollection, TumanCollection } from '../types';
 
 export async function fetchViloyatlarGeoJSON(): Promise<ViloyatCollection> {
   const res = await fetch('/uz-viloyatlar.geojson');

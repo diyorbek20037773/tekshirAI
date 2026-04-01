@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, TrendingUp, BookCheck, AlertCircle } from 'lucide-react'
 import { STUDENT_HISTORY } from '../../data/synthetic'
 import { getRandomParentQuote } from '../../data/quotes'
+import RiskDashboard from '../../components/RiskDashboard'
 
 export default function ParentDashboard() {
   const navigate = useNavigate()
@@ -10,6 +11,7 @@ export default function ParentDashboard() {
   const telegramId = localStorage.getItem('telegramId')
 
   const [childData, setChildData] = useState(null)
+  const [childAnalysis, setChildAnalysis] = useState(null)
   const [loading, setLoading] = useState(true)
   const [parentQuote] = useState(() => getRandomParentQuote())
 
@@ -20,7 +22,16 @@ export default function ParentDashboard() {
     }
     fetch(`/api/users/child-data?parent_telegram_id=${telegramId}`)
       .then(r => r.json())
-      .then(data => setChildData(data))
+      .then(data => {
+        setChildData(data)
+        // Agar farzand bog'langan bo'lsa, tahlilni ham yuklash
+        if (data?.linked && data?.child?.telegram_id) {
+          fetch(`/api/analysis/student/${data.child.telegram_id}`)
+            .then(r => r.json())
+            .then(analysis => { if (analysis.total_submissions > 0) setChildAnalysis(analysis) })
+            .catch(() => {})
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [telegramId])
@@ -85,7 +96,15 @@ export default function ParentDashboard() {
               </div>
             </div>
 
-            {childData.stats.weak_topics.length > 0 && (
+            {/* === RISK DASHBOARD — farzand tahlili === */}
+            {childAnalysis && (
+              <RiskDashboard
+                analysis={childAnalysis}
+                title="Farzandingiz bilim tahlili"
+              />
+            )}
+
+            {childData.stats.weak_topics.length > 0 && !childAnalysis && (
               <div className="bg-accent-50 rounded-xl p-3 border border-accent-200">
                 <p className="text-xs font-medium text-accent-700">
                   ⚠️ Zaif mavzular: {childData.stats.weak_topics.join(', ')}

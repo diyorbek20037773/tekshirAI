@@ -1,5 +1,6 @@
 import type { FeatureCollection, Feature, Geometry } from 'geojson';
 
+/* ── GeoJSON types (saqlanadi) ── */
 export interface ViloyatProperties {
   name: string;
   name_en: string;
@@ -17,42 +18,12 @@ export type TumanFeature = Feature<Geometry, TumanProperties>;
 export type ViloyatCollection = FeatureCollection<Geometry, ViloyatProperties>;
 export type TumanCollection = FeatureCollection<Geometry, TumanProperties>;
 
-export interface MaktabData {
-  id: number;
-  nom: string;
-  viloyat: string;
-  tuman: string;
-  manzil: string;
-  rasm_url: string;
-  lat: number;
-  lng: number;
-  jami_tekshiruv: number;
-  bajarildi: number;
-  muammo: number;
-  mamnuniyat_foizi: number | null;
-  holat: string;
-  holat_rangi: string;
-  vaadalar_soni: number;
-}
-
-export interface ViloyatStats {
-  kod: string;
-  nom: string;
-  lat: number;
-  lng: number;
-  maktablar_soni: number;
-  vaadalar_soni: number;
-}
-
-export interface TumanStats {
-  nom: string;
-  maktablar_soni: number;
-  vaadalar_soni: number;
-}
-
+/* ── Map types ── */
 export type MapLevel = 'country' | 'viloyat' | 'tuman';
 export type TileLayerType = 'map' | 'satellite' | 'hybrid';
+export type MapMetricType = 'ortacha_ball' | 'davomat' | 'ai_tekshiruvlar' | 'sifat';
 
+/* ── Viloyat kodlari ── */
 export const VILOYAT_KOD_TO_NAME: Record<string, string> = {
   toshkent_sh: 'Toshkent shahar',
   toshkent_v: 'Toshkent viloyati',
@@ -74,89 +45,77 @@ export const VILOYAT_NAME_TO_KOD: Record<string, string> = Object.fromEntries(
   Object.entries(VILOYAT_KOD_TO_NAME).map(([k, v]) => [v, k])
 );
 
-export interface Statistika {
+/* ── Ta'lim statistika tiplari ── */
+
+export type SifatDarajasi = 'alo' | 'yaxshi' | 'ortacha' | 'past';
+
+export interface ViloyatTalimStats {
+  kod: string;
+  nom: string;
   maktablar_soni: number;
-  bogchalar_soni: number;
-  tibbiyot_soni: number;
-  sport_soni: number;
-  murojaatlar_soni: number;
-  hal_qilingan: number;
-  jami_tekshiruv: number;
-  bajarildi: number;
-  muammo: number;
-  mamnuniyat_foizi: number;
-  tekshirilgan_maktablar: number;
+  oquvchilar_soni: number;
+  oqituvchilar_soni: number;
+  ortacha_ball: number;        // 0-100
+  davomat_foizi: number;       // 0-100
+  ai_tekshiruvlar: number;
+  premium_users: number;
+  tejangan_vaqt_soat: number;
+  sifat_darajasi: SifatDarajasi;
+  eng_zaif_fan: string;
+  eng_zaif_mavzular: string[];
 }
 
-export interface FeedItem {
-  id: number;
-  user: string;
-  is_anonim: boolean;
-  izoh: string;
-  viloyat: string;
-  tuman: string;
-  infratuzilma: string;
-  infratuzilma_kod: string;
-  holat: string;
-  holat_kod: string;
-  rasmlar: string[];
-  likes_soni: number;
-  comments_soni: number;
-  is_liked: boolean;
-  vaqt: string;
-}
-
-export interface FeedResponse {
-  results: FeedItem[];
-  jami: number;
-  has_more: boolean;
-}
-
-export interface TahlilViloyat {
-  viloyat: string;
+export interface TumanTalimStats {
+  nom: string;
   maktablar_soni: number;
-  jami_tekshiruv: number;
-  bajarildi: number;
-  muammo: number;
-  mamnuniyat_foizi: number;
+  oquvchilar_soni: number;
+  oqituvchilar_soni: number;
+  ortacha_ball: number;
+  davomat_foizi: number;
+  ai_tekshiruvlar: number;
 }
 
-export interface TahlilResponse {
-  viloyatlar: TahlilViloyat[];
-  muammo_turlari: { nom: string; soni: number }[];
-  eng_yaxshi_maktablar: MaktabData[];
-  eng_yomon_maktablar: MaktabData[];
-  umumiy: {
-    jami_tekshiruv: number;
-    bajarildi: number;
-    muammo: number;
-    mamnuniyat_foizi: number;
-    tekshirilgan_maktablar: number;
-  };
+export interface FanStatistika {
+  fan_nomi: string;
+  ortacha_ball: number;
+  tekshiruvlar_soni: number;
+  eng_zaif_mavzular: string[];
+  progress: number;              // 0-100 overall mastery
 }
 
-export type MetricType = 'satisfaction' | 'problems' | 'inspections' | 'signals';
-export type CategoryType = '' | 'maktab' | 'bogcha' | 'shifoxona' | 'yol' | 'sport' | 'boshqa';
+export interface ZaifMavzu {
+  mavzu: string;
+  fan: string;
+  ortacha_ball: number;
+  oquvchilar_soni: number;
+  viloyatlar: string[];
+}
 
-export const CATEGORY_LABELS: Record<string, string> = {
-  '': 'Hammasi',
-  maktab: 'Maktab',
-  bogcha: "Bog'cha",
-  shifoxona: 'Shifoxona',
-  yol: "Yo'l infratuzilmasi",
-  sport: 'Sport inshootlari',
-  boshqa: 'Boshqa',
-};
+export interface ViloyatMuammo {
+  viloyat_kod: string;
+  viloyat_nom: string;
+  muammo_turi: string;
+  tafsilot: string;
+  miqdor: number;
+  tavsiya: string;
+  jiddiylik: 'yuqori' | 'ortacha' | 'past';
+}
 
-export const METRIC_LABELS: Record<MetricType, string> = {
-  satisfaction: 'Mamnuniyat %',
-  problems: 'Muammolar soni',
-  inspections: 'Tekshiruvlar soni',
-  signals: 'Signallar soni',
-};
+export interface UmumiyKPI {
+  jami_maktablar: number;
+  jami_oquvchilar: number;
+  jami_oqituvchilar: number;
+  ortacha_davomat: number;
+  ortacha_ball: number;
+  ai_tekshiruvlar: number;
+  premium_users: number;
+  tejangan_vaqt: number;
+}
 
-export const HOLAT_LABELS: Record<string, string> = {
-  kutilmoqda: 'Kutilmoqda',
-  korib_chiqilmoqda: "Ko'rib chiqilmoqda",
-  hal_qilindi: 'Hal qilindi',
+/* ── Metric labels ── */
+export const MAP_METRIC_LABELS: Record<MapMetricType, string> = {
+  ortacha_ball: "O'rtacha ball",
+  davomat: 'Davomat %',
+  ai_tekshiruvlar: 'AI tekshiruvlar',
+  sifat: 'Sifat darajasi',
 };

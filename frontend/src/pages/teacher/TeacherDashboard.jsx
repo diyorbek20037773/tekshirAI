@@ -34,12 +34,18 @@ export default function TeacherDashboard() {
   const teacherClass = localStorage.getItem('teacherClass') || '7-A'
 
   const [realStudents, setRealStudents] = useState([])
+  const [riskData, setRiskData] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/users/students')
-      .then(r => r.json())
-      .then(data => setRealStudents(data.students || []))
+    Promise.all([
+      fetch('/api/users/students').then(r => r.json()),
+      fetch('/api/analysis/classroom-risks').then(r => r.json()),
+    ])
+      .then(([studentsData, risksData]) => {
+        setRealStudents(studentsData.students || [])
+        setRiskData(risksData)
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -82,6 +88,87 @@ export default function TeacherDashboard() {
             color="yellow" />
           <StatCard icon={School} title="Sinflar" value={CLASSROOMS.length} color="purple" />
         </div>
+
+        {/* === RISK MANAGEMENT — 3 GURUH === */}
+        {riskData && (riskData.green?.length > 0 || riskData.yellow?.length > 0 || riskData.red?.length > 0) && (
+          <div className="space-y-3">
+            <h2 className="text-base font-semibold text-gray-800">O'quvchilar tahlili</h2>
+
+            {/* YASHIL — zo'r */}
+            {riskData.green?.length > 0 && (
+              <div className="bg-success-50 rounded-xl p-4 border border-success-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 bg-success-500 rounded-full" />
+                  <p className="text-sm font-semibold text-success-800">
+                    Zo'r o'zlashtirayotgan ({riskData.green.length})
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {riskData.green.map(s => (
+                    <Link key={s.telegram_id} to={`/teacher/student/${s.telegram_id}`}
+                      className="bg-white px-3 py-1.5 rounded-lg text-xs hover:shadow transition">
+                      <span className="font-medium text-gray-700">{s.name}</span>
+                      <span className="text-success-600 ml-1 font-bold">{s.avg_score}%</span>
+                    </Link>
+                  ))}
+                </div>
+                <p className="text-xs text-success-700">💡 {riskData.summary?.green_advice}</p>
+              </div>
+            )}
+
+            {/* SARIQ — o'rtacha */}
+            {riskData.yellow?.length > 0 && (
+              <div className="bg-accent-50 rounded-xl p-4 border border-accent-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 bg-accent-500 rounded-full" />
+                  <p className="text-sm font-semibold text-accent-800">
+                    O'rtacha ({riskData.yellow.length})
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {riskData.yellow.map(s => (
+                    <Link key={s.telegram_id} to={`/teacher/student/${s.telegram_id}`}
+                      className="bg-white px-3 py-1.5 rounded-lg text-xs hover:shadow transition">
+                      <span className="font-medium text-gray-700">{s.name}</span>
+                      <span className="text-accent-600 ml-1 font-bold">{s.avg_score}%</span>
+                      {s.weak_topics?.length > 0 && (
+                        <span className="text-gray-400 ml-1">({s.weak_topics[0]})</span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+                <p className="text-xs text-accent-700">💡 {riskData.summary?.yellow_advice}</p>
+              </div>
+            )}
+
+            {/* QIZIL — yordam kerak */}
+            {riskData.red?.length > 0 && (
+              <div className="bg-danger-50 rounded-xl p-4 border border-danger-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 bg-danger-500 rounded-full" />
+                  <p className="text-sm font-semibold text-danger-800">
+                    Qo'shimcha tayyorlik kerak ({riskData.red.length})
+                  </p>
+                </div>
+                <div className="space-y-2 mb-2">
+                  {riskData.red.map(s => (
+                    <Link key={s.telegram_id} to={`/teacher/student/${s.telegram_id}`}
+                      className="flex items-center justify-between bg-white px-3 py-2 rounded-lg hover:shadow transition">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">{s.name}</span>
+                        {s.weak_topics?.length > 0 && (
+                          <p className="text-[10px] text-danger-500">Zaif: {s.weak_topics.join(', ')}</p>
+                        )}
+                      </div>
+                      <span className="text-sm font-bold text-danger-500">{s.avg_score}%</span>
+                    </Link>
+                  ))}
+                </div>
+                <p className="text-xs text-danger-700">⚠️ {riskData.summary?.red_advice}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Real o'quvchilar */}
         {realStudents.length > 0 && (
