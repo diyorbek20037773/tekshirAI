@@ -62,41 +62,32 @@ export default function MaktablarLayer({ tumanlarGeo, tumanName, viloyatName, ma
           >
             <Popup>
               <div className="p-0">
-                <div className="px-4 py-3 text-white" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
-                  <h3 className="font-bold text-sm leading-tight">{m.nom}</h3>
-                  <p className="text-white/70 text-[10px] mt-0.5">{m.tuman}, {m.viloyat}</p>
+                <div className="px-3 py-2 text-white" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
+                  <h3 className="font-bold text-xs leading-tight">{m.nom}</h3>
+                  <p className="text-white/70 text-[9px] mt-0.5">{m.tuman}</p>
                 </div>
-                <div className="px-4 py-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-bold"
+                <div className="px-3 py-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold"
                       style={{ backgroundColor: color + '15', color }}>
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
                       {label}
                     </span>
-                    <span className="text-xl font-black text-slate-800">{m.ortacha_ball}%</span>
+                    <span className="text-lg font-black text-slate-800">{m.ortacha_ball}%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
                     <div className="h-full rounded-full" style={{ width: m.ortacha_ball + '%', backgroundColor: color }} />
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mb-2">
-                    <div className="bg-slate-50 rounded-lg p-2 text-center">
-                      <p className="text-xs font-bold text-slate-700">{m.oquvchilar_soni}</p>
-                      <p className="text-[8px] text-slate-400 uppercase">O'quvchi</p>
-                    </div>
-                    <div className="bg-blue-50 rounded-lg p-2 text-center">
-                      <p className="text-xs font-bold text-blue-600">{m.sinflar_soni}</p>
-                      <p className="text-[8px] text-blue-400 uppercase">Sinf</p>
-                    </div>
-                    <div className="bg-emerald-50 rounded-lg p-2 text-center">
-                      <p className="text-xs font-bold text-emerald-600">{m.davomat_foizi}%</p>
-                      <p className="text-[8px] text-emerald-400 uppercase">Davomat</p>
-                    </div>
+                  <div className="flex gap-3 text-[10px] mb-2">
+                    <span className="text-slate-600"><b>{m.oquvchilar_soni}</b> o'quv.</span>
+                    <span className="text-blue-600"><b>{m.sinflar_soni}</b> sinf</span>
+                    <span className="text-emerald-600"><b>{m.davomat_foizi}%</b> dav.</span>
                   </div>
                   <button
                     onClick={() => onSelectMaktab(m)}
-                    className="w-full mt-1 px-3 py-1.5 bg-blue-600 text-white text-[11px] font-semibold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                    className="w-full px-2 py-1 bg-blue-600 text-white text-[10px] font-semibold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
                   >
-                    Batafsil ko'rish →
+                    Batafsil →
                   </button>
                 </div>
               </div>

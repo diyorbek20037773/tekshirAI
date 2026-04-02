@@ -73,7 +73,8 @@ html, body, #root {
 }
 .leaflet-popup-content {
   margin: 0 !important;
-  min-width: 240px !important;
+  min-width: 180px !important;
+  max-width: calc(100vw - 60px) !important;
 }
 .leaflet-popup-tip {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
@@ -102,4 +103,12 @@ html, body, #root {
 }
 .level-active {
   animation: levelPulse 2s ease-in-out infinite;
+}
+
+/* ── Mobile responsive overrides ── */
+@media (max-width: 640px) {
+  .leaflet-tooltip.choropleth-label { font-size: 9px; }
+  .leaflet-tooltip.tuman-label { font-size: 8px; }
+  .leaflet-popup-content-wrapper { border-radius: 12px !important; }
+  .leaflet-control-attribution { font-size: 8px !important; }
 }

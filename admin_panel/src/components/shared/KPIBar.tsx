@@ -20,13 +20,14 @@ function KPIItem({ icon: Icon, label, raw, suffix, color, divider }: typeof item
   const animated = useCountUp(raw);
   const display = divider ? (animated / divider).toFixed(1) : formatNumber(animated);
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-100 hover:shadow-sm transition-shadow">
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: color + '15' }}>
-        <Icon size={14} style={{ color }} />
+    <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 bg-white rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow">
+      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-md sm:rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: color + '15' }}>
+        <Icon size={12} className="sm:hidden" style={{ color }} />
+        <Icon size={14} className="hidden sm:block" style={{ color }} />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] text-slate-400 leading-tight">{label}</p>
-        <p className="text-sm font-bold text-slate-800 leading-tight">{display}{suffix}</p>
+        <p className="text-[9px] sm:text-[10px] text-slate-400 leading-tight truncate">{label}</p>
+        <p className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">{display}{suffix}</p>
       </div>
     </div>
   );
@@ -34,7 +35,7 @@ function KPIItem({ icon: Icon, label, raw, suffix, color, divider }: typeof item
 
 export default function KPIBar() {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-8 gap-2 p-3 sm:p-4 bg-slate-50 border-b border-slate-200">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-8 gap-1.5 sm:gap-2 p-2 sm:p-4 bg-slate-50 border-b border-slate-200">
       {items.map(item => (
         <KPIItem key={item.label} {...item} />
       ))}

@@ -65,8 +65,8 @@ export default function MuammolarPage() {
           </div>
 
           {/* Donut */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4">
-            <div className="w-32 h-32 shrink-0">
+          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-3 sm:p-5 flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={3}>

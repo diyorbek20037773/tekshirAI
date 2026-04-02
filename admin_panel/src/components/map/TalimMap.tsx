@@ -348,9 +348,9 @@ export default function TalimMap() {
               </div>
             ) : (
               <button onClick={() => setShowSearch(true)}
-                className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-3.5 py-2 flex items-center gap-2 hover:bg-white transition-colors cursor-pointer">
+                className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 p-2 sm:px-3.5 sm:py-2 flex items-center gap-2 hover:bg-white transition-colors cursor-pointer">
                 <Search size={14} className="text-slate-400" />
-                <span className="text-xs text-slate-400 font-medium">Qidirish</span>
+                <span className="text-xs text-slate-400 font-medium hidden sm:inline">Qidirish</span>
               </button>
             )}
           </div>
@@ -377,13 +377,13 @@ export default function TalimMap() {
               pos => setMapTarget({ center: [pos.coords.latitude, pos.coords.longitude], zoom: 13 }),
               () => {}, { enableHighAccuracy: true, timeout: 10000 }
             );
-          }} className="w-[45px] h-[45px] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 flex items-center justify-center hover:bg-white transition-colors cursor-pointer">
+          }} className="w-9 h-9 sm:w-[45px] sm:h-[45px] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 flex items-center justify-center hover:bg-white transition-colors cursor-pointer">
             <Navigation size={16} className="text-blue-600" />
           </button>
         </div>
 
-        {/* STATS BOX */}
-        <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 stats-glow overflow-hidden max-w-[200px] sm:max-w-none">
+        {/* STATS BOX — hidden on mobile, visible on sm+ */}
+        <div className="hidden sm:block absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 stats-glow overflow-hidden">
           <div className="px-4 py-3 flex items-center gap-4">
             <div className="relative w-14 h-14 shrink-0">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
@@ -418,6 +418,11 @@ export default function TalimMap() {
             <div className="h-full bg-red-400 transition-all duration-700" style={{ width: (100 - statsSummary.ball) + '%' }} />
           </div>
         </div>
+        {/* Mobile mini stats */}
+        <div className="sm:hidden absolute bottom-2 left-2 z-[1000] bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-white/50 px-2.5 py-1.5 flex items-center gap-2">
+          <span className="text-xs font-black" style={{ color: interpolateColor(statsSummary.ball, 100) }}>{statsSummary.ball}%</span>
+          <span className="text-[9px] text-slate-400">{formatNumber(statsSummary.maktablar)} maktab</span>
+        </div>
 
         <MapLegend metric={metric} />
 
@@ -441,7 +446,7 @@ export default function TalimMap() {
         fixed bottom-0 left-0 right-0 z-50 lg:static lg:z-auto
         bg-white border-t lg:border-t-0 lg:border-l border-slate-200
         flex flex-col overflow-hidden transition-all duration-300
-        ${showPanel ? 'max-h-[70vh] lg:max-h-none lg:w-80' : 'max-h-0 lg:max-h-none lg:w-0'}
+        ${showPanel ? 'max-h-[55vh] lg:max-h-none lg:w-80' : 'max-h-0 lg:max-h-none lg:w-0'}
         rounded-t-2xl lg:rounded-none
       `}>
         <div className="flex flex-col overflow-y-auto lg:min-w-[320px]">

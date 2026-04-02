@@ -32,7 +32,7 @@ export default function ReytingPage() {
   };
 
   const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
-    <th className="px-3 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-blue-600 select-none"
+    <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-blue-600 select-none whitespace-nowrap"
         onClick={() => handleSort(field)}>
       <span className="flex items-center gap-1">
         {label}
@@ -123,38 +123,38 @@ export default function ReytingPage() {
             <h3 className="text-sm font-bold text-slate-700">Barcha viloyatlar</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[560px]">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase w-8">#</th>
-                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase">Viloyat</th>
-                  <SortHeader label="Maktablar" field="maktablar_soni" />
-                  <SortHeader label="O'quvchilar" field="oquvchilar_soni" />
-                  <SortHeader label="O'rt. ball" field="ortacha_ball" />
-                  <SortHeader label="Davomat" field="davomat_foizi" />
-                  <SortHeader label="AI tekshiruv" field="ai_tekshiruvlar" />
-                  <th className="px-3 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase">Sifat</th>
+                  <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase w-6 sm:w-8">#</th>
+                  <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase">Viloyat</th>
+                  <SortHeader label="Maktab" field="maktablar_soni" />
+                  <SortHeader label="O'quvchi" field="oquvchilar_soni" />
+                  <SortHeader label="Ball" field="ortacha_ball" />
+                  <SortHeader label="Dav." field="davomat_foizi" />
+                  <SortHeader label="AI" field="ai_tekshiruvlar" />
+                  <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase">Sifat</th>
                 </tr>
               </thead>
               <tbody>
                 {sorted.map((v, i) => (
                   <tr key={v.kod} className="border-t border-slate-50 hover:bg-slate-50/50 transition-colors">
-                    <td className="px-3 py-3 text-xs font-bold text-slate-300">{i + 1}</td>
-                    <td className="px-3 py-3">
-                      <p className="text-sm font-medium text-slate-700">
+                    <td className="px-2 py-2 sm:px-3 sm:py-3 text-xs font-bold text-slate-300">{i + 1}</td>
+                    <td className="px-2 py-2 sm:px-3 sm:py-3">
+                      <p className="text-xs sm:text-sm font-medium text-slate-700 whitespace-nowrap">
                         {v.nom.replace(' viloyati', '').replace(' shahar', '').replace(' Respublikasi', '')}
                       </p>
                     </td>
-                    <td className="px-3 py-3 text-sm text-slate-600">{formatNumber(v.maktablar_soni)}</td>
-                    <td className="px-3 py-3 text-sm text-slate-600">{formatNumber(v.oquvchilar_soni)}</td>
-                    <td className="px-3 py-3">
-                      <span className="text-sm font-bold" style={{ color: interpolateColor(v.ortacha_ball, 100) }}>
+                    <td className="px-2 py-2 sm:px-3 sm:py-3 text-xs sm:text-sm text-slate-600">{formatNumber(v.maktablar_soni)}</td>
+                    <td className="px-2 py-2 sm:px-3 sm:py-3 text-xs sm:text-sm text-slate-600">{formatNumber(v.oquvchilar_soni)}</td>
+                    <td className="px-2 py-2 sm:px-3 sm:py-3">
+                      <span className="text-xs sm:text-sm font-bold" style={{ color: interpolateColor(v.ortacha_ball, 100) }}>
                         {v.ortacha_ball}%
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-sm text-slate-600">{v.davomat_foizi}%</td>
-                    <td className="px-3 py-3 text-sm text-slate-600">{formatNumber(v.ai_tekshiruvlar)}</td>
-                    <td className="px-3 py-3"><QualityBadge sifat={v.sifat_darajasi} /></td>
+                    <td className="px-2 py-2 sm:px-3 sm:py-3 text-xs sm:text-sm text-slate-600">{v.davomat_foizi}%</td>
+                    <td className="px-2 py-2 sm:px-3 sm:py-3 text-xs sm:text-sm text-slate-600">{formatNumber(v.ai_tekshiruvlar)}</td>
+                    <td className="px-2 py-2 sm:px-3 sm:py-3"><QualityBadge sifat={v.sifat_darajasi} /></td>
                   </tr>
                 ))}
               </tbody>

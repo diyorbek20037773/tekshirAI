@@ -227,7 +227,7 @@ export default function MavzularPage() {
         {/* Chart */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-bold text-slate-700 mb-4">Fanlar bo'yicha o'rtacha ball (taqqoslash)</h3>
-          <div className="h-64 sm:h-72">
+          <div className="h-48 sm:h-64 md:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 80, right: 30 }}>
                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
