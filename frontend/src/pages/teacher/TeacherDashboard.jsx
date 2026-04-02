@@ -65,7 +65,7 @@ export default function TeacherDashboard() {
   const [globalStats, setGlobalStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchData = () => {
     Promise.all([
       fetch('/api/users/students').then(r => r.json()).catch(() => ({ students: [] })),
       fetch('/api/analysis/classroom-risks').then(r => r.json()).catch(() => null),
@@ -79,6 +79,12 @@ export default function TeacherDashboard() {
       setTopicErrors(errors)
       setGlobalStats(stats)
     }).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchData()
+    const interval = setInterval(fetchData, 10000) // Har 10 sekundda yangilash
+    return () => clearInterval(interval)
   }, [])
 
   // Sintetik + real o'quvchilar birlashtirish

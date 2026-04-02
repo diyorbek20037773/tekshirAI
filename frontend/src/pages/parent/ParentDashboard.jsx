@@ -21,7 +21,7 @@ export default function ParentDashboard() {
   const [loading, setLoading] = useState(true)
   const [parentQuote] = useState(() => getRandomParentQuote())
 
-  useEffect(() => {
+  const fetchData = () => {
     Promise.all([
       fetch('/api/dashboard/recent-all?limit=20').then(r => r.json()).catch(() => []),
       fetch('/api/dashboard/stats-all').then(r => r.json()).catch(() => null),
@@ -29,6 +29,12 @@ export default function ParentDashboard() {
       setRecentSubs(recent)
       setGlobalStats(stats)
     }).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchData()
+    const interval = setInterval(fetchData, 10000) // Har 10 sekundda yangilash
+    return () => clearInterval(interval)
   }, [])
 
   const handleLogout = () => {
