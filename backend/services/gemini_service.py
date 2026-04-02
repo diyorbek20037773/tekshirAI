@@ -242,7 +242,9 @@ QOIDALAR:
 - Real hayotdan misol keltir (bozor, sport, ovqat pishirish)
 - Qadam-baqadam ko'rsat
 - Eng ko'pi bilan 200 so'z ishlat
-- Emoji ishlat: ✅ ❌ 💡 📝"""
+- Emoji ishlat: ✅ ❌ 💡 📝
+- FAQAT shu masala haqida gaplash, boshqa mavzularga o'tma
+- Agar savol fanga aloqador bo'lmasa: "Men faqat fan bo'yicha yordam beraman 📚" de"""
 
         try:
             response = model.generate_content(
@@ -304,7 +306,13 @@ QOIDALAR:
 - Agar o'quvchi "boshqa usulda" desa — boshqa usul bilan tushuntir
 - Agar "shunga o'xshash masala" desa — o'xshash yangi masala ber
 - Qisqa va aniq javob ber (200 so'zdan oshmasin)
-- Emoji ishlat: ✅ ❌ 💡 📝 🎯"""
+- Emoji ishlat: ✅ ❌ 💡 📝 🎯
+
+MUHIM CHEKLOV:
+- Sen FAQAT {subject} fani va shu masala haqida gaplash
+- Agar o'quvchi boshqa mavzuda savol bersa (masalan, o'yin, kino, shaxsiy savollar) — JAVOB BERMA
+- Buning o'rniga ayt: "Men faqat {subject} fani bo'yicha yordam bera olaman. Shu fan bo'yicha savol bering! 📚"
+- Hech qachon fan mavzusidan tashqari ma'lumot berma"""
 
         try:
             gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=1024)
@@ -357,7 +365,13 @@ QOIDALAR:
 - Hayotiy misollar bilan (bozor, sport, ovqat pishirish, pul hisoblash)
 - Savolga ANIQ javob ber, mavzudan chiqma
 - Qisqa va aniq javob ber (200 so'zdan oshmasin)
-- Emoji ishlat: ✅ ❌ 💡 📝 🎯"""
+- Emoji ishlat: ✅ ❌ 💡 📝 🎯
+
+MUHIM CHEKLOV:
+- Sen FAQAT {subject} fani va {topic} mavzusi haqida gaplash
+- Agar o'quvchi boshqa mavzuda savol bersa (masalan, o'yin, kino, shaxsiy savollar, boshqa fan) — JAVOB BERMA
+- Buning o'rniga ayt: "Men faqat {subject} fani bo'yicha yordam bera olaman. Shu fan bo'yicha savol bering! 📚"
+- Hech qachon fan mavzusidan tashqari ma'lumot berma"""
 
         try:
             gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=1024)
