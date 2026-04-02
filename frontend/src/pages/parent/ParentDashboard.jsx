@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { LogOut, TrendingUp, BookCheck, AlertCircle, Compass, GraduationCap, Star, Lightbulb, RefreshCw, Clock } from 'lucide-react'
+import { LogOut, TrendingUp, BookCheck, AlertCircle, Compass, GraduationCap, Star, Lightbulb, RefreshCw } from 'lucide-react'
 import { getRandomParentQuote } from '../../data/quotes'
 
 // 2 ta demo farzand
@@ -201,22 +201,20 @@ export default function ParentDashboard() {
               <p className="text-sm text-gray-400 text-center py-4">Hali tekshiruv yo'q — o'quvchilar vazifa yuborishi kerak</p>
             ) : (
               recentSubs.map(sub => (
-                <div key={sub.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
-                  <div className="flex items-center gap-2">
+                <div key={sub.id} className="p-3 mb-2 rounded-xl border border-gray-100 hover:border-blue-200 transition">
+                  <div className="flex items-center gap-3 mb-2">
                     <img src={sub.student_gender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'}
-                      alt="" className="w-7 h-7 rounded-full object-cover" />
-                    <div>
-                      <p className="text-sm text-gray-700">{sub.student_name}</p>
-                      <p className="text-xs text-gray-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {sub.subject} | {new Date(sub.created_at).toLocaleString('uz')}
-                      </p>
+                      alt="" className="w-10 h-10 rounded-full object-cover border-2 border-blue-100" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-gray-800">{sub.student_name}</p>
+                      <p className="text-xs text-gray-400">{sub.subject} | {new Date(sub.created_at).toLocaleString('uz')}</p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <span className={`text-sm font-bold ${
-                      sub.score >= 80 ? 'text-success-500' : sub.score >= 60 ? 'text-accent-500' : 'text-danger-500'
-                    }`}>{sub.score}%</span>
-                    <p className="text-xs text-gray-400">{sub.correct_count}/{sub.total_problems}</p>
+                    <div className="text-right">
+                      <span className={`text-lg font-black ${
+                        sub.score >= 80 ? 'text-success-500' : sub.score >= 60 ? 'text-accent-500' : 'text-danger-500'
+                      }`}>{sub.score}%</span>
+                      <p className="text-[10px] text-gray-400">{sub.correct_count}/{sub.total_problems} to'g'ri</p>
+                    </div>
                   </div>
                 </div>
               ))
