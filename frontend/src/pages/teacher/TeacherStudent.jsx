@@ -1,7 +1,90 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, BookCheck, Target, AlertCircle } from 'lucide-react'
+import { ArrowLeft, BookCheck, Target, AlertCircle, Compass, Star, Lightbulb, GraduationCap, RefreshCw } from 'lucide-react'
 import { STUDENTS, STUDENT_HISTORY, BADGES_CATALOG, LEVELS } from '../../data/synthetic'
+
+function CareerPredictionCard({ careerPrediction, careerLoading, onFetch }) {
+  return (
+    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Compass className="w-5 h-5 text-purple-500" />
+          <h2 className="text-base font-semibold text-gray-800">Kasb yo'nalishi</h2>
+        </div>
+        {!careerLoading && (
+          <button onClick={onFetch}
+            className="flex items-center gap-1 text-xs bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition">
+            <RefreshCw className="w-3 h-3" />
+            {careerPrediction ? "Yangilash" : "Aniqlash"}
+          </button>
+        )}
+      </div>
+
+      {careerLoading ? (
+        <div className="text-center py-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-200 border-t-purple-500 mx-auto"></div>
+          <p className="text-xs text-gray-400 mt-2">AI tahlil qilmoqda...</p>
+        </div>
+      ) : careerPrediction?.career_directions?.length > 0 ? (
+        <div className="space-y-3">
+          {careerPrediction.career_directions.map((career, i) => (
+            <div key={i} className="border border-gray-100 rounded-lg p-3 hover:border-purple-200 transition">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{career.career_emoji}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{career.career_name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{career.reason}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 bg-purple-50 px-2 py-1 rounded-full">
+                  <Star className="w-3 h-3 text-purple-500" />
+                  <span className="text-xs font-bold text-purple-600">{career.match_score}%</span>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {career.key_subjects?.map((subj, j) => (
+                  <span key={j} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{subj}</span>
+                ))}
+              </div>
+              <div className="mt-2 flex items-start gap-1">
+                <Lightbulb className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-gray-600">{career.advice}</p>
+              </div>
+              <div className="mt-2 w-full bg-gray-100 rounded-full h-1.5">
+                <div className="bg-gradient-to-r from-purple-400 to-purple-600 h-1.5 rounded-full transition-all"
+                  style={{ width: `${career.match_score}%` }}></div>
+              </div>
+            </div>
+          ))}
+          {careerPrediction.overall_summary && (
+            <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
+              <div className="flex items-center gap-1 mb-1">
+                <GraduationCap className="w-4 h-4 text-purple-600" />
+                <p className="text-xs font-semibold text-purple-700">Xulosa</p>
+              </div>
+              <p className="text-xs text-purple-600">{careerPrediction.overall_summary}</p>
+            </div>
+          )}
+          {careerPrediction.improvement_plan && (
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+              <p className="text-xs font-semibold text-blue-700 mb-1">Tavsiya</p>
+              <p className="text-xs text-blue-600">{careerPrediction.improvement_plan}</p>
+            </div>
+          )}
+          <p className="text-[10px] text-gray-400 text-center">
+            Bu AI tavsiyasi bo'lib, yakuniy baho emas.
+          </p>
+        </div>
+      ) : (
+        <div className="text-center py-4">
+          <Compass className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+          <p className="text-xs text-gray-400">"Aniqlash" tugmasini bosing — AI o'quvchining kasb yo'nalishini tahlil qiladi</p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function TeacherStudent() {
   const { id } = useParams()
@@ -12,6 +95,18 @@ export default function TeacherStudent() {
   // Real data
   const [realData, setRealData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [careerPrediction, setCareerPrediction] = useState(null)
+  const [careerLoading, setCareerLoading] = useState(false)
+
+  const fetchCareerPrediction = async (tgId) => {
+    setCareerLoading(true)
+    try {
+      const r = await fetch(`/api/analysis/career-prediction/${tgId}`)
+      const data = await r.json()
+      if (data.career_directions) setCareerPrediction(data)
+    } catch (e) { /* ignore */ }
+    finally { setCareerLoading(false) }
+  }
 
   useEffect(() => {
     // id raqam bo'lsa — real telegram_id, aks holda demo
@@ -57,6 +152,25 @@ export default function TeacherStudent() {
               <p className="text-[10px] text-gray-500">Streak</p>
             </div>
           </div>
+          {/* === KASB YO'NALISHI (demo) === */}
+          <CareerPredictionCard
+            careerPrediction={careerPrediction}
+            careerLoading={careerLoading}
+            onFetch={() => {
+              setCareerPrediction({
+                ready: true,
+                career_directions: [
+                  { career_name: "Dasturchi / IT mutaxassis", career_emoji: "💻", match_score: 88, reason: "Matematika va mantiqiy fikrlash kuchli", key_subjects: ["Informatika", "Matematika"], advice: "Python yoki JavaScript tillarini o'rganishni boshlang" },
+                  { career_name: "Muhandis", career_emoji: "⚙️", match_score: 82, reason: "Fizika va matematika bo'yicha yaxshi natijalar", key_subjects: ["Fizika", "Matematika"], advice: "Robototexnika to'garaklariga qatnashing" },
+                  { career_name: "Moliyachi", career_emoji: "📊", match_score: 75, reason: "Raqamlar bilan ishlash qobiliyati yuqori", key_subjects: ["Matematika", "Ingliz tili"], advice: "Iqtisodiyot asoslari bilan tanishing" },
+                ],
+                overall_summary: "O'quvchi aniq fanlar bo'yicha kuchli ko'rsatkichlarga ega. Texnologiya va muhandislik sohasida katta salohiyat bor.",
+                improvement_plan: "Ingliz tili va informatikaga ko'proq e'tibor berish tavsiya etiladi.",
+                motivation: "Har bir buyuk kashfiyot bitta qadamdan boshlanadi!",
+              })
+            }}
+          />
+
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-800 mb-3">Tarix (demo)</h2>
             {STUDENT_HISTORY.map(sub => (
@@ -149,6 +263,13 @@ export default function TeacherStudent() {
             </p>
           </div>
         )}
+
+        {/* === KASB YO'NALISHI (real) === */}
+        <CareerPredictionCard
+          careerPrediction={careerPrediction}
+          careerLoading={careerLoading}
+          onFetch={() => fetchCareerPrediction(id)}
+        />
 
         {/* Submissionlar */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">

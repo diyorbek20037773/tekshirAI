@@ -2,8 +2,19 @@ import { useState } from 'react';
 import type { MapLevel, ViloyatTalimStats, TumanTalimStats, MapMetricType, MaktabData, SinfData } from '../../types';
 import { interpolateColor, getScoreColor } from '../../utils/colors';
 import { generateSinflar, generateOquvchilar } from '../../data';
-import { Activity, MapPin, School, TrendingUp, Users, BarChart3, ChevronLeft, GraduationCap, Sparkles, Flame } from 'lucide-react';
+import { Activity, MapPin, School, TrendingUp, Users, BarChart3, ChevronLeft, GraduationCap, Sparkles, Flame, Compass } from 'lucide-react';
 import { formatNumber } from '../../utils/format';
+
+const CAREER_MAP: Record<string, { emoji: string; label: string }> = {
+  Matematika: { emoji: '💻', label: 'IT/Muhandislik' },
+  Fizika: { emoji: '⚙️', label: 'Muhandis' },
+  Kimyo: { emoji: '🔬', label: 'Farmatsevt/Olim' },
+  Biologiya: { emoji: '🏥', label: 'Shifokor/Olim' },
+  Informatika: { emoji: '💻', label: 'Dasturchi/IT' },
+  'Ingliz tili': { emoji: '🌍', label: 'Tarjimon/Diplomat' },
+  'Ona tili': { emoji: '✍️', label: 'Jurnalist/Yozuvchi' },
+  Tarix: { emoji: '⚖️', label: 'Huquqshunos' },
+};
 
 function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
@@ -70,26 +81,30 @@ export default function TalimRegionPanel({ level, viloyatKod, tumanName, viloyat
           </div>
 
           <div className="space-y-0.5">
-            {oquvchilar.map((o, i) => (
-              <div key={o.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors">
-                <span className="text-[10px] font-bold text-slate-300 w-4 text-right">{i + 1}</span>
-                <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold text-slate-500">{o.ism[0]}{o.familiya[0]}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-medium text-slate-700 truncate">{o.familiya} {o.ism}</p>
-                  <div className="flex gap-2 items-center">
-                    <span className="text-[9px] text-slate-400">Kuchli: {o.eng_kuchli_fan}</span>
-                    {o.is_premium && <Sparkles size={9} className="text-amber-500" />}
-                    {o.streak_days > 5 && <span className="flex items-center gap-0.5 text-[9px] text-orange-500"><Flame size={9} />{o.streak_days}k</span>}
+            {oquvchilar.map((o, i) => {
+              const career = CAREER_MAP[o.eng_kuchli_fan] || { emoji: '📚', label: 'Turli yo\'nalishlar' };
+              return (
+                <div key={o.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                  <span className="text-[10px] font-bold text-slate-300 w-4 text-right">{i + 1}</span>
+                  <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-bold text-slate-500">{o.ism[0]}{o.familiya[0]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-medium text-slate-700 truncate">{o.familiya} {o.ism}</p>
+                    <div className="flex gap-2 items-center">
+                      <span className="text-[9px] text-slate-400">Kuchli: {o.eng_kuchli_fan}</span>
+                      <span className="text-[8px] text-purple-500 bg-purple-50 px-1 py-0.5 rounded">{career.emoji} {career.label}</span>
+                      {o.is_premium && <Sparkles size={9} className="text-amber-500" />}
+                      {o.streak_days > 5 && <span className="flex items-center gap-0.5 text-[9px] text-orange-500"><Flame size={9} />{o.streak_days}k</span>}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[11px] font-bold" style={{ color: getScoreColor(o.ortacha_ball) }}>{o.ortacha_ball}%</p>
+                    <p className="text-[9px] text-slate-400">Dav: {o.davomat_foizi}%</p>
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[11px] font-bold" style={{ color: getScoreColor(o.ortacha_ball) }}>{o.ortacha_ball}%</p>
-                  <p className="text-[9px] text-slate-400">Dav: {o.davomat_foizi}%</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       );

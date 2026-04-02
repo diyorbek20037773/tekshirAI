@@ -124,6 +124,23 @@ PARENT_DAILY_REPORT = """📊 *{child_name}ning bugungi natijasi:*
 
 💡 *Tavsiya:* {recommendation}"""
 
+CAREER_PREDICTION_MESSAGE = """🧭 *Kasb yo'nalishi tahlili:*
+
+{career_list}
+
+📋 *Xulosa:* {summary}
+💡 *Tavsiya:* {improvement}
+✨ {motivation}
+
+_Bu AI tavsiyasi — yakuniy baho emas._"""
+
+CAREER_NOT_READY_MESSAGE = """🧭 Kasb yo'nalishini aniqlash uchun ko'proq tekshiruvlar kerak.
+
+📊 Hozircha: {current} ta tekshiruv
+📌 Kerak: kamida 5 ta tekshiruv, 2 ta fandan
+
+Ko'proq vazifalar yuboring! 📸"""
+
 ERROR_NOT_IMAGE = "📸 Iltimos, rasm yuboring. Boshqa turdagi fayllarni qabul qilmayman."
 ERROR_IMAGE_TOO_LARGE = "📸 Rasm juda katta (max 10MB). Kichikroq rasm yuboring."
 ERROR_GENERAL = "❌ Xatolik yuz berdi. Iltimos qayta urinib ko'ring."
