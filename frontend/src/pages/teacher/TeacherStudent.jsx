@@ -131,6 +131,7 @@ export default function TeacherStudent() {
             <Link to="/teacher" className="p-2 hover:bg-gray-100 rounded-lg">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </Link>
+            <img src="/avatars/boy.jpg" alt="" className="w-10 h-10 rounded-full object-cover border-2 border-gray-200" />
             <div>
               <h1 className="text-lg font-bold text-gray-800">{demoStudent.name}</h1>
               <p className="text-xs text-gray-500">{demoStudent.grade}-sinf | @{demoStudent.username}</p>
@@ -228,6 +229,8 @@ export default function TeacherStudent() {
           <Link to="/teacher" className="p-2 hover:bg-gray-100 rounded-lg">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Link>
+          <img src={student.gender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'}
+            alt="" className="w-10 h-10 rounded-full object-cover border-2 border-gray-200" />
           <div>
             <h1 className="text-lg font-bold text-gray-800">{student.full_name}</h1>
             <p className="text-xs text-gray-500">

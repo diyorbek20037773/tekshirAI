@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, User, Heart, BookCheck, TrendingUp, AlertCircle, Shield, Bell } from 'lucide-react'
+import { ArrowLeft, Heart, BookCheck, TrendingUp, AlertCircle, Shield, Bell } from 'lucide-react'
 
 export default function ParentProfile() {
   const parentName = localStorage.getItem('parentName') || 'Ota-ona'
@@ -53,9 +53,7 @@ export default function ParentProfile() {
         {/* Ota-ona ma'lumotlari */}
         <div className="bg-gradient-to-r from-accent-500 to-accent-600 rounded-xl p-5 text-white">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
-            </div>
+            <img src="/avatars/parent.jpg" alt="Avatar" className="w-20 h-20 rounded-full object-cover border-3 border-white/30 shadow-lg" />
             <div>
               <h2 className="text-xl font-bold">{parentName}</h2>
               <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Ota-ona</span>

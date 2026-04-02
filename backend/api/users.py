@@ -22,6 +22,7 @@ class UserRegister(BaseModel):
     username: str | None = None
     full_name: str
     role: str  # student, teacher, parent
+    gender: str | None = None  # male, female
     grade: int | None = None
     subject: str | None = None
     # Teacher uchun
@@ -34,6 +35,7 @@ class UserResponse(BaseModel):
     username: str | None
     full_name: str
     role: str
+    gender: str | None = None
     grade: int | None
     subject: str | None
     is_premium: bool
@@ -82,6 +84,7 @@ def user_to_response(user: User) -> dict:
         "username": user.username,
         "full_name": user.full_name,
         "role": user.role,
+        "gender": user.gender,
         "grade": user.grade,
         "subject": user.subject,
         "is_premium": user.is_premium,
@@ -106,6 +109,8 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
         existing.full_name = data.full_name
         if data.username:
             existing.username = data.username
+        if data.gender:
+            existing.gender = data.gender
         if data.grade is not None:
             existing.grade = data.grade
         if data.subject:
@@ -120,6 +125,7 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
         username=data.username,
         full_name=data.full_name,
         role=data.role,
+        gender=data.gender,
         grade=data.grade,
         subject=data.subject,
         daily_reset_date=date.today(),
@@ -320,6 +326,7 @@ async def get_student_submissions(telegram_id: int, db: AsyncSession = Depends(g
             "username": user.username,
             "grade": user.grade,
             "subject": user.subject,
+            "gender": user.gender,
         },
         "submissions": [
             {
@@ -378,6 +385,8 @@ async def get_child_data(parent_telegram_id: int, db: AsyncSession = Depends(get
             "username": child.username,
             "grade": child.grade,
             "subject": child.subject,
+            "gender": child.gender,
+            "telegram_id": child.telegram_id,
         },
         "stats": {
             "total_submissions": len(submissions),

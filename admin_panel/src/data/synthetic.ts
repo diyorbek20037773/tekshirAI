@@ -511,6 +511,7 @@ export function generateOquvchilar(sinfId: number, sinfBall: number, count: numb
       id: sinfId * 100 + i,
       ism,
       familiya,
+      isMale,
       ortacha_ball: ball,
       davomat_foizi: davomat,
       ai_tekshiruvlar: ai,

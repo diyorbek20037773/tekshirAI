@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, BookCheck, TrendingUp, School, Clock, LogOut, ChevronRight, Compass, User } from 'lucide-react'
+import { Users, BookCheck, TrendingUp, School, Clock, LogOut, ChevronRight, Compass } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { SUBMISSIONS, TOPIC_ERRORS, CLASSROOMS } from '../../data/synthetic'
 import { getRandomTeacherQuote } from '../../data/quotes'
@@ -67,9 +67,9 @@ export default function TeacherDashboard() {
             <h1 className="text-lg font-bold text-gray-800">Salom, {teacherName.split(' ')[0]}!</h1>
             <p className="text-xs text-gray-500">{teacherSubject} | {teacherClass} sinf</p>
           </div>
-          <div className="flex items-center gap-1">
-            <Link to="/teacher/profile" className="p-2 text-gray-400 hover:text-primary-500">
-              <User className="w-5 h-5" />
+          <div className="flex items-center gap-2">
+            <Link to="/teacher/profile">
+              <img src="/avatars/teacher.jpg" alt="Profil" className="w-9 h-9 rounded-full object-cover border-2 border-gray-200" />
             </Link>
             <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500">
               <LogOut className="w-5 h-5" />

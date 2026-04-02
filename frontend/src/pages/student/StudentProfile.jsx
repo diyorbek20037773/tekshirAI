@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, User, BookOpen, Trophy, Flame, Star, Target, Compass, RefreshCw, Lightbulb, GraduationCap, Shield, Crown } from 'lucide-react'
+import { ArrowLeft, BookOpen, Trophy, Flame, Star, Target, Compass, RefreshCw, Lightbulb, GraduationCap, Shield, Crown } from 'lucide-react'
 
 const LEVEL_INFO = [
   { level: 1, name: "Boshlang'ich", emoji: '🌱', xp: 0 },
@@ -18,6 +18,8 @@ export default function StudentProfile() {
   const subject = localStorage.getItem('studentSubject') || 'Matematika'
   const grade = localStorage.getItem('studentGrade') || '7'
   const telegramId = localStorage.getItem('telegramId')
+  const studentGender = localStorage.getItem('studentGender') || 'male'
+  const avatarSrc = studentGender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'
 
   const [profile, setProfile] = useState(null)
   const [analysis, setAnalysis] = useState(null)
@@ -76,9 +78,7 @@ export default function StudentProfile() {
             {/* Shaxsiy ma'lumotlar */}
             <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl p-5 text-white">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-white" />
-                </div>
+                <img src={avatarSrc} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-3 border-white/30 shadow-lg" />
                 <div>
                   <h2 className="text-xl font-bold">{name}</h2>
                   {username && <p className="text-primary-100 text-sm">@{username}</p>}

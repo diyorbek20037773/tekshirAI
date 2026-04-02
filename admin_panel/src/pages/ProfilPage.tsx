@@ -18,9 +18,7 @@ export default function ProfilPage() {
           {/* Profil kartasi */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center">
-                <Shield className="w-8 h-8 text-blue-400" />
-              </div>
+              <img src="/avatars/teacher.jpg" alt="Admin" className="w-16 h-16 rounded-full object-cover border-2 border-blue-400/30" />
               <div>
                 <h2 className="text-xl font-bold">Xalq ta'limi vazirligi</h2>
                 <p className="text-sm text-slate-400">Monitoring tizimi administratori</p>

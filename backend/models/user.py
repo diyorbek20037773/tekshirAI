@@ -17,6 +17,7 @@ class User(Base):
     username: Mapped[str | None] = mapped_column(String(100))
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False)  # student, teacher, parent
+    gender: Mapped[str | None] = mapped_column(String(10))  # male, female
     grade: Mapped[int | None] = mapped_column(Integer)  # 1-11 sinf
     subject: Mapped[str | None] = mapped_column(String(100))  # o'qituvchi fani
 

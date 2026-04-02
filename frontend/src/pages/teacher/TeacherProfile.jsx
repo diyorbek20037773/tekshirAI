@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, User, BookOpen, Users, School, TrendingUp, Award, BarChart3 } from 'lucide-react'
+import { ArrowLeft, BookOpen, Users, School, TrendingUp, Award, BarChart3 } from 'lucide-react'
 
 export default function TeacherProfile() {
   const name = localStorage.getItem('teacherName') || "O'qituvchi"
@@ -45,9 +45,7 @@ export default function TeacherProfile() {
         {/* Shaxsiy ma'lumotlar */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-5 text-white">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
-            </div>
+            <img src="/avatars/teacher.jpg" alt="Avatar" className="w-20 h-20 rounded-full object-cover border-3 border-white/30 shadow-lg" />
             <div>
               <h2 className="text-xl font-bold">{name}</h2>
               <div className="flex gap-2 mt-1">

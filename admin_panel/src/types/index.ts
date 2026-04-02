@@ -147,6 +147,7 @@ export interface OquvchiData {
   id: number;
   ism: string;
   familiya: string;
+  isMale: boolean;
   ortacha_ball: number;
   davomat_foizi: number;
   ai_tekshiruvlar: number;

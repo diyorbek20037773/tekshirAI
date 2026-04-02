@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { MapLevel, ViloyatTalimStats, TumanTalimStats, MapMetricType, MaktabData, SinfData } from '../../types';
 import { interpolateColor, getScoreColor } from '../../utils/colors';
 import { generateSinflar, generateOquvchilar } from '../../data';
-import { Activity, MapPin, School, TrendingUp, Users, BarChart3, ChevronLeft, GraduationCap, Sparkles, Flame, Compass } from 'lucide-react';
+import { Activity, MapPin, School, TrendingUp, Users, BarChart3, ChevronLeft, GraduationCap, Sparkles, Flame } from 'lucide-react';
 import { formatNumber } from '../../utils/format';
 
 const CAREER_MAP: Record<string, { emoji: string; label: string }> = {
@@ -86,9 +86,8 @@ export default function TalimRegionPanel({ level, viloyatKod, tumanName, viloyat
               return (
                 <div key={o.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors">
                   <span className="text-[10px] font-bold text-slate-300 w-4 text-right">{i + 1}</span>
-                  <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                    <span className="text-[10px] font-bold text-slate-500">{o.ism[0]}{o.familiya[0]}</span>
-                  </div>
+                  <img src={o.isMale ? '/avatars/boy.jpg' : '/avatars/girl.jpg'}
+                    alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-medium text-slate-700 truncate">{o.familiya} {o.ism}</p>
                     <div className="flex gap-2 items-center">
