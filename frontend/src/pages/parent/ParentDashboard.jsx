@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { LogOut, TrendingUp, BookCheck, AlertCircle, Compass, GraduationCap, Star, Lightbulb, RefreshCw } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { LogOut, TrendingUp, BookCheck, AlertCircle, Compass, GraduationCap, Star, Lightbulb, RefreshCw, User } from 'lucide-react'
 import { STUDENTS, STUDENT_HISTORY, TOPIC_ERRORS } from '../../data/synthetic'
 import { getRandomParentQuote } from '../../data/quotes'
 import RiskDashboard from '../../components/RiskDashboard'
@@ -125,9 +125,14 @@ export default function ParentDashboard() {
             <h1 className="text-lg font-bold text-gray-800">{parentName}</h1>
             <p className="text-xs text-gray-500">Ota-ona paneli</p>
           </div>
-          <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500">
-            <LogOut className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <Link to="/parent/profile" className="p-2 text-gray-400 hover:text-accent-500">
+              <User className="w-5 h-5" />
+            </Link>
+            <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500">
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 

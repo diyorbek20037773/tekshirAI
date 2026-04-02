@@ -8,6 +8,7 @@ const links = [
   { to: '/reyting', icon: Trophy, label: 'Reyting' },
   { to: '/mavzular', icon: BookOpen, label: 'Mavzular' },
   { to: '/muammolar', icon: AlertTriangle, label: 'Muammolar' },
+  { to: '/profil', icon: Users, label: 'Profil' },
 ];
 
 const kpi = getKPI();

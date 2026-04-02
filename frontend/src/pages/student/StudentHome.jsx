@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X, User } from 'lucide-react'
 import { getQuoteByScore, getDailyQuote, getRandomErrorMotivation, POINTS } from '../../data/quotes'
 import RiskDashboard from '../../components/RiskDashboard'
 import AiChat from '../../components/AiChat'
@@ -199,9 +199,14 @@ export default function StudentHome() {
               <h1 className="text-lg font-bold">{name}</h1>
               <p className="text-xs text-success-100">{grade}-sinf | {subject}</p>
             </div>
-            <button onClick={handleLogout} className="p-2 text-white/70 hover:text-white">
-              <LogOut className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <Link to="/student/profile" className="p-2 text-white/70 hover:text-white">
+                <User className="w-5 h-5" />
+              </Link>
+              <button onClick={handleLogout} className="p-2 text-white/70 hover:text-white">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
           {dailyQuote && (
             <div className="bg-white/15 rounded-lg px-3 py-2 mt-2">
