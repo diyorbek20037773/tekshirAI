@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { LogOut, TrendingUp, BookCheck, AlertCircle, Compass, GraduationCap, Star, Lightbulb, RefreshCw } from 'lucide-react'
 import { getRandomParentQuote } from '../../data/quotes'
@@ -20,12 +20,29 @@ export default function ParentDashboard() {
   const [careerLoading, setCareerLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [parentQuote] = useState(() => getRandomParentQuote())
+  const [notification, setNotification] = useState(null)
+  const lastSubIdRef = React.useRef(null)
 
   const fetchData = () => {
     Promise.all([
       fetch('/api/dashboard/recent-all?limit=20').then(r => r.json()).catch(() => []),
       fetch('/api/dashboard/stats-all').then(r => r.json()).catch(() => null),
     ]).then(([recent, stats]) => {
+      // Yangi submission kelganmi tekshirish
+      if (recent.length > 0 && lastSubIdRef.current && recent[0].id !== lastSubIdRef.current) {
+        const n = recent[0]
+        const subj = (n.subject || '').toLowerCase()
+        let career = 'Turli yo\'nalishlar'
+        if (subj.includes('matematik') || subj.includes('algebra')) career = 'IT / Muhandislik'
+        else if (subj.includes('fizika')) career = 'Muhandis'
+        else if (subj.includes('biolog') || subj.includes('kimyo')) career = 'Shifokor / Olim'
+        else if (subj.includes('ona tili')) career = 'Jurnalist / Yozuvchi'
+        else if (subj.includes('ingliz')) career = 'Tarjimon / Diplomat'
+        else if (subj.includes('informatika')) career = 'Dasturchi / IT'
+        setNotification({ name: n.student_name, gender: n.student_gender, subject: n.subject, score: n.score, correct: n.correct_count, total: n.total_problems, career })
+        setTimeout(() => setNotification(null), 10000)
+      }
+      if (recent.length > 0) lastSubIdRef.current = recent[0].id
       setRecentSubs(recent)
       setGlobalStats(stats)
     }).finally(() => setLoading(false))
@@ -33,7 +50,7 @@ export default function ParentDashboard() {
 
   useEffect(() => {
     fetchData()
-    const interval = setInterval(fetchData, 10000) // Har 10 sekundda yangilash
+    const interval = setInterval(fetchData, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -62,6 +79,29 @@ export default function ParentDashboard() {
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-4">
+
+        {/* Yangi natija notification */}
+        {notification && (
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg animate-pulse">
+            <div className="flex items-center gap-3">
+              <img src={notification.gender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'}
+                alt="" className="w-12 h-12 rounded-full object-cover border-2 border-white/40" />
+              <div className="flex-1">
+                <p className="text-sm font-bold">Farzandingiz vazifa bajardi!</p>
+                <p className="text-xs text-green-100">
+                  <span className="font-semibold text-white">{notification.name}</span> — {notification.subject}
+                </p>
+                <p className="text-xs text-green-100 mt-0.5">
+                  Baho: <span className="font-bold text-white">{notification.score}%</span> ({notification.correct}/{notification.total} to'g'ri)
+                </p>
+                <p className="text-xs text-green-200 mt-0.5">
+                  Kasb yo'nalishi: <span className="font-semibold text-white">{notification.career}</span>
+                </p>
+              </div>
+              <button onClick={() => setNotification(null)} className="text-white/60 hover:text-white text-lg">x</button>
+            </div>
+          </div>
+        )}
 
         {/* Hikmatli so'z */}
         <div className="bg-accent-50 rounded-xl px-4 py-3 border border-accent-100">

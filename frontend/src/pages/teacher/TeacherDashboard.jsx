@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Users, BookCheck, TrendingUp, School, Clock, LogOut, ChevronRight, Compass } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -64,6 +64,8 @@ export default function TeacherDashboard() {
   const [topicErrors, setTopicErrors] = useState([])
   const [globalStats, setGlobalStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [notification, setNotification] = useState(null)
+  const lastSubIdRef = React.useRef(null)
 
   const fetchData = () => {
     Promise.all([
@@ -75,15 +77,30 @@ export default function TeacherDashboard() {
     ]).then(([studentsData, risksData, recent, errors, stats]) => {
       setRealStudents(studentsData.students || [])
       setRiskData(risksData)
-      setRecentSubs(recent)
       setTopicErrors(errors)
       setGlobalStats(stats)
+
+      // Yangi submission kelganmi tekshirish
+      if (recent.length > 0 && lastSubIdRef.current && recent[0].id !== lastSubIdRef.current) {
+        const newSub = recent[0]
+        setNotification({
+          name: newSub.student_name,
+          gender: newSub.student_gender,
+          subject: newSub.subject,
+          score: newSub.score,
+          correct: newSub.correct_count,
+          total: newSub.total_problems,
+        })
+        setTimeout(() => setNotification(null), 8000)
+      }
+      if (recent.length > 0) lastSubIdRef.current = recent[0].id
+      setRecentSubs(recent)
     }).finally(() => setLoading(false))
   }
 
   useEffect(() => {
     fetchData()
-    const interval = setInterval(fetchData, 10000) // Har 10 sekundda yangilash
+    const interval = setInterval(fetchData, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -132,6 +149,26 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-5">
+        {/* Yangi submission notification */}
+        {notification && (
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg animate-pulse">
+            <div className="flex items-center gap-3">
+              <img src={notification.gender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'}
+                alt="" className="w-12 h-12 rounded-full object-cover border-2 border-white/40" />
+              <div className="flex-1">
+                <p className="text-sm font-bold">Yangi natija!</p>
+                <p className="text-xs text-blue-100">
+                  <span className="font-semibold text-white">{notification.name}</span> {notification.subject} fanidan vazifa tekshirdi
+                </p>
+                <p className="text-xs text-blue-100 mt-0.5">
+                  Natija: <span className="font-bold text-white">{notification.score}%</span> ({notification.correct}/{notification.total} to'g'ri)
+                </p>
+              </div>
+              <button onClick={() => setNotification(null)} className="text-white/60 hover:text-white text-lg">x</button>
+            </div>
+          </div>
+        )}
+
         {/* Hikmatli so'z */}
         <div className="bg-primary-50 rounded-xl px-4 py-3 border border-primary-100">
           <p className="text-xs text-primary-700 italic">"{teacherQuote.text}"</p>
