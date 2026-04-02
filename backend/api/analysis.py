@@ -186,6 +186,10 @@ async def get_classroom_risks(db: AsyncSession = Depends(get_db)):
         avg = round(float(row.avg_score or 0), 1)
         sub_count = row.sub_count or 0
 
+        # Hali tekshiruv yubormaganlarni o'tkazib yuborish
+        if sub_count == 0:
+            continue
+
         # Zaif mavzular
         weak_result = await db.execute(
             select(Submission.ai_result)
