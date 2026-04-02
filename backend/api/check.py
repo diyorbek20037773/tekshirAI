@@ -103,6 +103,7 @@ async def check_homework(
         if student_id:
             submission = Submission(
                 student_id=student_id,
+                image_url="mini-app-upload",
                 subject=subject,
                 grade=grade,
                 ocr_raw_text=ai_result.get("ocr_text", ""),
