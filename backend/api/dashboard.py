@@ -40,3 +40,21 @@ async def get_topic_errors(
     """Mavzu bo'yicha xatolar statistikasi (chart uchun)."""
     errors = await analytics_service.get_topic_errors(db, str(current_user.id))
     return errors
+
+
+@router.get("/recent-all")
+async def get_recent_all(limit: int = 20, db: AsyncSession = Depends(get_db)):
+    """Barcha o'quvchilarning oxirgi tekshiruvlari (autentifikatsiyasiz)."""
+    return await analytics_service.get_global_recent(db, limit)
+
+
+@router.get("/topic-errors-all")
+async def get_topic_errors_all(db: AsyncSession = Depends(get_db)):
+    """Barcha mavzu xatolari (autentifikatsiyasiz)."""
+    return await analytics_service.get_global_topic_errors(db)
+
+
+@router.get("/stats-all")
+async def get_stats_all(db: AsyncSession = Depends(get_db)):
+    """Umumiy statistika (autentifikatsiyasiz)."""
+    return await analytics_service.get_global_stats(db)

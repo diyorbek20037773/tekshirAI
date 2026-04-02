@@ -1,23 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, ArrowLeft, CheckCircle, Search, Loader2 } from 'lucide-react'
-import WheelPicker from '../../components/WheelPicker'
-import { STUDENTS } from '../../data/synthetic'
-
-const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({
-  value: i + 1,
-  label: `${i + 1}-sinf`,
-}))
+import { ArrowLeft, Loader2 } from 'lucide-react'
 
 export default function ParentSetup() {
   const navigate = useNavigate()
-  const [childGrade, setChildGrade] = useState(5)
-  const [childUsername, setChildUsername] = useState('')
-  const [foundChild, setFoundChild] = useState(null)
-  const [notFound, setNotFound] = useState(false)
-  const [searching, setSearching] = useState(false)
-  const [linking, setLinking] = useState(false)
-  const [linked, setLinked] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
@@ -25,63 +12,12 @@ export default function ParentSetup() {
   const parentUsername = tgUser?.username || ''
   const telegramId = tgUser?.id || 0
 
-  const searchChild = async () => {
-    if (!childUsername.trim()) return
-    setSearching(true)
-    setFoundChild(null)
-    setNotFound(false)
+  const handleSubmit = async () => {
+    setLoading(true)
     setError('')
 
-    const cleaned = childUsername.replace('@', '').trim().toLowerCase()
-
     try {
-      // Avval API dan qidirish
-      const res = await fetch(`/api/users/search?username=${encodeURIComponent(cleaned)}`)
-      if (res.ok) {
-        const data = await res.json()
-        setFoundChild(data)
-        setSearching(false)
-        return
-      }
-    } catch {}
-
-    // API da topilmasa — sintetik datadan qidirish (demo uchun)
-    const demoChild = STUDENTS.find(s => s.username.toLowerCase() === cleaned)
-    if (demoChild) {
-      setFoundChild({
-        id: demoChild.id,
-        full_name: demoChild.name,
-        username: demoChild.username,
-        grade: demoChild.grade,
-        role: 'student',
-        _demo: true,
-      })
-    } else {
-      setNotFound(true)
-    }
-    setSearching(false)
-  }
-
-  const confirmChild = async () => {
-    setLinking(true)
-    setError('')
-
-    // Demo farzand — to'g'ridan-to'g'ri dashboardga
-    if (foundChild._demo) {
-      setLinked(true)
-      localStorage.setItem('parentName', parentName)
-      localStorage.setItem('childName', foundChild.full_name)
-      localStorage.setItem('childUsername', foundChild.username)
-      localStorage.setItem('childGrade', foundChild.grade || childGrade)
-      localStorage.setItem('childId', foundChild.id)
-      localStorage.setItem('telegramId', telegramId || '0')
-      setTimeout(() => navigate('/parent'), 1500)
-      return
-    }
-
-    try {
-      // Avval ota-onani ro'yxatdan o'tkazish
-      const regRes = await fetch('/api/users/register', {
+      const res = await fetch('/api/users/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,43 +27,21 @@ export default function ParentSetup() {
           role: 'parent',
         }),
       })
-      const regData = await regRes.json()
+      const data = await res.json()
 
-      if (!regRes.ok) {
-        setError(regData.detail || 'Ro\'yxatdan o\'tishda xatolik')
-        setLinking(false)
+      if (!res.ok) {
+        setError(data.detail || 'Xatolik yuz berdi')
+        setLoading(false)
         return
       }
 
-      // Farzandga bog'lanish so'rovi
-      const linkRes = await fetch('/api/users/link-parent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          parent_telegram_id: telegramId,
-          child_username: childUsername.replace('@', '').trim(),
-        }),
-      })
-      const linkData = await linkRes.json()
-
-      if (!linkRes.ok) {
-        setError(linkData.detail || 'Bog\'lashda xatolik')
-        setLinking(false)
-        return
-      }
-
-      setLinked(true)
-      localStorage.setItem('parentName', parentName)
-      localStorage.setItem('childName', foundChild.full_name)
-      localStorage.setItem('childUsername', foundChild.username)
-      localStorage.setItem('childGrade', foundChild.grade || childGrade)
-      localStorage.setItem('userId', regData.id)
+      localStorage.setItem('parentName', data.full_name)
+      localStorage.setItem('userId', data.id)
       localStorage.setItem('telegramId', telegramId)
-
-      setTimeout(() => navigate('/parent'), 2000)
+      navigate('/parent')
     } catch (err) {
-      setError('Server bilan bog\'lanib bo\'lmadi')
-      setLinking(false)
+      setError("Server bilan bog'lanib bo'lmadi")
+      setLoading(false)
     }
   }
 
@@ -140,92 +54,28 @@ export default function ParentSetup() {
         </button>
 
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-accent-500 rounded-xl flex items-center justify-center">
-            <Users className="w-6 h-6 text-white" />
-          </div>
+          <img src="/avatars/parent.jpg" alt="Avatar"
+            className="w-14 h-14 rounded-full object-cover border-2 border-orange-200 shadow-sm" />
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Ota-ona paneli</h1>
-            <p className="text-sm text-gray-500">Farzandingizni bog'lang</p>
+            <h1 className="text-xl font-bold text-gray-800">Salom, {parentName}!</h1>
+            <p className="text-sm text-gray-500">Ota-ona sifatida kiring</p>
           </div>
         </div>
 
-        {!linked ? (
-          <div className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Farzandingiz nechanchi sinfda?</label>
-              <WheelPicker
-                items={GRADE_ITEMS}
-                selectedValue={childGrade}
-                onSelect={setChildGrade}
-              />
-            </div>
+        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm mb-5">
+          <p className="text-sm text-gray-600 text-center">
+            O'quvchilar uyga vazifa natijalarini real vaqtda ko'rasiz
+          </p>
+        </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Farzandingizning Telegram username'ini kiriting
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text" value={childUsername} onChange={e => setChildUsername(e.target.value)}
-                  placeholder="@username"
-                  className="flex-1 px-4 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none"
-                  onKeyDown={e => e.key === 'Enter' && searchChild()}
-                />
-                <button onClick={searchChild} disabled={!childUsername.trim() || searching}
-                  className="px-5 bg-accent-500 text-white rounded-xl font-medium hover:bg-accent-600 transition disabled:opacity-50">
-                  {searching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Demo: aziz_t, dilnoza_r, gulnora_s, bobur_a, sardor_u
-              </p>
-            </div>
-
-            {foundChild && (
-              <div className="bg-white rounded-xl p-5 border-2 border-accent-200 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-xl font-bold text-primary-600">
-                    {foundChild.full_name[0]}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-800">{foundChild.full_name}</p>
-                    <p className="text-sm text-gray-500">@{foundChild.username} {foundChild.grade ? `| ${foundChild.grade}-sinf` : ''}</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-gray-500 text-center mb-3">
-                  Bu sizning farzandingizmi?
-                </p>
-                <button onClick={confirmChild} disabled={linking}
-                  className="w-full bg-accent-500 text-white py-3.5 rounded-xl font-semibold hover:bg-accent-600 transition flex items-center justify-center gap-2 disabled:opacity-50">
-                  {linking ? <><Loader2 className="w-5 h-5 animate-spin" /> Bog'lanmoqda...</>
-                    : <><CheckCircle className="w-5 h-5" /> Ha, tasdiqlash</>}
-                </button>
-              </div>
-            )}
-
-            {notFound && (
-              <div className="bg-danger-50 rounded-xl p-4 text-center">
-                <p className="text-sm text-danger-600">Bu username bilan o'quvchi topilmadi</p>
-                <p className="text-xs text-gray-500 mt-1">Farzandingiz avval o'quvchi sifatida ro'yxatdan o'tishi kerak</p>
-              </div>
-            )}
-
-            {error && (
-              <p className="text-sm text-danger-500 text-center">{error}</p>
-            )}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl p-8 text-center shadow-sm">
-            <div className="text-5xl mb-4">✅</div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">So'rov yuborildi!</h2>
-            <p className="text-sm text-gray-500">
-              {foundChild.full_name} ga tasdiqlash so'rovi yuborildi.
-              Farzandingiz tasdiqlashi kerak.
-            </p>
-            <p className="text-xs text-gray-400 mt-4">Yo'naltirilmoqda...</p>
-          </div>
+        {error && (
+          <p className="text-sm text-danger-500 text-center mb-4">{error}</p>
         )}
+
+        <button onClick={handleSubmit} disabled={loading}
+          className="w-full bg-accent-500 text-white py-4 rounded-xl font-semibold text-base hover:bg-accent-600 transition disabled:opacity-40 flex items-center justify-center gap-2">
+          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Yuklanmoqda...</> : 'Boshlash'}
+        </button>
       </div>
     </div>
   )

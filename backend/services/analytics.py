@@ -202,4 +202,68 @@ class AnalyticsService:
         ]
 
 
+    async def get_global_recent(self, session: AsyncSession, limit: int = 20) -> List[Dict]:
+        """Barcha o'quvchilarning oxirgi tekshiruvlari (classroom filtersiz)."""
+        result = await session.execute(
+            select(Submission, User)
+            .join(User, Submission.student_id == User.id)
+            .where(Submission.status == "completed")
+            .order_by(desc(Submission.created_at))
+            .limit(limit)
+        )
+        rows = result.all()
+        return [
+            {
+                "id": str(sub.id),
+                "student_name": user.full_name,
+                "student_gender": user.gender,
+                "subject": sub.subject,
+                "score": sub.score,
+                "total_problems": sub.total_problems,
+                "correct_count": sub.correct_count,
+                "created_at": sub.created_at.isoformat(),
+            }
+            for sub, user in rows
+        ]
+
+    async def get_global_topic_errors(self, session: AsyncSession) -> List[Dict]:
+        """Barcha mavzu xatolari (classroom filtersiz)."""
+        result = await session.execute(
+            select(Submission.ai_result)
+            .where(Submission.status == "completed")
+            .order_by(desc(Submission.created_at))
+            .limit(100)
+        )
+        topic_errors = {}
+        for (ai_result,) in result.all():
+            if ai_result:
+                for topic in ai_result.get("weak_topics", []):
+                    topic_errors[topic] = topic_errors.get(topic, 0) + 1
+        return [
+            {"topic": topic, "count": count}
+            for topic, count in sorted(topic_errors.items(), key=lambda x: -x[1])[:10]
+        ]
+
+    async def get_global_stats(self, session: AsyncSession) -> Dict:
+        """Umumiy statistika."""
+        today = date.today()
+
+        total_students = await session.execute(
+            select(func.count()).select_from(User).where(User.role == "student")
+        )
+        today_subs = await session.execute(
+            select(func.count()).select_from(Submission).where(
+                and_(func.date(Submission.created_at) == today, Submission.status == "completed")
+            )
+        )
+        avg_result = await session.execute(
+            select(func.avg(Submission.score)).where(Submission.status == "completed")
+        )
+        return {
+            "total_students": total_students.scalar() or 0,
+            "today_submissions": today_subs.scalar() or 0,
+            "avg_score": round(avg_result.scalar() or 0, 1),
+        }
+
+
 analytics_service = AnalyticsService()

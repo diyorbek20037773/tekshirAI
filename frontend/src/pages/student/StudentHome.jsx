@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X } from 'lucide-react'
+import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X, Trophy } from 'lucide-react'
 import { getQuoteByScore, getDailyQuote, getRandomErrorMotivation, POINTS } from '../../data/quotes'
 import RiskDashboard from '../../components/RiskDashboard'
 import AiChat from '../../components/AiChat'
@@ -381,6 +381,92 @@ export default function StudentHome() {
           </div>
           )
         })()}
+        {/* === SINF REYTINGI === */}
+        {result && (() => {
+          const SINF = [
+            { name: "Barno Abdullayeva", score: 96 },
+            { name: "Madina Qodirova", score: 95 },
+            { name: "Aziza Karimova", score: 92 },
+            { name: "Zulfiya Ergasheva", score: 91 },
+            { name: "Gulnora Saidova", score: 90 },
+            { name: "Jasur Toshmatov", score: 88 },
+            { name: "Nilufar Rahimova", score: 87 },
+            { name: "Kamola Ne'matova", score: 85 },
+            { name: "Mohira Qo'chqorova", score: 84 },
+            { name: "Nodir Xasanov", score: 82 },
+            { name: "Ulugbek Tursunov", score: 81 },
+            { name: "Iroda Mahmudova", score: 79 },
+            { name: "Sardor Umarov", score: 78 },
+            { name: "Otabek Raximov", score: 76 },
+            { name: "Sabina Xolmatova", score: 74 },
+            { name: "Bobur Aliyev", score: 72 },
+            { name: "Jamshid Kamolov", score: 69 },
+            { name: "Sherzod Mirzayev", score: 65 },
+            { name: "Asilbek Normatov", score: 61 },
+            { name: "Dostonbek Salimov", score: 42 },
+          ]
+
+          // O'quvchini sinf ichiga joylashtirish
+          const myScore = scorePercent
+          const withMe = [...SINF, { name: name, score: myScore, isMe: true }]
+            .sort((a, b) => b.score - a.score)
+          const myRank = withMe.findIndex(s => s.isMe) + 1
+
+          return (
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                <h2 className="text-base font-semibold text-gray-800">Sinf reytingi</h2>
+              </div>
+
+              <div className={`text-center p-3 rounded-xl mb-3 ${
+                myRank <= 3 ? 'bg-yellow-50 border border-yellow-200' :
+                myRank <= 10 ? 'bg-blue-50 border border-blue-200' :
+                'bg-gray-50 border border-gray-200'
+              }`}>
+                <p className="text-2xl font-black">
+                  {myRank <= 3 ? '🏆' : myRank <= 10 ? '⭐' : '📊'} {myRank}-o'rin
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {myRank <= 3 ? "Zo'r natija! Siz eng yaxshilar qatorida!" :
+                   myRank <= 10 ? "Yaxshi! Biroz harakat qilsangiz tepaga chiqasiz!" :
+                   "Mashq qilishni davom eting — ko'tarilasiz!"}
+                </p>
+              </div>
+
+              <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                {withMe.slice(0, 10).map((s, i) => (
+                  <div key={i} className={`flex items-center justify-between py-1.5 px-2 rounded-lg ${
+                    s.isMe ? 'bg-success-50 border border-success-200' : ''
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-400 w-5">{i + 1}</span>
+                      <p className={`text-xs ${s.isMe ? 'font-bold text-success-700' : 'text-gray-700'}`}>
+                        {s.name} {s.isMe && '(Siz)'}
+                      </p>
+                    </div>
+                    <span className={`text-xs font-bold ${
+                      s.score >= 80 ? 'text-success-600' : s.score >= 60 ? 'text-accent-600' : 'text-danger-500'
+                    }`}>{s.score}%</span>
+                  </div>
+                ))}
+                {myRank > 10 && (
+                  <>
+                    <div className="text-center text-[10px] text-gray-400 py-1">• • •</div>
+                    <div className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-success-50 border border-success-200">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-400 w-5">{myRank}</span>
+                        <p className="text-xs font-bold text-success-700">{name} (Siz)</p>
+                      </div>
+                      <span className="text-xs font-bold text-success-600">{myScore}%</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* === BILIM TAHLILI (Risk Dashboard) === */}
         {analysis && (
           <RiskDashboard
