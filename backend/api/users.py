@@ -1,6 +1,7 @@
 """Mini App foydalanuvchilar — ro'yxatdan o'tish, profil, ota-ona bog'lash."""
 
 import random
+import time
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -104,10 +105,11 @@ def user_to_response(user: User) -> dict:
 async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
     """Mini App dan ro'yxatdan o'tish. Agar mavjud bo'lsa — profilni qaytaradi."""
 
-    # telegram_id=0 demo rejim — random ID berish va yangi user yaratish
+    # telegram_id=0 demo rejim — unique ID berish va yangi user yaratish
     is_demo = not data.telegram_id or data.telegram_id == 0
     if is_demo:
-        data.telegram_id = random.randint(900000000, 999999999)
+        # timestamp (ms) + random = collision ehtimoli deyarli 0
+        data.telegram_id = int(time.time() * 1000) % 9000000000 + random.randint(100000, 999999)
 
     existing = await find_user_by_telegram_id(data.telegram_id, db)
     if existing:
