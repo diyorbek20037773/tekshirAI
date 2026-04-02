@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
             # Yangi ustunlar qo'shish (create_all mavjud jadvalga ustun qo'shmaydi)
             migrations = [
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_parent_id UUID REFERENCES users(id)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(10)",
             ]
             for sql in migrations:
                 try:
