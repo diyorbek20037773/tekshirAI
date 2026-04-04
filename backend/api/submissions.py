@@ -1,7 +1,8 @@
-"""Submissions API — detail, o'quvchi tarixi."""
+"""Submissions API — detail, o'quvchi tarixi, baho tahrirlash."""
 
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +11,10 @@ from backend.api.auth import get_current_user
 from backend.models.user import User
 from backend.models.submission import Submission
 from backend.schemas.submission import SubmissionResponse, SubmissionListResponse
+
+
+class ScoreUpdate(BaseModel):
+    score: float
 
 router = APIRouter(prefix="/api/submissions", tags=["submissions"])
 
@@ -50,3 +55,22 @@ async def get_student_submissions(
         .limit(limit)
     )
     return result.scalars().all()
+
+
+@router.patch("/{submission_id}/score")
+async def update_score(
+    submission_id: str,
+    data: ScoreUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    """O'qituvchi bahoni tahrirlaydi."""
+    result = await db.execute(
+        select(Submission).where(Submission.id == submission_id)
+    )
+    submission = result.scalar_one_or_none()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission topilmadi")
+
+    submission.score = data.score
+    await db.flush()
+    return {"status": "updated", "new_score": data.score}

@@ -1,6 +1,7 @@
 """Rasm tekshirish API — Mini App dan rasm keladi, Gemini AI tekshiradi, DB ga saqlanadi."""
 
 import time
+import base64
 import logging
 from fastapi import APIRouter, UploadFile, File, Form, Depends
 from fastapi.responses import JSONResponse
@@ -101,9 +102,12 @@ async def check_homework(
                 logger.info(f"telegram_id topilmadi, oxirgi student ishlatildi: {last_student.full_name}")
 
         if student_id:
+            # Rasmni base64 formatda saqlash
+            image_base64 = f"data:image/jpeg;base64,{base64.b64encode(processed_image).decode()}"
+
             submission = Submission(
                 student_id=student_id,
-                image_url="mini-app-upload",
+                image_url=image_base64,
                 subject=subject,
                 grade=grade,
                 ocr_raw_text=ai_result.get("ocr_text", ""),

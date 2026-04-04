@@ -361,6 +361,7 @@ async def get_student_submissions(telegram_id: int, db: AsyncSession = Depends(g
         "submissions": [
             {
                 "id": str(sub.id),
+                "image_url": sub.image_url,
                 "subject": sub.subject,
                 "grade": sub.grade,
                 "score": sub.score,
