@@ -27,7 +27,9 @@ class UserRegister(BaseModel):
     gender: str | None = None  # male, female
     grade: int | None = None
     subject: str | None = None
-    # Teacher uchun
+    viloyat: str | None = None
+    tuman: str | None = None
+    maktab: str | None = None
     teacher_class: str | None = None
 
 
@@ -40,6 +42,9 @@ class UserResponse(BaseModel):
     gender: str | None = None
     grade: int | None
     subject: str | None
+    viloyat: str | None = None
+    tuman: str | None = None
+    maktab: str | None = None
     is_premium: bool
     # Game profile
     xp: int = 0
@@ -89,6 +94,9 @@ def user_to_response(user: User) -> dict:
         "gender": user.gender,
         "grade": user.grade,
         "subject": user.subject,
+        "viloyat": user.viloyat,
+        "tuman": user.tuman,
+        "maktab": user.maktab,
         "is_premium": user.is_premium,
         "xp": gp.xp if gp else 0,
         "level": gp.level if gp else 1,
@@ -123,6 +131,12 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
             existing.grade = data.grade
         if data.subject:
             existing.subject = data.subject
+        if data.viloyat:
+            existing.viloyat = data.viloyat
+        if data.tuman:
+            existing.tuman = data.tuman
+        if data.maktab:
+            existing.maktab = data.maktab
         existing.updated_at = datetime.utcnow()
         await db.flush()
         return user_to_response(existing)
@@ -136,6 +150,9 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
         gender=data.gender,
         grade=data.grade,
         subject=data.subject,
+        viloyat=data.viloyat,
+        tuman=data.tuman,
+        maktab=data.maktab,
         daily_reset_date=date.today(),
     )
     db.add(user)
@@ -280,11 +297,12 @@ async def confirm_parent(data: ConfirmLink, db: AsyncSession = Depends(get_db)):
 # === O'qituvchi uchun ===
 
 @router.get("/students")
-async def get_all_students(db: AsyncSession = Depends(get_db)):
-    """Barcha o'quvchilar ro'yxati (o'qituvchi uchun)."""
-    result = await db.execute(
-        select(User).where(User.role == "student").order_by(User.created_at.desc())
-    )
+async def get_all_students(maktab: str = None, db: AsyncSession = Depends(get_db)):
+    """O'quvchilar ro'yxati. maktab parametri bo'lsa — faqat shu maktab o'quvchilari."""
+    query = select(User).where(User.role == "student")
+    if maktab:
+        query = query.where(User.maktab == maktab)
+    result = await db.execute(query.order_by(User.created_at.desc()))
     students = result.scalars().all()
 
     student_list = []
@@ -303,8 +321,12 @@ async def get_all_students(db: AsyncSession = Depends(get_db)):
             "telegram_id": s.telegram_id,
             "username": s.username,
             "full_name": s.full_name,
+            "gender": s.gender,
             "grade": s.grade,
             "subject": s.subject,
+            "viloyat": s.viloyat,
+            "tuman": s.tuman,
+            "maktab": s.maktab,
             "submission_count": stats.count or 0,
             "avg_score": round(stats.avg_score or 0, 1),
             "created_at": s.created_at.isoformat() if s.created_at else None,

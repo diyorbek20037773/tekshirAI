@@ -49,6 +49,9 @@ async def lifespan(app: FastAPI):
             migrations = [
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_parent_id UUID REFERENCES users(id)",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(10)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS viloyat VARCHAR(100)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS tuman VARCHAR(100)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS maktab VARCHAR(200)",
             ]
             for sql in migrations:
                 try:

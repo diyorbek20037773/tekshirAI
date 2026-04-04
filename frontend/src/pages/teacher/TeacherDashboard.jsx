@@ -57,6 +57,7 @@ function StatCard({ icon: Icon, title, value, color }) {
 export default function TeacherDashboard() {
   const navigate = useNavigate()
   const teacherName = localStorage.getItem('teacherName') || "O'qituvchi"
+  const teacherMaktab = localStorage.getItem('teacherMaktab') || ''
 
   const [realStudents, setRealStudents] = useState([])
   const [riskData, setRiskData] = useState(null)
@@ -69,7 +70,7 @@ export default function TeacherDashboard() {
 
   const fetchData = () => {
     Promise.all([
-      fetch('/api/users/students').then(r => r.json()).catch(() => ({ students: [] })),
+      fetch(`/api/users/students${teacherMaktab ? `?maktab=${encodeURIComponent(teacherMaktab)}` : ''}`).then(r => r.json()).catch(() => ({ students: [] })),
       fetch('/api/analysis/classroom-risks').then(r => r.json()).catch(() => null),
       fetch('/api/dashboard/recent-all?limit=10').then(r => r.json()).catch(() => []),
       fetch('/api/dashboard/topic-errors-all').then(r => r.json()).catch(() => []),
@@ -135,7 +136,7 @@ export default function TeacherDashboard() {
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-800">Salom, {teacherName.split(' ')[0]}!</h1>
-            <p className="text-xs text-gray-500">O'qituvchi paneli</p>
+            <p className="text-xs text-gray-500">{teacherMaktab || "O'qituvchi paneli"}</p>
           </div>
           <div className="flex items-center gap-2">
             <Link to="/teacher/profile">

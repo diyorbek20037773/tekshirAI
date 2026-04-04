@@ -1,81 +1,187 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, MapPin } from 'lucide-react'
+import WheelPicker from '../../components/WheelPicker'
+
+const SUBJECT_ITEMS = [
+  'Ona tili', 'Ingliz tili', 'Matematika', 'Algebra', 'Geometriya',
+  'Fizika', 'Kimyo', 'Biologiya', 'Tabiatshunoslik', 'Informatika',
+].map(s => ({ value: s, label: s }))
 
 export default function TeacherSetup() {
   const navigate = useNavigate()
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
+  const telegramId = tgUser?.id || 0
+  const userUsername = tgUser?.username || ''
+
+  const [firstName, setFirstName] = useState(tgUser?.first_name || '')
+  const [lastName, setLastName] = useState(tgUser?.last_name || '')
+  const [subject, setSubject] = useState('')
+
+  // Geolokatsiya
+  const [viloyatlar, setViloyatlar] = useState([])
+  const [tumanlar, setTumanlar] = useState([])
+  const [maktablar, setMaktablar] = useState([])
+  const [selectedViloyat, setSelectedViloyat] = useState('')
+  const [selectedTuman, setSelectedTuman] = useState('')
+  const [selectedMaktab, setSelectedMaktab] = useState('')
+  const [geoLoading, setGeoLoading] = useState(true)
+  const [geoStatus, setGeoStatus] = useState('Joylashuv aniqlanmoqda...')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
-  const userName = tgUser?.first_name || "O'qituvchi"
-  const userUsername = tgUser?.username || ''
-  const telegramId = tgUser?.id || 0
+  useEffect(() => {
+    fetch('/api/geo/viloyatlar').then(r => r.json()).then(setViloyatlar).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!navigator.geolocation) { setGeoStatus('Qo\'llab-quvvatlanmaydi'); setGeoLoading(false); return }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const r = await fetch(`/api/geo/detect?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`)
+          const data = await r.json()
+          if (data.found) {
+            setSelectedViloyat(data.viloyat); setSelectedTuman(data.tuman)
+            setGeoStatus(`${data.tuman}, ${data.viloyat}`)
+          } else { setGeoStatus('Aniqlanmadi — qo\'lda tanlang') }
+        } catch { setGeoStatus('Xatolik — qo\'lda tanlang') }
+        setGeoLoading(false)
+      },
+      () => { setGeoStatus('Ruxsat berilmadi — qo\'lda tanlang'); setGeoLoading(false) },
+      { timeout: 10000 }
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!selectedViloyat) { setTumanlar([]); return }
+    fetch(`/api/geo/tumanlar?viloyat=${encodeURIComponent(selectedViloyat)}`)
+      .then(r => r.json()).then(setTumanlar).catch(() => setTumanlar([]))
+  }, [selectedViloyat])
+
+  useEffect(() => {
+    if (!selectedTuman) { setMaktablar([]); return }
+    fetch(`/api/geo/maktablar?tuman=${encodeURIComponent(selectedTuman)}`)
+      .then(r => r.json()).then(setMaktablar).catch(() => setMaktablar([]))
+  }, [selectedTuman])
 
   const handleSubmit = async () => {
-    setLoading(true)
-    setError('')
+    if (!firstName.trim() || !subject || !selectedMaktab) return
+    setLoading(true); setError('')
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
 
     try {
       const res = await fetch('/api/users/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          telegram_id: telegramId,
-          username: userUsername,
-          full_name: userName,
-          role: 'teacher',
+          telegram_id: telegramId, username: userUsername, full_name: fullName,
+          role: 'teacher', subject,
+          viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
         }),
       })
       const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.detail || 'Xatolik yuz berdi')
-        setLoading(false)
-        return
-      }
+      if (!res.ok) { setError(data.detail || 'Xatolik'); setLoading(false); return }
 
       localStorage.setItem('teacherName', data.full_name)
+      localStorage.setItem('teacherSubject', subject)
+      localStorage.setItem('teacherMaktab', selectedMaktab)
+      localStorage.setItem('teacherViloyat', selectedViloyat)
+      localStorage.setItem('teacherTuman', selectedTuman)
       localStorage.setItem('userId', data.id)
-      localStorage.setItem('telegramId', telegramId)
+      localStorage.setItem('telegramId', data.telegram_id)
       navigate('/teacher')
     } catch (err) {
-      setError("Server bilan bog'lanib bo'lmadi")
-      setLoading(false)
+      setError("Server bilan bog'lanib bo'lmadi"); setLoading(false)
     }
   }
+
+  const isReady = firstName.trim() && subject && selectedMaktab
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-md mx-auto">
         <button onClick={() => { localStorage.removeItem('userRole'); navigate('/') }}
-          className="flex items-center gap-2 text-gray-500 mb-6 hover:text-gray-700">
+          className="flex items-center gap-2 text-gray-500 mb-4 hover:text-gray-700">
           <ArrowLeft className="w-5 h-5" /> Orqaga
         </button>
 
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-3 mb-4">
           <img src="/avatars/teacher.jpg" alt="Avatar"
             className="w-14 h-14 rounded-full object-cover border-2 border-blue-200 shadow-sm" />
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Salom, {userName}!</h1>
-            <p className="text-sm text-gray-500">O'qituvchi sifatida kiring</p>
+            <h1 className="text-lg font-bold text-gray-800">O'qituvchi</h1>
+            <p className="text-xs text-gray-500">{userUsername ? `@${userUsername}` : "Ro'yxatdan o'tish"}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm mb-5">
-          <p className="text-sm text-gray-600 text-center">
-            O'quvchilar uyga vazifa yuborganda natijalarini real vaqtda ko'rasiz
-          </p>
+        <div className="space-y-3">
+          {/* Ism va Familya */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Ismingiz</label>
+              <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
+                placeholder="Ism" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Familiyangiz</label>
+              <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
+                placeholder="Familiya" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400" />
+            </div>
+          </div>
+
+          {/* Geolokatsiya */}
+          <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
+            <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
+            <p className="text-xs text-blue-600">{geoLoading ? <span className="animate-pulse">{geoStatus}</span> : geoStatus}</p>
+          </div>
+
+          {/* Viloyat */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Viloyat</label>
+            <select value={selectedViloyat} onChange={e => { setSelectedViloyat(e.target.value); setSelectedTuman(''); setSelectedMaktab('') }}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-primary-400">
+              <option value="">Tanlang...</option>
+              {viloyatlar.map(v => <option key={v.kod} value={v.nom}>{v.nom}</option>)}
+            </select>
+          </div>
+
+          {selectedViloyat && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Tuman</label>
+              <select value={selectedTuman} onChange={e => { setSelectedTuman(e.target.value); setSelectedMaktab('') }}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-primary-400">
+                <option value="">Tanlang...</option>
+                {tumanlar.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          )}
+
+          {selectedTuman && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Maktab</label>
+              <select value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-primary-400">
+                <option value="">Tanlang...</option>
+                {maktablar.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Fan */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Fan</label>
+            <WheelPicker items={SUBJECT_ITEMS} selectedValue={subject} onSelect={setSubject} visibleItems={3} itemHeight={40} />
+          </div>
+
+          {error && <p className="text-sm text-danger-500 text-center">{error}</p>}
+
+          <button onClick={handleSubmit} disabled={!isReady || loading}
+            className="w-full bg-primary-500 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-primary-600 transition disabled:opacity-40 flex items-center justify-center gap-2">
+            {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Yuklanmoqda...</> : 'Boshlash'}
+          </button>
         </div>
-
-        {error && (
-          <p className="text-sm text-danger-500 text-center mb-4">{error}</p>
-        )}
-
-        <button onClick={handleSubmit} disabled={loading}
-          className="w-full bg-primary-500 text-white py-4 rounded-xl font-semibold text-base hover:bg-primary-600 transition disabled:opacity-40 flex items-center justify-center gap-2">
-          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Yuklanmoqda...</> : 'Boshlash'}
-        </button>
       </div>
     </div>
   )

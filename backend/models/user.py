@@ -20,6 +20,9 @@ class User(Base):
     gender: Mapped[str | None] = mapped_column(String(10))  # male, female
     grade: Mapped[int | None] = mapped_column(Integer)  # 1-11 sinf
     subject: Mapped[str | None] = mapped_column(String(100))  # o'qituvchi fani
+    viloyat: Mapped[str | None] = mapped_column(String(100))  # Surxondaryo viloyati
+    tuman: Mapped[str | None] = mapped_column(String(100))  # Termiz Tumani
+    maktab: Mapped[str | None] = mapped_column(String(200))  # 1-sonli umumta'lim maktabi
 
     # Premium
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False)
