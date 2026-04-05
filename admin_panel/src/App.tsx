@@ -5,6 +5,7 @@ import ReytingPage from './pages/ReytingPage';
 import MavzularPage from './pages/MavzularPage';
 import MuammolarPage from './pages/MuammolarPage';
 import ProfilPage from './pages/ProfilPage';
+import FoydalanuvchilarPage from './pages/FoydalanuvchilarPage';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="reyting" element={<ReytingPage />} />
           <Route path="mavzular" element={<MavzularPage />} />
           <Route path="muammolar" element={<MuammolarPage />} />
+          <Route path="foydalanuvchilar" element={<FoydalanuvchilarPage />} />
           <Route path="profil" element={<ProfilPage />} />
         </Route>
       </Routes>

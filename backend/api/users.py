@@ -78,9 +78,12 @@ class UserSearch(BaseModel):
 
 # === Helpers ===
 
-async def find_user_by_telegram_id(telegram_id: int, db: AsyncSession) -> User | None:
-    result = await db.execute(select(User).where(User.telegram_id == telegram_id))
-    return result.scalar_one_or_none()
+async def find_user_by_telegram_id(telegram_id: int, db: AsyncSession, role: str = None) -> User | None:
+    query = select(User).where(User.telegram_id == telegram_id)
+    if role:
+        query = query.where(User.role == role)
+    result = await db.execute(query.order_by(User.created_at.desc()))
+    return result.scalars().first()
 
 
 def user_to_response(user: User) -> dict:
@@ -119,7 +122,7 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
         # timestamp (ms) + random = collision ehtimoli deyarli 0
         data.telegram_id = int(time.time() * 1000) % 9000000000 + random.randint(100000, 999999)
 
-    existing = await find_user_by_telegram_id(data.telegram_id, db)
+    existing = await find_user_by_telegram_id(data.telegram_id, db, role=data.role)
     if existing:
         # Mavjud user — profilni yangilash
         existing.full_name = data.full_name
@@ -180,9 +183,9 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me")
-async def get_me(telegram_id: int, db: AsyncSession = Depends(get_db)):
-    """Telegram ID bo'yicha profil olish."""
-    user = await find_user_by_telegram_id(telegram_id, db)
+async def get_me(telegram_id: int, role: str = None, db: AsyncSession = Depends(get_db)):
+    """Telegram ID bo'yicha profil olish. role parametri bilan aniq rol tanlash."""
+    user = await find_user_by_telegram_id(telegram_id, db, role=role)
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
     return user_to_response(user)

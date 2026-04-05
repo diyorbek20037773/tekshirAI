@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import RoleSelect from './pages/RoleSelect'
 import TeacherSetup from './pages/teacher/TeacherSetup'
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
@@ -18,10 +19,35 @@ function RoleGuard({ role, children }) {
   return children
 }
 
+function AutoLogin() {
+  const navigate = useNavigate()
+  const [checked, setChecked] = useState(false)
+
+  useEffect(() => {
+    const savedRole = localStorage.getItem('userRole')
+    const userId = localStorage.getItem('userId')
+
+    // Agar allaqachon ro'yxatdan o'tgan bo'lsa — dashboardga yuborish
+    if (savedRole && userId) {
+      navigate(`/${savedRole}`, { replace: true })
+      return
+    }
+    setChecked(true)
+  }, [navigate])
+
+  if (!checked) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-200 border-t-primary-500"></div>
+    </div>
+  )
+
+  return <RoleSelect />
+}
+
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<RoleSelect />} />
+      <Route path="/" element={<AutoLogin />} />
 
       {/* O'qituvchi */}
       <Route path="/teacher/setup" element={<RoleGuard role="teacher"><TeacherSetup /></RoleGuard>} />

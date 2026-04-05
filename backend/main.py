@@ -43,6 +43,7 @@ async def lifespan(app: FastAPI):
         import backend.models.submission
         import backend.models.classroom
         import backend.models.conversation
+        import backend.models.rating
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             # Yangi ustunlar qo'shish (create_all mavjud jadvalga ustun qo'shmaydi)
@@ -52,6 +53,9 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS viloyat VARCHAR(100)",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS tuman VARCHAR(100)",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS maktab VARCHAR(200)",
+                # Bitta telegram_id dan bir nechta rol (ota-ona + farzand)
+                "DROP INDEX IF EXISTS ix_users_telegram_id",
+                "CREATE INDEX IF NOT EXISTS ix_users_telegram_id ON users (telegram_id)",
             ]
             for sql in migrations:
                 try:

@@ -45,14 +45,16 @@ def _load_geojson():
 
 
 def _point_in_polygon(lat: float, lng: float, ring: list) -> bool:
-    """Ray casting algorithm."""
+    """Ray casting algorithm. GeoJSON coordinates: [longitude, latitude]."""
     inside = False
     n = len(ring)
     j = n - 1
     for i in range(n):
-        yi, xi = ring[i][0], ring[i][1]
-        yj, xj = ring[j][0], ring[j][1]
-        if (yi > lng) != (yj > lng) and lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi:
+        # GeoJSON: ring[i] = [longitude, latitude]
+        ring_lat_i, ring_lng_i = ring[i][1], ring[i][0]
+        ring_lat_j, ring_lng_j = ring[j][1], ring[j][0]
+        if (ring_lat_i > lat) != (ring_lat_j > lat) and \
+           lng < ((ring_lng_j - ring_lng_i) * (lat - ring_lat_i)) / (ring_lat_j - ring_lat_i) + ring_lng_i:
             inside = not inside
         j = i
     return inside

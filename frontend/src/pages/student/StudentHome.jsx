@@ -4,6 +4,7 @@ import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X, Trophy } from 'lu
 import { getQuoteByScore, getDailyQuote, getRandomErrorMotivation, POINTS } from '../../data/quotes'
 import RiskDashboard from '../../components/RiskDashboard'
 import AiChat from '../../components/AiChat'
+import RatingModal from '../../components/RatingModal'
 
 export default function StudentHome() {
   const navigate = useNavigate()
@@ -20,6 +21,7 @@ export default function StudentHome() {
   const [processingTime, setProcessingTime] = useState(0)
   const [analysis, setAnalysis] = useState(null)
   const [lastSubmissionId, setLastSubmissionId] = useState(null)
+  const [showRating, setShowRating] = useState(false)
 
   // Bilim tahlilini yuklash
   useEffect(() => {
@@ -126,6 +128,10 @@ export default function StudentHome() {
 
         if (data.success) {
           setResult(data.result)
+          // Birinchi marta tekshirgandan keyin baho so'rash
+          if (!localStorage.getItem('ratingGiven')) {
+            setTimeout(() => setShowRating(true), 3000)
+          }
         } else if (data.ocr_error) {
           setError('Rasmdagi yozuvni o\'qib bo\'lmadi. Yaxshiroq sifatda qayta suratga oling.')
         } else {
@@ -482,6 +488,9 @@ export default function StudentHome() {
           topic={subject}
         />
       </div>
+
+      {/* Rating Modal */}
+      {showRating && <RatingModal onClose={() => setShowRating(false)} />}
     </div>
   )
 }
