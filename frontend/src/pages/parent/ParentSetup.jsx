@@ -26,8 +26,8 @@ export default function ParentSetup() {
   const [selectedMaktab, setSelectedMaktab] = useState('')
   const [grade, setGrade] = useState(5)
   const [subject, setSubject] = useState('')
-  const [geoLoading, setGeoLoading] = useState(true)
-  const [geoStatus, setGeoStatus] = useState('Joylashuv aniqlanmoqda...')
+  const [geoLoading, setGeoLoading] = useState(false)
+  const [geoStatus, setGeoStatus] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -37,11 +37,14 @@ export default function ParentSetup() {
   }, [])
 
   useEffect(() => {
-    if (!navigator.geolocation) { setGeoStatus("Qo'llab-quvvatlanmaydi"); setGeoLoading(false); return }
+    if (!navigator.geolocation) return
+    setGeoLoading(true); setGeoStatus('Joylashuv aniqlanmoqda...')
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const r = await fetch(`/api/geo/detect?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`)
+          const { latitude, longitude, accuracy } = pos.coords
+          if (accuracy > 1000) { setGeoStatus("GPS aniqlik past — qo'lda tanlang"); setGeoLoading(false); return }
+          const r = await fetch(`/api/geo/detect?lat=${latitude}&lng=${longitude}`)
           const data = await r.json()
           if (data.found) {
             setSelectedViloyat(data.viloyat); setSelectedTuman(data.tuman)
@@ -50,8 +53,8 @@ export default function ParentSetup() {
         } catch { setGeoStatus("Xatolik — qo'lda tanlang") }
         setGeoLoading(false)
       },
-      () => { setGeoStatus("Ruxsat berilmadi — qo'lda tanlang"); setGeoLoading(false) },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      () => { setGeoStatus(''); setGeoLoading(false) },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
   }, [])
 
@@ -127,10 +130,12 @@ export default function ParentSetup() {
           </div>
 
           {/* Geolokatsiya */}
-          <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
-            <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
-            <p className="text-xs text-blue-600">{geoLoading ? <span className="animate-pulse">{geoStatus}</span> : geoStatus}</p>
-          </div>
+          {(geoLoading || geoStatus) && (
+            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
+              <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
+              <p className="text-xs text-blue-600">{geoLoading ? <span className="animate-pulse">{geoStatus}</span> : geoStatus}</p>
+            </div>
+          )}
 
           {/* Viloyat */}
           <div>
