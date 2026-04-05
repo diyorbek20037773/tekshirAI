@@ -29,7 +29,6 @@ export default function StudentSetup() {
   // Geolokatsiya
   const [viloyatlar, setViloyatlar] = useState([])
   const [tumanlar, setTumanlar] = useState([])
-  const [maktablar, setMaktablar] = useState([])
   const [selectedViloyat, setSelectedViloyat] = useState('')
   const [selectedTuman, setSelectedTuman] = useState('')
   const [selectedMaktab, setSelectedMaktab] = useState('')
@@ -67,7 +66,7 @@ export default function StudentSetup() {
         setGeoLoading(false)
       },
       () => { setGeoStatus('Ruxsat berilmadi — qo\'lda tanlang'); setGeoLoading(false) },
-      { timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
   }, [])
 
@@ -77,13 +76,6 @@ export default function StudentSetup() {
     fetch(`/api/geo/tumanlar?viloyat=${encodeURIComponent(selectedViloyat)}`)
       .then(r => r.json()).then(setTumanlar).catch(() => setTumanlar([]))
   }, [selectedViloyat])
-
-  // Tuman o'zgarganda maktablar yuklash
-  useEffect(() => {
-    if (!selectedTuman) { setMaktablar([]); return }
-    fetch(`/api/geo/maktablar?tuman=${encodeURIComponent(selectedTuman)}`)
-      .then(r => r.json()).then(setMaktablar).catch(() => setMaktablar([]))
-  }, [selectedTuman])
 
   const subjectItems = useMemo(() => {
     return (GRADE_SUBJECTS[grade] || []).map(s => ({ value: s, label: s }))
@@ -211,11 +203,9 @@ export default function StudentSetup() {
           {selectedTuman && (
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Maktab</label>
-              <select value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-success-400">
-                <option value="">Tanlang...</option>
-                {maktablar.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
+              <input type="text" value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
+                placeholder="Maktab nomini kiriting (masalan: 1-sonli maktab)"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-success-400 focus:ring-1 focus:ring-success-400" />
             </div>
           )}
 

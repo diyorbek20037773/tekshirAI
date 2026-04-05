@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, MapPin } from 'lucide-react'
 import WheelPicker from '../../components/WheelPicker'
 
-const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({ value: i + 1, label: `${i + 1}-sinf` }))
-
 const SUBJECT_ITEMS = [
   'Ona tili', 'Ingliz tili', 'Matematika', 'Algebra', 'Geometriya',
   'Fizika', 'Kimyo', 'Biologiya', 'Tabiatshunoslik', 'Informatika',
 ].map(s => ({ value: s, label: s }))
 
-export default function TeacherSetup() {
+export default function DirectorSetup() {
   const navigate = useNavigate()
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
   const telegramId = tgUser?.id || 0
@@ -20,7 +18,6 @@ export default function TeacherSetup() {
   const [lastName, setLastName] = useState(tgUser?.last_name || '')
   const [subject, setSubject] = useState('')
 
-  // Geolokatsiya
   const [viloyatlar, setViloyatlar] = useState([])
   const [tumanlar, setTumanlar] = useState([])
   const [selectedViloyat, setSelectedViloyat] = useState('')
@@ -29,7 +26,6 @@ export default function TeacherSetup() {
   const [geoLoading, setGeoLoading] = useState(true)
   const [geoStatus, setGeoStatus] = useState('Joylashuv aniqlanmoqda...')
 
-  const [grade, setGrade] = useState(5)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -38,7 +34,7 @@ export default function TeacherSetup() {
   }, [])
 
   useEffect(() => {
-    if (!navigator.geolocation) { setGeoStatus('Qo\'llab-quvvatlanmaydi'); setGeoLoading(false); return }
+    if (!navigator.geolocation) { setGeoStatus("Qo'llab-quvvatlanmaydi"); setGeoLoading(false); return }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
@@ -47,11 +43,11 @@ export default function TeacherSetup() {
           if (data.found) {
             setSelectedViloyat(data.viloyat); setSelectedTuman(data.tuman)
             setGeoStatus(`${data.tuman}, ${data.viloyat}`)
-          } else { setGeoStatus('Aniqlanmadi — qo\'lda tanlang') }
-        } catch { setGeoStatus('Xatolik — qo\'lda tanlang') }
+          } else { setGeoStatus("Aniqlanmadi — qo'lda tanlang") }
+        } catch { setGeoStatus("Xatolik — qo'lda tanlang") }
         setGeoLoading(false)
       },
-      () => { setGeoStatus('Ruxsat berilmadi — qo\'lda tanlang'); setGeoLoading(false) },
+      () => { setGeoStatus("Ruxsat berilmadi — qo'lda tanlang"); setGeoLoading(false) },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
   }, [])
@@ -62,9 +58,8 @@ export default function TeacherSetup() {
       .then(r => r.json()).then(setTumanlar).catch(() => setTumanlar([]))
   }, [selectedViloyat])
 
-
   const handleSubmit = async () => {
-    if (!firstName.trim() || !subject || !selectedMaktab || !grade) return
+    if (!firstName.trim() || !selectedMaktab) return
     setLoading(true); setError('')
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
 
@@ -74,27 +69,24 @@ export default function TeacherSetup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           telegram_id: telegramId, username: userUsername, full_name: fullName,
-          role: 'teacher', subject,
-          viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab, grade,
+          role: 'director', subject,
+          viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
         }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.detail || 'Xatolik'); setLoading(false); return }
 
-      localStorage.setItem('teacherName', data.full_name)
-      localStorage.setItem('teacherSubject', subject)
-      localStorage.setItem('teacherMaktab', selectedMaktab)
-      localStorage.setItem('teacherViloyat', selectedViloyat)
-      localStorage.setItem('teacherTuman', selectedTuman)
+      localStorage.setItem('directorName', data.full_name)
+      localStorage.setItem('directorMaktab', selectedMaktab)
       localStorage.setItem('userId', data.id)
       localStorage.setItem('telegramId', data.telegram_id)
-      navigate('/teacher')
+      navigate('/director')
     } catch (err) {
       setError("Server bilan bog'lanib bo'lmadi"); setLoading(false)
     }
   }
 
-  const isReady = firstName.trim() && subject && selectedMaktab && grade
+  const isReady = firstName.trim() && selectedMaktab
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -105,40 +97,38 @@ export default function TeacherSetup() {
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <img src="/avatars/teacher.jpg" alt="Avatar"
-            className="w-14 h-14 rounded-full object-cover border-2 border-blue-200 shadow-sm" />
+          <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center border-2 border-purple-200">
+            <span className="text-2xl">🏫</span>
+          </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-800">O'qituvchi</h1>
+            <h1 className="text-lg font-bold text-gray-800">Maktab direktori</h1>
             <p className="text-xs text-gray-500">{userUsername ? `@${userUsername}` : "Ro'yxatdan o'tish"}</p>
           </div>
         </div>
 
         <div className="space-y-3">
-          {/* Ism va Familya */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Ismingiz</label>
               <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
-                placeholder="Ism" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400" />
+                placeholder="Ism" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Familiyangiz</label>
               <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
-                placeholder="Familiya" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400" />
+                placeholder="Familiya" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400" />
             </div>
           </div>
 
-          {/* Geolokatsiya */}
           <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
             <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
             <p className="text-xs text-blue-600">{geoLoading ? <span className="animate-pulse">{geoStatus}</span> : geoStatus}</p>
           </div>
 
-          {/* Viloyat */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Viloyat</label>
             <select value={selectedViloyat} onChange={e => { setSelectedViloyat(e.target.value); setSelectedTuman(''); setSelectedMaktab('') }}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-primary-400">
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-purple-400">
               <option value="">Tanlang...</option>
               {viloyatlar.map(v => <option key={v.kod} value={v.nom}>{v.nom}</option>)}
             </select>
@@ -148,7 +138,7 @@ export default function TeacherSetup() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Tuman</label>
               <select value={selectedTuman} onChange={e => { setSelectedTuman(e.target.value); setSelectedMaktab('') }}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-primary-400">
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-purple-400">
                 <option value="">Tanlang...</option>
                 {tumanlar.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -160,26 +150,19 @@ export default function TeacherSetup() {
               <label className="block text-xs font-medium text-gray-600 mb-1">Maktab</label>
               <input type="text" value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
                 placeholder="Maktab nomini kiriting"
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400" />
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400" />
             </div>
           )}
 
-          {/* Sinf */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Sinf</label>
-            <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={setGrade} visibleItems={3} itemHeight={40} />
-          </div>
-
-          {/* Fan */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Fan</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Mutaxassislik</label>
             <WheelPicker items={SUBJECT_ITEMS} selectedValue={subject} onSelect={setSubject} visibleItems={3} itemHeight={40} />
           </div>
 
           {error && <p className="text-sm text-danger-500 text-center">{error}</p>}
 
           <button onClick={handleSubmit} disabled={!isReady || loading}
-            className="w-full bg-primary-500 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-primary-600 transition disabled:opacity-40 flex items-center justify-center gap-2">
+            className="w-full bg-purple-500 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-purple-600 transition disabled:opacity-40 flex items-center justify-center gap-2">
             {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Yuklanmoqda...</> : 'Boshlash'}
           </button>
         </div>

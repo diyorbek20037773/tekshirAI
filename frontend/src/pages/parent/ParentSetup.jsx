@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, MapPin, UserPlus } from 'lucide-react'
+import WheelPicker from '../../components/WheelPicker'
+
+const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({ value: i + 1, label: `${i + 1}-sinf` }))
+const SUBJECT_ITEMS = [
+  'Ona tili', 'Ingliz tili', 'Matematika', 'Algebra', 'Geometriya',
+  'Fizika', 'Kimyo', 'Biologiya', 'Tabiatshunoslik', 'Informatika',
+].map(s => ({ value: s, label: s }))
 
 export default function ParentSetup() {
   const navigate = useNavigate()
@@ -14,10 +21,11 @@ export default function ParentSetup() {
   // Geolokatsiya
   const [viloyatlar, setViloyatlar] = useState([])
   const [tumanlar, setTumanlar] = useState([])
-  const [maktablar, setMaktablar] = useState([])
   const [selectedViloyat, setSelectedViloyat] = useState('')
   const [selectedTuman, setSelectedTuman] = useState('')
   const [selectedMaktab, setSelectedMaktab] = useState('')
+  const [grade, setGrade] = useState(5)
+  const [subject, setSubject] = useState('')
   const [geoLoading, setGeoLoading] = useState(true)
   const [geoStatus, setGeoStatus] = useState('Joylashuv aniqlanmoqda...')
 
@@ -43,7 +51,7 @@ export default function ParentSetup() {
         setGeoLoading(false)
       },
       () => { setGeoStatus("Ruxsat berilmadi — qo'lda tanlang"); setGeoLoading(false) },
-      { timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
   }, [])
 
@@ -52,12 +60,6 @@ export default function ParentSetup() {
     fetch(`/api/geo/tumanlar?viloyat=${encodeURIComponent(selectedViloyat)}`)
       .then(r => r.json()).then(setTumanlar).catch(() => setTumanlar([]))
   }, [selectedViloyat])
-
-  useEffect(() => {
-    if (!selectedTuman) { setMaktablar([]); return }
-    fetch(`/api/geo/maktablar?tuman=${encodeURIComponent(selectedTuman)}`)
-      .then(r => r.json()).then(setMaktablar).catch(() => setMaktablar([]))
-  }, [selectedTuman])
 
   const handleSubmit = async () => {
     if (!firstName.trim() || !selectedMaktab) return
@@ -72,6 +74,7 @@ export default function ParentSetup() {
           telegram_id: telegramId, username: parentUsername, full_name: fullName,
           role: 'parent',
           viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
+          grade, subject,
         }),
       })
       const data = await res.json()
@@ -89,7 +92,7 @@ export default function ParentSetup() {
     }
   }
 
-  const isReady = firstName.trim() && selectedMaktab
+  const isReady = firstName.trim() && selectedMaktab && subject
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -150,16 +153,25 @@ export default function ParentSetup() {
             </div>
           )}
 
-          {selectedTuman && (
+          {/* Maktab */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Farzandingiz maktabi</label>
+            <input type="text" value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
+              placeholder="Farzandingiz maktabini kiriting"
+              className="w-full px-3 py-2.5 rounded-xl border border-accent-400 text-sm focus:outline-none focus:border-accent-400 focus:ring-1 focus:ring-accent-400" />
+          </div>
+
+          {/* Sinf va Fan */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Farzandingiz maktabi</label>
-              <select value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-accent-400">
-                <option value="">Tanlang...</option>
-                {maktablar.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Sinf</label>
+              <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={setGrade} />
             </div>
-          )}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Fan</label>
+              <WheelPicker items={SUBJECT_ITEMS} selectedValue={subject} onSelect={setSubject} />
+            </div>
+          </div>
 
           {error && <p className="text-sm text-danger-500 text-center">{error}</p>}
 
