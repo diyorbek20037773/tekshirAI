@@ -13,7 +13,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Railway URL (environment variable dan yoki default)
     import os
-    webapp_url = os.getenv("WEBAPP_URL", "https://milliyaitermizhackathon-production.up.railway.app")
+    webapp_url = os.getenv("WEBAPP_URL", "https://web-production-f1b9.up.railway.app")
 
     text = (
         f"Salom, {name}! 👋\n\n"
