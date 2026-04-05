@@ -1,14 +1,11 @@
 """Mini App foydalanuvchilar — ro'yxatdan o'tish, profil, ota-ona bog'lash."""
 
-import random
-import time
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query as Q
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from backend.database import get_db
 from backend.models.user import User, UserGameProfile
@@ -23,7 +20,7 @@ class UserRegister(BaseModel):
     telegram_id: int
     username: str | None = None
     full_name: str
-    role: str  # student, teacher, parent
+    role: str  # student, teacher, parent, director
     gender: str | None = None  # male, female
     grade: int | None = None
     subject: str | None = None
@@ -46,12 +43,10 @@ class UserResponse(BaseModel):
     tuman: str | None = None
     maktab: str | None = None
     is_premium: bool
-    # Game profile
     xp: int = 0
     level: int = 1
     streak_days: int = 0
     badges: list = []
-    # Parent link
     parent_id: str | None = None
     pending_parent_username: str | None = None
 
@@ -66,7 +61,7 @@ class LinkRequest(BaseModel):
 
 class ConfirmLink(BaseModel):
     child_telegram_id: int
-    confirm: bool  # True = tasdiqlash, False = rad etish
+    confirm: bool
 
 
 class UserSearch(BaseModel):
@@ -106,7 +101,7 @@ def user_to_response(user: User) -> dict:
         "streak_days": gp.streak_days if gp else 0,
         "badges": gp.badges if gp else [],
         "parent_id": str(user.parent_id) if user.parent_id else None,
-        "pending_parent_username": user.pending_parent_username if hasattr(user, 'pending_parent_username') else None,
+        "pending_parent_username": None,
     }
 
 
@@ -114,17 +109,16 @@ def user_to_response(user: User) -> dict:
 
 @router.post("/register", response_model=UserResponse)
 async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
-    """Mini App dan ro'yxatdan o'tish. Agar mavjud bo'lsa — profilni qaytaradi."""
+    """Mini App dan ro'yxatdan o'tish. Agar mavjud bo'lsa — profilni yangilaydi."""
 
-    # telegram_id=0 demo rejim — unique ID berish va yangi user yaratish
-    is_demo = not data.telegram_id or data.telegram_id == 0
-    if is_demo:
-        # timestamp (ms) + random = collision ehtimoli deyarli 0
-        data.telegram_id = int(time.time() * 1000) % 9000000000 + random.randint(100000, 999999)
+    if not data.telegram_id:
+        raise HTTPException(status_code=400, detail="Telegram ID majburiy")
+
+    if data.role not in ("student", "teacher", "parent", "director"):
+        raise HTTPException(status_code=400, detail="Noto'g'ri rol")
 
     existing = await find_user_by_telegram_id(data.telegram_id, db, role=data.role)
     if existing:
-        # Mavjud user — profilni yangilash
         existing.full_name = data.full_name
         if data.username:
             existing.username = data.username
@@ -182,9 +176,32 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
     return user_to_response(user)
 
 
+@router.get("/roles")
+async def get_user_roles(telegram_id: int, db: AsyncSession = Depends(get_db)):
+    """Telegram ID bo'yicha barcha rollarni qaytarish (auto-login uchun)."""
+    result = await db.execute(
+        select(User).where(User.telegram_id == telegram_id).order_by(User.created_at)
+    )
+    users = result.scalars().all()
+
+    return {
+        "roles": [
+            {
+                "role": u.role,
+                "id": str(u.id),
+                "full_name": u.full_name,
+                "viloyat": u.viloyat,
+                "tuman": u.tuman,
+                "maktab": u.maktab,
+            }
+            for u in users
+        ]
+    }
+
+
 @router.get("/me")
 async def get_me(telegram_id: int, role: str = None, db: AsyncSession = Depends(get_db)):
-    """Telegram ID bo'yicha profil olish. role parametri bilan aniq rol tanlash."""
+    """Telegram ID bo'yicha profil olish."""
     user = await find_user_by_telegram_id(telegram_id, db, role=role)
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
@@ -220,12 +237,10 @@ async def search_user(username: str, db: AsyncSession = Depends(get_db)):
 @router.post("/link-parent")
 async def link_parent(data: LinkRequest, db: AsyncSession = Depends(get_db)):
     """Ota-ona farzandga bog'lanish so'rovi yuboradi."""
-    # Ota-onani tekshirish
-    parent = await find_user_by_telegram_id(data.parent_telegram_id, db)
-    if not parent or parent.role != "parent":
+    parent = await find_user_by_telegram_id(data.parent_telegram_id, db, role="parent")
+    if not parent:
         raise HTTPException(status_code=400, detail="Ota-ona topilmadi")
 
-    # Farzandni username bo'yicha topish
     cleaned = data.child_username.replace("@", "").strip().lower()
     result = await db.execute(
         select(User).where(
@@ -240,7 +255,17 @@ async def link_parent(data: LinkRequest, db: AsyncSession = Depends(get_db)):
     if child.parent_id:
         raise HTTPException(status_code=400, detail="Bu o'quvchi allaqachon bog'langan")
 
-    # Pending link saqlash — child ga so'rov yuborish
+    # Agar ota-ona va farzand bitta telegram_id bo'lsa — avtomatik tasdiqlash
+    if child.telegram_id == parent.telegram_id:
+        child.parent_id = parent.id
+        await db.flush()
+        return {
+            "status": "confirmed",
+            "message": f"{child.full_name} avtomatik bog'landi",
+            "child_name": child.full_name,
+            "child_grade": child.grade,
+        }
+
     child.pending_parent_id = parent.id
     await db.flush()
 
@@ -255,14 +280,13 @@ async def link_parent(data: LinkRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/pending-parent")
 async def get_pending_parent(telegram_id: int, db: AsyncSession = Depends(get_db)):
     """O'quvchi uchun — kutilayotgan ota-ona so'rovini ko'rish."""
-    user = await find_user_by_telegram_id(telegram_id, db)
+    user = await find_user_by_telegram_id(telegram_id, db, role="student")
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
 
     if not user.pending_parent_id:
         return {"has_pending": False}
 
-    # Ota-ona ma'lumotlarini olish
     result = await db.execute(select(User).where(User.id == user.pending_parent_id))
     parent = result.scalar_one_or_none()
 
@@ -279,7 +303,7 @@ async def get_pending_parent(telegram_id: int, db: AsyncSession = Depends(get_db
 @router.post("/confirm-parent")
 async def confirm_parent(data: ConfirmLink, db: AsyncSession = Depends(get_db)):
     """O'quvchi ota-onani tasdiqlaydi yoki rad etadi."""
-    child = await find_user_by_telegram_id(data.child_telegram_id, db)
+    child = await find_user_by_telegram_id(data.child_telegram_id, db, role="student")
     if not child:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
 
@@ -310,7 +334,6 @@ async def get_all_students(maktab: str = None, db: AsyncSession = Depends(get_db
 
     student_list = []
     for s in students:
-        # Oxirgi submission va o'rtacha ball
         sub_result = await db.execute(
             select(
                 func.count(Submission.id).label("count"),
@@ -384,11 +407,10 @@ async def get_student_submissions(telegram_id: int, db: AsyncSession = Depends(g
 @router.get("/child-data")
 async def get_child_data(parent_telegram_id: int, db: AsyncSession = Depends(get_db)):
     """Ota-ona uchun — farzand ma'lumotlari + submissionlari."""
-    parent = await find_user_by_telegram_id(parent_telegram_id, db)
-    if not parent or parent.role != "parent":
+    parent = await find_user_by_telegram_id(parent_telegram_id, db, role="parent")
+    if not parent:
         raise HTTPException(status_code=404, detail="Ota-ona topilmadi")
 
-    # Farzandni topish (parent_id orqali)
     result = await db.execute(
         select(User).where(User.parent_id == parent.id, User.role == "student")
     )
@@ -396,7 +418,6 @@ async def get_child_data(parent_telegram_id: int, db: AsyncSession = Depends(get
     if not child:
         return {"linked": False, "message": "Farzand hali bog'lanmagan"}
 
-    # Farzandning submissionlari
     sub_result = await db.execute(
         select(Submission)
         .where(Submission.student_id == child.id, Submission.status == "completed")
@@ -405,7 +426,6 @@ async def get_child_data(parent_telegram_id: int, db: AsyncSession = Depends(get
     )
     submissions = sub_result.scalars().all()
 
-    # Statistika
     avg_score = sum(s.score or 0 for s in submissions) / len(submissions) if submissions else 0
     weak_topics = set()
     for sub in submissions:

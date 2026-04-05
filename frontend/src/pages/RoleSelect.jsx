@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { GraduationCap, BookOpen, Users, Building2 } from 'lucide-react'
+import { GraduationCap, BookOpen, Users, Building2, UserPlus } from 'lucide-react'
 
 export default function RoleSelect() {
   const navigate = useNavigate()
@@ -22,70 +22,82 @@ export default function RoleSelect() {
         </div>
 
         {/* Rol tanlash */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <p className="text-center text-white/80 text-sm mb-2">Kim sifatida kirmoqchisiz?</p>
 
           {/* O'qituvchi */}
           <button
             onClick={() => selectRole('teacher')}
-            className="w-full bg-white rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-7 h-7 text-primary-600" />
+            <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-6 h-6 text-primary-600" />
             </div>
             <div className="text-left">
-              <h3 className="text-lg font-semibold text-gray-800">O'qituvchi</h3>
-              <p className="text-sm text-gray-500">Sinf va o'quvchilarni boshqarish, statistika</p>
+              <h3 className="text-base font-semibold text-gray-800">O'qituvchi</h3>
+              <p className="text-xs text-gray-500">Sinf va o'quvchilarni boshqarish</p>
             </div>
           </button>
 
           {/* O'quvchi */}
           <button
             onClick={() => selectRole('student')}
-            className="w-full bg-white rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <div className="w-14 h-14 bg-success-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-7 h-7 text-success-600" />
+            <div className="w-12 h-12 bg-success-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-6 h-6 text-success-600" />
             </div>
             <div className="text-left">
-              <h3 className="text-lg font-semibold text-gray-800">O'quvchi</h3>
-              <p className="text-sm text-gray-500">Vazifani suratga olib tekshirish, AI bilan suhbat</p>
+              <h3 className="text-base font-semibold text-gray-800">O'quvchi</h3>
+              <p className="text-xs text-gray-500">Vazifani tekshirish, AI bilan suhbat</p>
             </div>
           </button>
 
           {/* Ota-ona */}
           <button
             onClick={() => selectRole('parent')}
-            className="w-full bg-white rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <div className="w-14 h-14 bg-accent-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Users className="w-7 h-7 text-accent-600" />
+            <div className="w-12 h-12 bg-accent-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Users className="w-6 h-6 text-accent-600" />
             </div>
             <div className="text-left">
-              <h3 className="text-lg font-semibold text-gray-800">Ota-ona</h3>
-              <p className="text-sm text-gray-500">Farzandingiz natijalarini kuzating</p>
+              <h3 className="text-base font-semibold text-gray-800">Ota-ona</h3>
+              <p className="text-xs text-gray-500">Farzandingiz natijalarini kuzating</p>
             </div>
           </button>
 
-          {/* Xalq ta'limi vazirligi */}
-          <a
-            href="https://tekshiraixalqtalimistatusi-production.up.railway.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full bg-white rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] block"
+          {/* Ota-ona va O'quvchi */}
+          <button
+            onClick={() => selectRole('parent_student')}
+            className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-7 h-7 text-purple-600" />
+            <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <UserPlus className="w-6 h-6 text-teal-600" />
             </div>
             <div className="text-left">
-              <h3 className="text-lg font-semibold text-gray-800">Xalq ta'limi vazirligi</h3>
-              <p className="text-sm text-gray-500">Umumiy ta'lim tizimi monitoringi</p>
+              <h3 className="text-base font-semibold text-gray-800">Ota-ona va O'quvchi</h3>
+              <p className="text-xs text-gray-500">Bitta akkauntda ikki rol</p>
             </div>
-          </a>
+          </button>
+
+          {/* Maktab direktori */}
+          <button
+            onClick={() => selectRole('director')}
+            className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-base font-semibold text-gray-800">Maktab direktori</h3>
+              <p className="text-xs text-gray-500">Maktab statistikasi va monitoring</p>
+            </div>
+          </button>
         </div>
 
-        <p className="text-center text-white/50 text-xs mt-8">
-          Termiz Milliy AI Hackathon 2026
+        <p className="text-center text-white/50 text-xs mt-6">
+          TekshirAI 2026
         </p>
       </div>
     </div>

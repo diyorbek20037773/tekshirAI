@@ -38,12 +38,14 @@ async def role_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     """Rol tanlanganda."""
     text = update.message.text
 
-    if "O'quvchi" in text:
+    if "O'quvchi" in text and "Ota-ona" not in text:
         context.user_data["role"] = "student"
     elif "O'qituvchi" in text:
         context.user_data["role"] = "teacher"
     elif "Ota-ona" in text:
         context.user_data["role"] = "parent"
+    elif "Direktor" in text:
+        context.user_data["role"] = "director"
     else:
         await update.message.reply_text(
             "Iltimos, quyidagi tugmalardan birini tanlang:",
@@ -71,15 +73,19 @@ async def name_entered(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             reply_markup=grade_keyboard(),
         )
         return GRADE
-    elif role == "teacher":
+    elif role in ("teacher", "director"):
         await update.message.reply_text(
             REGISTRATION_SUBJECT,
             reply_markup=subject_keyboard(),
         )
         return SUBJECT
     else:
-        # Ota-ona — to'g'ridan-to'g'ri saqlash
-        return await _save_user(update, context)
+        # Ota-ona — fan tanlash
+        await update.message.reply_text(
+            REGISTRATION_SUBJECT,
+            reply_markup=subject_keyboard(),
+        )
+        return SUBJECT
 
 
 async def grade_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -108,7 +114,6 @@ async def subject_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     """Fan tanlanganda — ro'yxatdan o'tishni yakunlash."""
     text = update.message.text.strip()
 
-    # Emoji ni olib tashlash
     subject_map = {
         "Matematika": "Matematika",
         "Fizika": "Fizika",
@@ -124,7 +129,7 @@ async def subject_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             break
 
     if not subject:
-        subject = text  # Boshqa fan kiritilgan bo'lsa
+        subject = text
 
     context.user_data["subject"] = subject
     return await _save_user(update, context)
@@ -148,14 +153,12 @@ async def _save_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         session.add(user)
         await session.flush()
 
-        # Gamification profil yaratish (o'quvchilar uchun)
         if data["role"] == "student":
             game_profile = UserGameProfile(user_id=user.id)
             session.add(game_profile)
 
         await session.commit()
 
-    # Xabar yuborish
     role = data["role"]
     if role == "student":
         msg = REGISTRATION_SUCCESS.format(
@@ -167,6 +170,13 @@ async def _save_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         msg = REGISTRATION_TEACHER_SUCCESS.format(
             name=data["name"],
             subject=data.get("subject", "?"),
+        )
+    elif role == "director":
+        msg = (
+            f"✅ Maktab direktori sifatida ro'yxatdan o'tdingiz!\n\n"
+            f"👤 Ism: {data['name']}\n"
+            f"📐 Mutaxassislik: {data.get('subject', '?')}\n\n"
+            f"Mini app orqali maktab statistikasini ko'ring."
         )
     else:
         msg = REGISTRATION_PARENT_SUCCESS.format(name=data["name"])
@@ -193,14 +203,14 @@ def get_registration_handler() -> ConversationHandler:
     return ConversationHandler(
         entry_points=[
             MessageHandler(
-                filters.Regex(r"(O'quvchi|O'qituvchi|Ota-ona)"),
+                filters.Regex(r"(O'quvchi|O'qituvchi|Ota-ona|Direktor)"),
                 role_chosen,
             ),
         ],
         states={
             ROLE: [
                 MessageHandler(
-                    filters.Regex(r"(O'quvchi|O'qituvchi|Ota-ona)"),
+                    filters.Regex(r"(O'quvchi|O'qituvchi|Ota-ona|Direktor)"),
                     role_chosen,
                 ),
             ],

@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-this-secret-key"
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
+    # Admin
+    ADMIN_TELEGRAM_IDS: str = ""
+
     # Limits
     FREE_DAILY_LIMIT: int = 3
     PREMIUM_DAILY_LIMIT: int = 999
@@ -40,6 +43,11 @@ class Settings(BaseSettings):
     def gemini_keys(self) -> List[str]:
         """Gemini API kalitlar ro'yxati"""
         return [k.strip() for k in self.GEMINI_API_KEYS.split(",") if k.strip()]
+
+    @property
+    def admin_telegram_ids(self) -> List[int]:
+        """Admin Telegram ID lar ro'yxati"""
+        return [int(x.strip()) for x in self.ADMIN_TELEGRAM_IDS.split(",") if x.strip()]
 
     @property
     def cors_origins(self) -> List[str]:

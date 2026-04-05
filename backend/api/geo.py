@@ -1,15 +1,17 @@
-"""Geolokatsiya API — viloyat/tuman aniqlash, maktablar ro'yxati."""
+"""Geolokatsiya API — viloyat/tuman aniqlash."""
 
 import json
 import logging
 from pathlib import Path
 from fastapi import APIRouter, Query
+from shapely.geometry import shape, Point
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/geo", tags=["geo"])
 
 # GeoJSON bir marta yuklanadi
 _geojson_cache = None
+_shapes_cache = None
 GEOJSON_PATH = Path(__file__).parent.parent / "data" / "uz-tumanlar.geojson"
 
 VILOYATLAR = [
@@ -31,63 +33,73 @@ VILOYATLAR = [
 
 
 def _load_geojson():
-    global _geojson_cache
+    global _geojson_cache, _shapes_cache
     if _geojson_cache is not None:
         return _geojson_cache
     try:
         with open(GEOJSON_PATH, "r", encoding="utf-8") as f:
             _geojson_cache = json.load(f)
-        logger.info(f"GeoJSON yuklandi: {len(_geojson_cache['features'])} tuman")
+        # Shapely obyektlarni oldindan yaratish
+        _shapes_cache = []
+        for feature in _geojson_cache["features"]:
+            try:
+                geom = shape(feature["geometry"])
+                _shapes_cache.append((geom, feature["properties"]))
+            except Exception:
+                pass
+        logger.info(f"GeoJSON yuklandi: {len(_shapes_cache)} tuman (shapely)")
     except Exception as e:
         logger.error(f"GeoJSON yuklashda xato: {e}")
         _geojson_cache = {"features": []}
+        _shapes_cache = []
     return _geojson_cache
 
 
-def _point_in_polygon(lat: float, lng: float, ring: list) -> bool:
-    """Ray casting algorithm. GeoJSON coordinates: [longitude, latitude]."""
-    inside = False
-    n = len(ring)
-    j = n - 1
-    for i in range(n):
-        # GeoJSON: ring[i] = [longitude, latitude]
-        ring_lat_i, ring_lng_i = ring[i][1], ring[i][0]
-        ring_lat_j, ring_lng_j = ring[j][1], ring[j][0]
-        if (ring_lat_i > lat) != (ring_lat_j > lat) and \
-           lng < ((ring_lng_j - ring_lng_i) * (lat - ring_lat_i)) / (ring_lat_j - ring_lat_i) + ring_lng_i:
-            inside = not inside
-        j = i
-    return inside
-
-
 def _detect_location(lat: float, lng: float) -> dict | None:
-    """Lat/lng dan viloyat va tumanni aniqlash."""
-    geo = _load_geojson()
-    for feature in geo["features"]:
-        props = feature["properties"]
-        geom = feature["geometry"]
+    """Lat/lng dan viloyat va tumanni aniqlash (shapely bilan)."""
+    _load_geojson()
+    if not _shapes_cache:
+        return None
 
-        if geom["type"] == "Polygon":
-            rings = [geom["coordinates"][0]]
-        elif geom["type"] == "MultiPolygon":
-            rings = [p[0] for p in geom["coordinates"]]
-        else:
-            continue
+    point = Point(lng, lat)  # shapely: (x=lng, y=lat)
 
-        for ring in rings:
-            if _point_in_polygon(lat, lng, ring):
-                viloyat_nom = props.get("viloyat", "")
-                # Viloyat kodini topish
-                viloyat_kod = ""
-                for v in VILOYATLAR:
-                    if v["nom"] == viloyat_nom:
-                        viloyat_kod = v["kod"]
-                        break
-                return {
-                    "viloyat": viloyat_nom,
-                    "viloyat_kod": viloyat_kod,
-                    "tuman": props.get("name", ""),
-                }
+    for geom, props in _shapes_cache:
+        if geom.contains(point):
+            viloyat_nom = props.get("viloyat", "")
+            viloyat_kod = ""
+            for v in VILOYATLAR:
+                if v["nom"] == viloyat_nom:
+                    viloyat_kod = v["kod"]
+                    break
+            return {
+                "viloyat": viloyat_nom,
+                "viloyat_kod": viloyat_kod,
+                "tuman": props.get("name", ""),
+            }
+
+    # Fallback: eng yaqin tumanni topish (5 km ichida)
+    min_dist = float("inf")
+    closest = None
+    for geom, props in _shapes_cache:
+        dist = geom.distance(point)
+        if dist < min_dist:
+            min_dist = dist
+            closest = props
+
+    # ~0.05 daraja ≈ 5 km
+    if closest and min_dist < 0.05:
+        viloyat_nom = closest.get("viloyat", "")
+        viloyat_kod = ""
+        for v in VILOYATLAR:
+            if v["nom"] == viloyat_nom:
+                viloyat_kod = v["kod"]
+                break
+        return {
+            "viloyat": viloyat_nom,
+            "viloyat_kod": viloyat_kod,
+            "tuman": closest.get("name", ""),
+        }
+
     return None
 
 
@@ -117,12 +129,3 @@ async def get_tumanlar(viloyat: str = Query(..., description="Viloyat nomi")):
             tumanlar.append(props.get("name", ""))
     tumanlar.sort()
     return tumanlar
-
-
-@router.get("/maktablar")
-async def get_maktablar(tuman: str = Query(..., description="Tuman nomi")):
-    """Tuman bo'yicha maktablar ro'yxati (1-sonli...60-sonli)."""
-    # Tuman nomiga qarab maktab soni generatsiya qilish
-    count = 35 + (hash(tuman) % 30)
-    maktablar = [f"{i + 1}-sonli umumta'lim maktabi" for i in range(count)]
-    return maktablar

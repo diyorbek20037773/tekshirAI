@@ -16,7 +16,7 @@ class User(Base):
     telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     username: Mapped[str | None] = mapped_column(String(100))
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    role: Mapped[str] = mapped_column(String(20), nullable=False)  # student, teacher, parent
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # student, teacher, parent, director, admin
     gender: Mapped[str | None] = mapped_column(String(10))  # male, female
     grade: Mapped[int | None] = mapped_column(Integer)  # 1-11 sinf
     subject: Mapped[str | None] = mapped_column(String(100))  # o'qituvchi fani
@@ -45,7 +45,7 @@ class User(Base):
     game_profile = relationship("UserGameProfile", back_populates="user", uselist=False, lazy="selectin")
 
     __table_args__ = (
-        CheckConstraint("role IN ('student', 'teacher', 'parent')", name="check_user_role"),
+        CheckConstraint("role IN ('student', 'teacher', 'parent', 'director', 'admin')", name="check_user_role"),
         CheckConstraint("grade IS NULL OR (grade >= 1 AND grade <= 11)", name="check_grade_range"),
     )
 

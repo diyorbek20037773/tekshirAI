@@ -12,6 +12,7 @@ from backend.api.analysis import router as analysis_router
 from backend.api.chat import router as chat_router
 from backend.api.geo import router as geo_router
 from backend.api.admin import router as admin_router
+from backend.api.director import router as director_router
 
 api_router = APIRouter()
 
@@ -25,3 +26,4 @@ api_router.include_router(analysis_router)
 api_router.include_router(chat_router)
 api_router.include_router(geo_router)
 api_router.include_router(admin_router)
+api_router.include_router(director_router)

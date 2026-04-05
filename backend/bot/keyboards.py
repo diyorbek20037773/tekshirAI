@@ -6,11 +6,11 @@ from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMa
 # === Reply Keyboards ===
 
 def role_keyboard():
-    """Rol tanlash (student/teacher/parent)."""
+    """Rol tanlash."""
     return ReplyKeyboardMarkup(
         [
             ["📚 O'quvchi", "👨‍🏫 O'qituvchi"],
-            ["👨‍👩‍👦 Ota-ona"],
+            ["👨‍👩‍👦 Ota-ona", "🏫 Direktor"],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,

@@ -56,6 +56,9 @@ async def lifespan(app: FastAPI):
                 # Bitta telegram_id dan bir nechta rol (ota-ona + farzand)
                 "DROP INDEX IF EXISTS ix_users_telegram_id",
                 "CREATE INDEX IF NOT EXISTS ix_users_telegram_id ON users (telegram_id)",
+                # Yangi rollar: director, admin
+                "ALTER TABLE users DROP CONSTRAINT IF EXISTS check_user_role",
+                "ALTER TABLE users ADD CONSTRAINT check_user_role CHECK (role IN ('student', 'teacher', 'parent', 'director', 'admin'))",
             ]
             for sql in migrations:
                 try:
