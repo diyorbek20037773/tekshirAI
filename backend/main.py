@@ -19,8 +19,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Frontend build papkasi
+# Frontend va Admin build papkalari
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "dist"
+ADMIN_DIR = Path(__file__).parent.parent / "admin_panel" / "dist"
 
 # Bot instance (global)
 bot_app = None
@@ -34,40 +35,54 @@ async def lifespan(app: FastAPI):
     logger.info("TekshirAI backend ishga tushmoqda...")
     logger.info(f"Environment: {settings.APP_ENV}")
     logger.info(f"Frontend dir: {FRONTEND_DIR} (exists: {FRONTEND_DIR.exists()})")
+    logger.info(f"Admin dir: {ADMIN_DIR} (exists: {ADMIN_DIR.exists()})")
 
-    # DB jadvallarni yaratish / yangilash
-    try:
-        from sqlalchemy import text
-        from backend.database import engine, Base
-        import backend.models.user
-        import backend.models.submission
-        import backend.models.classroom
-        import backend.models.conversation
-        import backend.models.rating
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            # Yangi ustunlar qo'shish (create_all mavjud jadvalga ustun qo'shmaydi)
-            migrations = [
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_parent_id UUID REFERENCES users(id)",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(10)",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS viloyat VARCHAR(100)",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS tuman VARCHAR(100)",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS maktab VARCHAR(200)",
-                # Bitta telegram_id dan bir nechta rol (ota-ona + farzand)
-                "DROP INDEX IF EXISTS ix_users_telegram_id",
-                "CREATE INDEX IF NOT EXISTS ix_users_telegram_id ON users (telegram_id)",
-                # Yangi rollar: director, admin
-                "ALTER TABLE users DROP CONSTRAINT IF EXISTS check_user_role",
-                "ALTER TABLE users ADD CONSTRAINT check_user_role CHECK (role IN ('student', 'teacher', 'parent', 'director', 'admin'))",
-            ]
-            for sql in migrations:
-                try:
-                    await conn.execute(text(sql))
-                except Exception:
-                    pass
-        logger.info("DB jadvallar tekshirildi / yaratildi")
-    except Exception as e:
-        logger.error(f"DB yaratishda xato: {e}")
+    # DB URL masklangan log (debug uchun)
+    db_url = settings.DATABASE_URL
+    if "@" in db_url:
+        masked = db_url.split("@")[0][:30] + "...@" + db_url.split("@")[1]
+    else:
+        masked = db_url[:40] + "..."
+    logger.info(f"DATABASE_URL: {masked}")
+
+    # DB jadvallarni yaratish / yangilash (retry bilan)
+    for attempt in range(3):
+        try:
+            from sqlalchemy import text
+            from backend.database import engine, Base
+            import backend.models.user
+            import backend.models.submission
+            import backend.models.classroom
+            import backend.models.conversation
+            import backend.models.rating
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                # Yangi ustunlar qo'shish (create_all mavjud jadvalga ustun qo'shmaydi)
+                migrations = [
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_parent_id UUID REFERENCES users(id)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(10)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS viloyat VARCHAR(100)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS tuman VARCHAR(100)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS maktab VARCHAR(200)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT true",
+                    # Bitta telegram_id dan bir nechta rol (ota-ona + farzand)
+                    "DROP INDEX IF EXISTS ix_users_telegram_id",
+                    "CREATE INDEX IF NOT EXISTS ix_users_telegram_id ON users (telegram_id)",
+                    # Yangi rollar: director, admin
+                    "ALTER TABLE users DROP CONSTRAINT IF EXISTS check_user_role",
+                    "ALTER TABLE users ADD CONSTRAINT check_user_role CHECK (role IN ('student', 'teacher', 'parent', 'director', 'admin'))",
+                ]
+                for sql in migrations:
+                    try:
+                        await conn.execute(text(sql))
+                    except Exception:
+                        pass
+            logger.info("DB jadvallar tekshirildi / yaratildi")
+            break
+        except Exception as e:
+            logger.error(f"DB yaratishda xato (urinish {attempt + 1}/3): {e}")
+            if attempt < 2:
+                await asyncio.sleep(2)
 
     # Telegram bot ishga tushirish
     if settings.TELEGRAM_BOT_TOKEN:
@@ -123,9 +138,23 @@ async def health():
     return {"status": "ok", "bot_running": bot_app is not None}
 
 
+# Admin panel static fayllar
+if ADMIN_DIR.exists() and (ADMIN_DIR / "assets").exists():
+    app.mount("/admin/assets", StaticFiles(directory=ADMIN_DIR / "assets"), name="admin-assets")
+
 # Frontend static fayllar (agar build qilingan bo'lsa)
 if FRONTEND_DIR.exists() and (FRONTEND_DIR / "assets").exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
+
+    @app.get("/admin/{full_path:path}")
+    async def serve_admin(request: Request, full_path: str = ""):
+        """Admin panel SPA serve"""
+        if not ADMIN_DIR.exists():
+            return {"detail": "Admin panel build qilinmagan"}
+        file_path = ADMIN_DIR / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(ADMIN_DIR / "index.html")
 
     @app.get("/{full_path:path}")
     async def serve_frontend(request: Request, full_path: str):

@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout';
 import DashboardPage from './pages/DashboardPage';
 import FoydalanuvchilarPage from './pages/FoydalanuvchilarPage';
 import TekshiruvlarPage from './pages/TekshiruvlarPage';
+import DirektorlarPage from './pages/DirektorlarPage';
 import ProfilPage from './pages/ProfilPage';
 import LoginPage from './pages/LoginPage';
 
@@ -37,6 +38,7 @@ export default function App() {
           <Route index element={<DashboardPage adminId={adminId} />} />
           <Route path="foydalanuvchilar" element={<FoydalanuvchilarPage adminId={adminId} />} />
           <Route path="tekshiruvlar" element={<TekshiruvlarPage adminId={adminId} />} />
+          <Route path="direktorlar" element={<DirektorlarPage adminId={adminId} />} />
           <Route path="profil" element={<ProfilPage adminId={adminId} onLogout={handleLogout} />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

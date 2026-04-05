@@ -193,6 +193,59 @@ async def get_ratings(telegram_id: int = Query(...), db: AsyncSession = Depends(
     }
 
 
+@router.get("/pending-directors")
+async def get_pending_directors(telegram_id: int = Query(...), db: AsyncSession = Depends(get_db)):
+    """Tasdiqlanmagan direktorlar ro'yxati."""
+    verify_admin(telegram_id)
+
+    result = await db.execute(
+        select(User).where(User.role == "director", User.is_approved == False)
+        .order_by(User.created_at.desc())
+    )
+    directors = result.scalars().all()
+
+    return [
+        {
+            "id": str(d.id),
+            "telegram_id": d.telegram_id,
+            "full_name": d.full_name,
+            "username": d.username,
+            "viloyat": d.viloyat,
+            "tuman": d.tuman,
+            "maktab": d.maktab,
+            "created_at": d.created_at.isoformat() if d.created_at else None,
+        }
+        for d in directors
+    ]
+
+
+@router.post("/approve-director")
+async def approve_director(
+    telegram_id: int = Query(...),
+    director_id: str = Query(...),
+    approve: bool = Query(True),
+    db: AsyncSession = Depends(get_db),
+):
+    """Direktorni tasdiqlash yoki rad etish."""
+    verify_admin(telegram_id)
+
+    from uuid import UUID
+    result = await db.execute(select(User).where(User.id == UUID(director_id)))
+    director = result.scalar_one_or_none()
+
+    if not director:
+        raise HTTPException(status_code=404, detail="Direktor topilmadi")
+
+    if approve:
+        director.is_approved = True
+        await db.flush()
+        return {"status": "approved", "message": f"{director.full_name} tasdiqlandi"}
+    else:
+        await db.delete(director)
+        await db.flush()
+        return {"status": "rejected", "message": f"{director.full_name} rad etildi"}
+
+
 @router.get("/submissions-stats")
 async def get_submissions_stats(telegram_id: int = Query(...), db: AsyncSession = Depends(get_db)):
     """Tekshiruvlar bo'yicha batafsil statistika."""

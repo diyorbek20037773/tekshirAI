@@ -11,10 +11,22 @@ export default function DirectorDashboard() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submissions, setSubmissions] = useState([])
+  const [pendingApproval, setPendingApproval] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
     try {
+      // Avval profil tekshirish — tasdiqlangan yoki yo'q
+      const meRes = await fetch(`/api/users/me?telegram_id=${telegramId}&role=director`)
+      if (meRes.ok) {
+        const me = await meRes.json()
+        if (!me.is_approved) {
+          setPendingApproval(true)
+          setLoading(false)
+          return
+        }
+      }
+
       const [statsRes, subsRes] = await Promise.all([
         fetch(`/api/director/stats?telegram_id=${telegramId}`),
         fetch(`/api/director/submissions?telegram_id=${telegramId}&limit=10`),
@@ -37,6 +49,30 @@ export default function DirectorDashboard() {
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="animate-spin rounded-full h-10 w-10 border-4 border-purple-200 border-t-purple-500" />
+    </div>
+  )
+
+  if (pendingApproval) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-sm text-center">
+        <div className="w-20 h-20 bg-yellow-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span className="text-4xl">⏳</span>
+        </div>
+        <h1 className="text-xl font-bold text-gray-800 mb-2">Tasdiqlash kutilmoqda</h1>
+        <p className="text-sm text-gray-500 mb-4">
+          Sizning direktor so'rovingiz admin tomonidan ko'rib chiqilmoqda.
+          Tasdiqlangandan so'ng dashboard ochiladi.
+        </p>
+        <p className="text-xs text-gray-400">Maktab: {directorMaktab}</p>
+        <button onClick={() => { fetchData() }}
+          className="mt-4 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200 transition">
+          Qayta tekshirish
+        </button>
+        <button onClick={logout}
+          className="mt-2 block w-full text-sm text-gray-400 hover:text-red-500">
+          Chiqish
+        </button>
+      </div>
     </div>
   )
 

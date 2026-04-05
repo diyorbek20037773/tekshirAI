@@ -1,15 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { GraduationCap, BookOpen, Users, Building2, UserPlus, Shield } from 'lucide-react'
 
-const ADMIN_PANEL_URL = 'https://tekshirai-admin.up.railway.app'
-
 export default function RoleSelect() {
   const navigate = useNavigate()
 
   const selectRole = (role) => {
     if (role === 'admin') {
-      // Admin panelga yo'naltirish (tashqi sahifa)
-      window.open(ADMIN_PANEL_URL, '_blank')
+      // Admin panelga yo'naltirish (shu backend dan serve)
+      window.open('/admin', '_blank')
       return
     }
     localStorage.setItem('userRole', role)

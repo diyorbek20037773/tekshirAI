@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, User, LogOut, Shield, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Users, User, LogOut, Shield, BarChart3, Building2 } from 'lucide-react';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/foydalanuvchilar', icon: Users, label: 'Foydalanuvchilar' },
   { to: '/tekshiruvlar', icon: BarChart3, label: 'Tekshiruvlar' },
+  { to: '/direktorlar', icon: Building2, label: 'Direktorlar' },
   { to: '/profil', icon: User, label: 'Profil' },
 ];
 

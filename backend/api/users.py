@@ -47,6 +47,7 @@ class UserResponse(BaseModel):
     level: int = 1
     streak_days: int = 0
     badges: list = []
+    is_approved: bool = True
     parent_id: str | None = None
     pending_parent_username: str | None = None
 
@@ -95,6 +96,7 @@ def user_to_response(user: User) -> dict:
         "viloyat": user.viloyat,
         "tuman": user.tuman,
         "maktab": user.maktab,
+        "is_approved": user.is_approved if hasattr(user, 'is_approved') else True,
         "is_premium": user.is_premium,
         "xp": gp.xp if gp else 0,
         "level": gp.level if gp else 1,
@@ -150,6 +152,7 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
         viloyat=data.viloyat,
         tuman=data.tuman,
         maktab=data.maktab,
+        is_approved=data.role != "director",  # Direktor admin tasdiqlashi kerak
         daily_reset_date=date.today(),
     )
     db.add(user)

@@ -32,6 +32,9 @@ class User(Base):
     daily_submissions_count: Mapped[int] = mapped_column(Integer, default=0)
     daily_reset_date: Mapped[date] = mapped_column(Date, default=date.today)
 
+    # Tasdiqlash (direktor uchun admin tasdiqlaydi)
+    is_approved: Mapped[bool] = mapped_column(Boolean, default=True)
+
     # Ota-ona bog'lanishi
     parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     pending_parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
