@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, BookCheck, Target, AlertCircle, Compass, Star, Lightbulb, GraduationCap, RefreshCw, Edit3, Download, Check, X, Image } from 'lucide-react'
-import { STUDENTS, STUDENT_HISTORY, BADGES_CATALOG, LEVELS } from '../../data/synthetic'
 import { jsPDF } from 'jspdf'
 
 function SubmissionCard({ sub, studentName }) {
@@ -232,10 +231,6 @@ function CareerPredictionCard({ careerPrediction, careerLoading, onFetch }) {
 export default function TeacherStudent() {
   const { id } = useParams()
 
-  // Synthetic data (demo uchun)
-  const demoStudent = STUDENTS.find(s => s.id === id)
-
-  // Real data
   const [realData, setRealData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [careerPrediction, setCareerPrediction] = useState(null)
@@ -252,89 +247,13 @@ export default function TeacherStudent() {
   }
 
   useEffect(() => {
-    // id raqam bo'lsa — real telegram_id, aks holda demo
-    if (!isNaN(id) && Number(id) > 100) {
-      fetch(`/api/users/student/${id}/submissions`)
-        .then(r => r.json())
-        .then(data => setRealData(data))
-        .catch(() => {})
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
-    }
+    fetch(`/api/users/student/${id}/submissions`)
+      .then(r => r.json())
+      .then(data => setRealData(data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [id])
 
-  // Demo student view
-  if (demoStudent && !realData) {
-    const levelInfo = LEVELS.find(l => l.level === demoStudent.level) || LEVELS[0]
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b border-gray-200 px-4 py-4">
-          <div className="max-w-lg mx-auto flex items-center gap-3">
-            <Link to="/teacher" className="p-2 hover:bg-gray-100 rounded-lg">
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </Link>
-            <img src="/avatars/boy.jpg" alt="" className="w-10 h-10 rounded-full object-cover border-2 border-gray-200" />
-            <div>
-              <h1 className="text-lg font-bold text-gray-800">{demoStudent.name}</h1>
-              <p className="text-xs text-gray-500">{demoStudent.grade}-sinf | @{demoStudent.username}</p>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-lg mx-auto p-4 space-y-4">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-white rounded-xl p-3 text-center border border-gray-100">
-              <p className="text-lg font-bold text-gray-800">{STUDENT_HISTORY.length}</p>
-              <p className="text-[10px] text-gray-500">Tekshiruvlar</p>
-            </div>
-            <div className="bg-white rounded-xl p-3 text-center border border-gray-100">
-              <p className="text-lg font-bold text-success-600">{demoStudent.avgScore}%</p>
-              <p className="text-[10px] text-gray-500">O'rtacha</p>
-            </div>
-            <div className="bg-white rounded-xl p-3 text-center border border-gray-100">
-              <p className="text-lg font-bold text-orange-500">{demoStudent.streak}</p>
-              <p className="text-[10px] text-gray-500">Streak</p>
-            </div>
-          </div>
-          {/* === KASB YO'NALISHI (demo) === */}
-          <CareerPredictionCard
-            careerPrediction={careerPrediction}
-            careerLoading={careerLoading}
-            onFetch={() => {
-              setCareerPrediction({
-                ready: true,
-                career_directions: [
-                  { career_name: "Dasturchi / IT mutaxassis", career_emoji: "💻", match_score: 88, reason: "Matematika va mantiqiy fikrlash kuchli", key_subjects: ["Informatika", "Matematika"], advice: "Python yoki JavaScript tillarini o'rganishni boshlang" },
-                  { career_name: "Muhandis", career_emoji: "⚙️", match_score: 82, reason: "Fizika va matematika bo'yicha yaxshi natijalar", key_subjects: ["Fizika", "Matematika"], advice: "Robototexnika to'garaklariga qatnashing" },
-                  { career_name: "Moliyachi", career_emoji: "📊", match_score: 75, reason: "Raqamlar bilan ishlash qobiliyati yuqori", key_subjects: ["Matematika", "Ingliz tili"], advice: "Iqtisodiyot asoslari bilan tanishing" },
-                ],
-                overall_summary: "O'quvchi aniq fanlar bo'yicha kuchli ko'rsatkichlarga ega. Texnologiya va muhandislik sohasida katta salohiyat bor.",
-                improvement_plan: "Ingliz tili va informatikaga ko'proq e'tibor berish tavsiya etiladi.",
-                motivation: "Har bir buyuk kashfiyot bitta qadamdan boshlanadi!",
-              })
-            }}
-          />
-
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Tarix (demo)</h2>
-            {STUDENT_HISTORY.map(sub => (
-              <div key={sub.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
-                <div>
-                  <p className="text-sm text-gray-700">{sub.subject}</p>
-                  <p className="text-xs text-gray-400">{sub.date}</p>
-                </div>
-                <span className={`text-sm font-bold ${
-                  sub.score >= 80 ? 'text-success-500' : sub.score >= 60 ? 'text-accent-500' : 'text-danger-500'
-                }`}>{sub.score}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Real student view
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

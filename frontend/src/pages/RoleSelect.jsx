@@ -1,10 +1,17 @@
 import { useNavigate } from 'react-router-dom'
-import { GraduationCap, BookOpen, Users, Building2, UserPlus } from 'lucide-react'
+import { GraduationCap, BookOpen, Users, Building2, UserPlus, Shield } from 'lucide-react'
+
+const ADMIN_PANEL_URL = 'https://tekshirai-admin.up.railway.app'
 
 export default function RoleSelect() {
   const navigate = useNavigate()
 
   const selectRole = (role) => {
+    if (role === 'admin') {
+      // Admin panelga yo'naltirish (tashqi sahifa)
+      window.open(ADMIN_PANEL_URL, '_blank')
+      return
+    }
     localStorage.setItem('userRole', role)
     navigate(`/${role}/setup`)
   }
@@ -92,6 +99,20 @@ export default function RoleSelect() {
             <div className="text-left">
               <h3 className="text-base font-semibold text-gray-800">Maktab direktori</h3>
               <p className="text-xs text-gray-500">Maktab statistikasi va monitoring</p>
+            </div>
+          </button>
+
+          {/* Admin */}
+          <button
+            onClick={() => selectRole('admin')}
+            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-base font-semibold text-white">Admin panel</h3>
+              <p className="text-xs text-white/60">Platformani boshqarish</p>
             </div>
           </button>
         </div>

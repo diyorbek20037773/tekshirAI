@@ -1,36 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, BookCheck, TrendingUp, School, Clock, LogOut, ChevronRight, Compass } from 'lucide-react'
+import { Users, BookCheck, TrendingUp, Clock, LogOut, Camera, X, Send, Loader2, Image, Compass } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getRandomTeacherQuote } from '../../data/quotes'
-
-// 24 ta sintetik o'quvchi
-const SINTETIK_OQUVCHILAR = [
-  { id: 's1', name: 'Aziza Karimova', gender: 'female', grade: 7, avgScore: 92, subject: 'Matematika' },
-  { id: 's2', name: 'Jasur Toshmatov', gender: 'male', grade: 7, avgScore: 88, subject: 'Matematika' },
-  { id: 's3', name: 'Nilufar Rahimova', gender: 'female', grade: 5, avgScore: 85, subject: 'Ona tili' },
-  { id: 's4', name: 'Sardor Umarov', gender: 'male', grade: 8, avgScore: 78, subject: 'Fizika' },
-  { id: 's5', name: 'Madina Qodirova', gender: 'female', grade: 6, avgScore: 95, subject: 'Biologiya' },
-  { id: 's6', name: "Bobur Aliyev", gender: 'male', grade: 9, avgScore: 72, subject: 'Kimyo' },
-  { id: 's7', name: 'Gulnora Saidova', gender: 'female', grade: 7, avgScore: 90, subject: 'Ingliz tili' },
-  { id: 's8', name: 'Sherzod Mirzayev', gender: 'male', grade: 8, avgScore: 65, subject: 'Matematika' },
-  { id: 's9', name: "Dilorom To'rayeva", gender: 'female', grade: 6, avgScore: 88, subject: 'Tarix' },
-  { id: 's10', name: 'Nodir Xasanov', gender: 'male', grade: 7, avgScore: 82, subject: 'Informatika' },
-  { id: 's11', name: 'Zulfiya Ergasheva', gender: 'female', grade: 5, avgScore: 91, subject: 'Matematika' },
-  { id: 's12', name: "Abdulloh Jo'rayev", gender: 'male', grade: 9, avgScore: 55, subject: 'Fizika' },
-  { id: 's13', name: "Kamola Ne'matova", gender: 'female', grade: 8, avgScore: 87, subject: 'Biologiya' },
-  { id: 's14', name: 'Otabek Raximov', gender: 'male', grade: 7, avgScore: 76, subject: 'Matematika' },
-  { id: 's15', name: 'Sevinch Nazarova', gender: 'female', grade: 6, avgScore: 93, subject: 'Ona tili' },
-  { id: 's16', name: 'Jamshid Kamolov', gender: 'male', grade: 8, avgScore: 69, subject: 'Kimyo' },
-  { id: 's17', name: "Mohira Qo'chqorova", gender: 'female', grade: 7, avgScore: 84, subject: 'Ingliz tili' },
-  { id: 's18', name: 'Ulugbek Tursunov', gender: 'male', grade: 9, avgScore: 81, subject: 'Informatika' },
-  { id: 's19', name: "Barno Abdullayeva", gender: 'female', grade: 5, avgScore: 96, subject: 'Matematika' },
-  { id: 's20', name: 'Dostonbek Salimov', gender: 'male', grade: 6, avgScore: 42, subject: 'Fizika' },
-  { id: 's21', name: 'Iroda Mahmudova', gender: 'female', grade: 8, avgScore: 79, subject: 'Tarix' },
-  { id: 's22', name: "Firdavs O'rinov", gender: 'male', grade: 7, avgScore: 86, subject: 'Matematika' },
-  { id: 's23', name: 'Sabina Xolmatova', gender: 'female', grade: 6, avgScore: 74, subject: 'Biologiya' },
-  { id: 's24', name: 'Asilbek Normatov', gender: 'male', grade: 9, avgScore: 61, subject: 'Kimyo' },
-]
 
 function StatCard({ icon: Icon, title, value, color }) {
   const colors = {
@@ -58,8 +30,10 @@ export default function TeacherDashboard() {
   const navigate = useNavigate()
   const teacherName = localStorage.getItem('teacherName') || "O'qituvchi"
   const teacherMaktab = localStorage.getItem('teacherMaktab') || ''
+  const teacherSubject = localStorage.getItem('teacherSubject') || ''
+  const telegramId = localStorage.getItem('telegramId')
 
-  const [realStudents, setRealStudents] = useState([])
+  const [students, setStudents] = useState([])
   const [riskData, setRiskData] = useState(null)
   const [recentSubs, setRecentSubs] = useState([])
   const [topicErrors, setTopicErrors] = useState([])
@@ -67,6 +41,18 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true)
   const [notification, setNotification] = useState(null)
   const lastSubIdRef = React.useRef(null)
+  const [teacherQuote] = useState(() => getRandomTeacherQuote())
+
+  // Vazifa yuborish
+  const [showAssignment, setShowAssignment] = useState(false)
+  const [assignmentMode, setAssignmentMode] = useState(null) // 'camera' | 'check'
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [capturedImage, setCapturedImage] = useState(null)
+  const [checking, setChecking] = useState(false)
+  const [checkResult, setCheckResult] = useState(null)
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const streamRef = useRef(null)
 
   const fetchData = () => {
     Promise.all([
@@ -76,12 +62,11 @@ export default function TeacherDashboard() {
       fetch('/api/dashboard/topic-errors-all').then(r => r.json()).catch(() => []),
       fetch('/api/dashboard/stats-all').then(r => r.json()).catch(() => null),
     ]).then(([studentsData, risksData, recent, errors, stats]) => {
-      setRealStudents(studentsData.students || [])
+      setStudents(studentsData.students || [])
       setRiskData(risksData)
       setTopicErrors(errors)
       setGlobalStats(stats)
 
-      // Yangi submission kelganmi tekshirish
       if (recent.length > 0 && lastSubIdRef.current && recent[0].id !== lastSubIdRef.current) {
         const newSub = recent[0]
         setNotification({
@@ -105,29 +90,100 @@ export default function TeacherDashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  // Sintetik + real o'quvchilar birlashtirish
-  const allStudents = [
-    ...realStudents.map(s => ({
-      id: s.id,
-      name: s.full_name,
-      gender: s.gender || 'male',
-      grade: s.grade,
-      avgScore: s.avg_score,
-      subject: s.subject,
-      submissions: s.submission_count,
-      isReal: true,
-      telegram_id: s.telegram_id,
-    })),
-    ...SINTETIK_OQUVCHILAR.map(s => ({ ...s, isReal: false })),
-  ]
+  // Kamera funksiyalari
+  const openCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      })
+      streamRef.current = stream
+      setCameraOpen(true)
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          videoRef.current.play()
+        }
+      }, 100)
+    } catch (err) {
+      alert('Kameraga ruxsat berilmadi')
+    }
+  }, [])
 
-  const totalStudents = allStudents.length
-  const avgScore = globalStats?.avg_score || (totalStudents > 0 ? Math.round(allStudents.reduce((a, s) => a + s.avgScore, 0) / totalStudents) : 0)
-  const [teacherQuote] = useState(() => getRandomTeacherQuote())
+  const closeCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+    }
+    setCameraOpen(false)
+  }, [])
+
+  const takePhoto = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d').drawImage(video, 0, 0)
+    closeCamera()
+    canvas.toBlob(blob => {
+      if (blob) setCapturedImage(blob)
+    }, 'image/jpeg', 0.85)
+  }, [closeCamera])
+
+  // O'qituvchi o'zi tekshirish (dars paytida)
+  const handleTeacherCheck = async () => {
+    if (!capturedImage) return
+    setChecking(true)
+    setCheckResult(null)
+    try {
+      const formData = new FormData()
+      formData.append('image', capturedImage, 'teacher_check.jpg')
+      formData.append('subject', teacherSubject.toLowerCase() || 'matematika')
+      formData.append('grade', '7')
+      formData.append('telegram_id', telegramId || '0')
+
+      const res = await fetch('/api/check/homework', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.success) {
+        setCheckResult(data.result)
+      } else {
+        setCheckResult({ error: data.message || "Tekshirib bo'lmadi" })
+      }
+    } catch {
+      setCheckResult({ error: "Server bilan aloqa yo'q" })
+    }
+    setChecking(false)
+  }
+
+  const totalStudents = students.length
+  const avgScore = globalStats?.avg_score || 0
 
   const handleLogout = () => {
     localStorage.clear()
     navigate('/')
+  }
+
+  // Kamera fullscreen
+  if (cameraOpen) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        <video ref={videoRef} autoPlay playsInline muted className="flex-1 object-cover" />
+        <canvas ref={canvasRef} className="hidden" />
+        <div className="absolute top-4 right-4">
+          <button onClick={closeCamera} className="bg-black/50 text-white p-2 rounded-full">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 pb-8 pt-4 flex justify-center bg-gradient-to-t from-black/80 to-transparent">
+          <button onClick={takePhoto}
+            className="w-20 h-20 rounded-full border-4 border-white bg-white/20 active:bg-white/40 transition flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-white" />
+          </button>
+        </div>
+        <p className="absolute bottom-2 left-0 right-0 text-center text-white/60 text-xs">Daftarni kameraga to'g'rilang</p>
+      </div>
+    )
   }
 
   return (
@@ -150,7 +206,7 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-5">
-        {/* Yangi submission notification */}
+        {/* Notification */}
         {notification && (
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg animate-pulse">
             <div className="flex items-center gap-3">
@@ -162,7 +218,7 @@ export default function TeacherDashboard() {
                   <span className="font-semibold text-white">{notification.name}</span> {notification.subject} fanidan vazifa tekshirdi
                 </p>
                 <p className="text-xs text-blue-100 mt-0.5">
-                  Natija: <span className="font-bold text-white">{notification.score}%</span> ({notification.correct}/{notification.total} to'g'ri)
+                  Natija: <span className="font-bold text-white">{notification.score}%</span> ({notification.correct}/{notification.total})
                 </p>
               </div>
               <button onClick={() => setNotification(null)} className="text-white/60 hover:text-white text-lg">x</button>
@@ -176,22 +232,100 @@ export default function TeacherDashboard() {
           {teacherQuote.author && <p className="text-[10px] text-primary-400 mt-0.5">— {teacherQuote.author}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard icon={Users} title="O'quvchilar" value={totalStudents} color="blue" />
-          <StatCard icon={BookCheck} title="Bugun" value={`${globalStats?.today_submissions || 0} tekshiruv`} color="green" />
-          <StatCard icon={TrendingUp} title="O'rtacha ball" value={`${avgScore}%`} color="yellow" />
-          <StatCard icon={School} title="Real" value={`${realStudents.length} o'quvchi`} color="purple" />
+        {/* === VAZIFA TEKSHIRISH / YUBORISH === */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <h2 className="text-base font-semibold text-gray-800 mb-3">Dars vaqtida tekshirish</h2>
+          <p className="text-xs text-gray-500 mb-3">O'quvchi daftarini suratga olib, AI orqali tekshiring</p>
+
+          {!capturedImage && !checkResult && (
+            <button onClick={openCamera}
+              className="w-full flex items-center justify-center gap-2 bg-primary-500 text-white py-3 rounded-xl font-semibold hover:bg-primary-600 transition active:scale-95">
+              <Camera className="w-5 h-5" /> Suratga olish
+            </button>
+          )}
+
+          {capturedImage && !checkResult && (
+            <div className="space-y-3">
+              <div className="relative">
+                <img src={URL.createObjectURL(capturedImage)} alt="Captured"
+                  className="w-full rounded-xl border border-gray-200" />
+                <button onClick={() => setCapturedImage(null)}
+                  className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <button onClick={handleTeacherCheck} disabled={checking}
+                className="w-full flex items-center justify-center gap-2 bg-success-500 text-white py-3 rounded-xl font-semibold hover:bg-success-600 transition disabled:opacity-50">
+                {checking ? <><Loader2 className="w-5 h-5 animate-spin" /> Tekshirilmoqda...</> : <><BookCheck className="w-5 h-5" /> AI bilan tekshirish</>}
+              </button>
+            </div>
+          )}
+
+          {checkResult && (
+            <div className="space-y-3">
+              {checkResult.error ? (
+                <div className="bg-danger-50 border border-danger-200 rounded-xl p-4">
+                  <p className="text-sm text-danger-700">{checkResult.error}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center">
+                    <span className="text-4xl">{checkResult.score_percentage >= 80 ? '🏆' : checkResult.score_percentage >= 60 ? '👍' : '📚'}</span>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{checkResult.score_percentage}%</p>
+                    <p className="text-sm text-gray-500">{checkResult.correct_count}/{checkResult.total_problems} to'g'ri</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {(checkResult.problems || []).map((p, i) => (
+                      <div key={i} className={`p-3 rounded-xl ${p.is_correct ? 'bg-success-50 border border-success-100' : 'bg-danger-50 border border-danger-100'}`}>
+                        <div className="flex items-start gap-2">
+                          <span>{p.is_correct ? '✅' : '❌'}</span>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-700">{p.number}-masala: {p.problem_text}</p>
+                            {!p.is_correct && p.correct_answer && (
+                              <p className="text-xs text-success-600 mt-1">To'g'ri javob: {p.correct_answer}</p>
+                            )}
+                            {!p.is_correct && p.error_explanation && (
+                              <p className="text-xs text-danger-600 mt-1">{p.error_explanation}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {checkResult.weak_topics?.length > 0 && (
+                    <div className="bg-accent-50 rounded-xl p-3">
+                      <p className="text-xs font-medium text-accent-700">Mashq kerak: {checkResult.weak_topics.join(', ')}</p>
+                    </div>
+                  )}
+                </>
+              )}
+              <button onClick={() => { setCheckResult(null); setCapturedImage(null) }}
+                className="w-full bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition">
+                Yangi tekshirish
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* === RISK MANAGEMENT === */}
+        {/* Statistika */}
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard icon={Users} title="O'quvchilar" value={totalStudents} color="blue" />
+          <StatCard icon={BookCheck} title="Bugun" value={`${globalStats?.today_submissions || 0} ta`} color="green" />
+          <StatCard icon={TrendingUp} title="O'rtacha ball" value={`${avgScore}%`} color="yellow" />
+          <StatCard icon={Clock} title="Jami tekshiruv" value={globalStats?.total_submissions || 0} color="purple" />
+        </div>
+
+        {/* Risk tahlili */}
         {riskData && (riskData.green?.length > 0 || riskData.yellow?.length > 0 || riskData.red?.length > 0) && (
           <div className="space-y-3">
-            <h2 className="text-base font-semibold text-gray-800">Real o'quvchilar tahlili</h2>
+            <h2 className="text-base font-semibold text-gray-800">O'quvchilar tahlili</h2>
             {riskData.green?.length > 0 && (
               <div className="bg-success-50 rounded-xl p-4 border border-success-200">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-3 h-3 bg-success-500 rounded-full" />
-                  <p className="text-sm font-semibold text-success-800">Zo'r ({riskData.green.length})</p>
+                  <p className="text-sm font-semibold text-success-800">A'lochi ({riskData.green.length})</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {riskData.green.map(s => (
@@ -241,37 +375,37 @@ export default function TeacherDashboard() {
           </div>
         )}
 
-        {/* Barcha o'quvchilar (sintetik + real) */}
+        {/* O'quvchilar ro'yxati (faqat real) */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <h2 className="text-base font-semibold text-gray-800 mb-3">O'quvchilar ({allStudents.length})</h2>
-          <div className="space-y-2">
-            {allStudents.sort((a, b) => b.avgScore - a.avgScore).map(s => (
-              <div key={s.id}
-                className={`flex items-center justify-between p-2.5 rounded-lg border transition ${
-                  s.isReal ? 'border-blue-200 bg-blue-50/30 hover:bg-blue-50' : 'border-gray-100 hover:bg-gray-50'
-                }`}>
-                <div className="flex items-center gap-2">
-                  <img src={s.gender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'}
-                    alt="" className="w-8 h-8 rounded-full object-cover" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      {s.name} {s.isReal && <span className="text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full ml-1">REAL</span>}
-                    </p>
-                    <p className="text-[10px] text-gray-400">{s.grade}-sinf | {s.subject}</p>
+          <h2 className="text-base font-semibold text-gray-800 mb-3">O'quvchilar ({totalStudents})</h2>
+          {students.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">Hali o'quvchi ro'yxatdan o'tmagan</p>
+          ) : (
+            <div className="space-y-2">
+              {students.sort((a, b) => (b.avg_score || 0) - (a.avg_score || 0)).map(s => (
+                <Link key={s.id} to={`/teacher/student/${s.telegram_id}`}
+                  className="flex items-center justify-between p-2.5 rounded-lg border border-gray-100 hover:bg-blue-50/30 transition block">
+                  <div className="flex items-center gap-2">
+                    <img src={s.gender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'}
+                      alt="" className="w-8 h-8 rounded-full object-cover" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">{s.full_name}</p>
+                      <p className="text-[10px] text-gray-400">{s.grade}-sinf | {s.subject} | {s.submission_count || 0} tekshiruv</p>
+                    </div>
                   </div>
-                </div>
-                <span className={`text-sm font-bold ${
-                  s.avgScore >= 80 ? 'text-success-500' : s.avgScore >= 60 ? 'text-accent-500' : 'text-danger-500'
-                }`}>{s.avgScore}%</span>
-              </div>
-            ))}
-          </div>
+                  <span className={`text-sm font-bold ${
+                    (s.avg_score || 0) >= 80 ? 'text-success-500' : (s.avg_score || 0) >= 60 ? 'text-accent-500' : 'text-danger-500'
+                  }`}>{s.avg_score || 0}%</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Oxirgi tekshiruvlar (real) */}
+        {/* Oxirgi tekshiruvlar */}
         {recentSubs.length > 0 && (
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Oxirgi tekshiruvlar (real)</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Oxirgi tekshiruvlar</h2>
             <div className="space-y-2">
               {recentSubs.map(sub => (
                 <div key={sub.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
@@ -297,10 +431,10 @@ export default function TeacherDashboard() {
           </div>
         )}
 
-        {/* Mavzu xatolari (real) */}
+        {/* Mavzu xatolari */}
         {topicErrors.length > 0 && (
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Mavzu bo'yicha xatolar (real)</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Mavzu bo'yicha xatolar</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={topicErrors}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -310,41 +444,6 @@ export default function TeacherDashboard() {
                 <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Xatolar" />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        )}
-
-        {/* Kasb moyilliklari */}
-        {allStudents.filter(s => s.avgScore >= 70).length > 0 && (
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-3">
-              <Compass className="w-5 h-5 text-purple-500" />
-              <h2 className="text-base font-semibold text-gray-800">Kasb moyilliklari</h2>
-            </div>
-            <div className="space-y-2">
-              {allStudents.filter(s => s.avgScore >= 70).slice(0, 5).map(s => {
-                const subj = (s.subject || '').toLowerCase()
-                let career = { emoji: '📚', name: "Turli yo'nalishlar" }
-                if (subj.includes('matematik') || subj.includes('algebra')) career = { emoji: '💻', name: 'IT / Muhandislik' }
-                else if (subj.includes('fizika')) career = { emoji: '⚙️', name: 'Muhandis' }
-                else if (subj.includes('biolog') || subj.includes('kimyo')) career = { emoji: '🔬', name: 'Shifokor / Olim' }
-                else if (subj.includes('ona tili')) career = { emoji: '✍️', name: 'Jurnalist' }
-                else if (subj.includes('ingliz')) career = { emoji: '🌍', name: 'Tarjimon' }
-                else if (subj.includes('tarix')) career = { emoji: '⚖️', name: 'Huquqshunos' }
-                else if (subj.includes('informatika')) career = { emoji: '💻', name: 'Dasturchi' }
-                return (
-                  <div key={s.id} className="flex items-center justify-between p-2.5 rounded-lg border border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{career.emoji}</span>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">{s.name}</p>
-                        <p className="text-[10px] text-purple-500">{career.name}</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold bg-success-50 text-success-600 px-2 py-1 rounded-full">{s.avgScore}%</span>
-                  </div>
-                )
-              })}
-            </div>
           </div>
         )}
       </div>
