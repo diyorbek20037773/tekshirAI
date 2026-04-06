@@ -163,6 +163,18 @@ if FRONTEND_DIR.exists() and (FRONTEND_DIR / "assets").exists():
         if full_path.startswith("api/"):
             return {"detail": "Not found"}
 
+        # Admin panel — alohida serve
+        if full_path == "admin" or full_path.startswith("admin/"):
+            if not ADMIN_DIR.exists():
+                return {"detail": "Admin panel build qilinmagan"}
+            admin_path = full_path[6:]  # "admin/" dan keyin
+            if admin_path.startswith("/"):
+                admin_path = admin_path[1:]
+            file_path = ADMIN_DIR / admin_path
+            if admin_path and file_path.exists() and file_path.is_file():
+                return FileResponse(file_path)
+            return FileResponse(ADMIN_DIR / "index.html")
+
         file_path = FRONTEND_DIR / full_path
         if file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
