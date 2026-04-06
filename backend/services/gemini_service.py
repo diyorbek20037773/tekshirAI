@@ -159,7 +159,7 @@ Yuqoridagi rasmdagi uyga vazifa yechimini tekshir va JSON formatda natija qaytar
                 ]
                 gen_config = genai.GenerationConfig(
                     temperature=0.1,
-                    max_output_tokens=4096,
+                    max_output_tokens=8192,
                 )
 
                 def _call():
@@ -246,7 +246,7 @@ QOIDALAR:
 - Sodda va tushunarli qilib tushuntir (maktab o'quvchisi tushunsin)
 - Real hayotdan misol keltir (bozor, sport, ovqat pishirish)
 - Qadam-baqadam ko'rsat
-- Eng ko'pi bilan 200 so'z ishlat
+- Eng ko'pi bilan 300 so'z ishlat
 - Emoji ishlat: ✅ ❌ 💡 📝
 - FAQAT shu masala haqida gaplash, boshqa mavzularga o'tma
 - Agar savol fanga aloqador bo'lmasa: "Men faqat fan bo'yicha yordam beraman 📚" de"""
@@ -256,7 +256,7 @@ QOIDALAR:
                 prompt,
                 generation_config=genai.GenerationConfig(
                     temperature=0.3,
-                    max_output_tokens=1024,
+                    max_output_tokens=2048,
                 )
             )
             self.key_manager.record_usage()
@@ -310,7 +310,7 @@ QOIDALAR:
 - Agar o'quvchi "tushundim" desa — tabrikla va rag'batlantir
 - Agar o'quvchi "boshqa usulda" desa — boshqa usul bilan tushuntir
 - Agar "shunga o'xshash masala" desa — o'xshash yangi masala ber
-- Qisqa va aniq javob ber (200 so'zdan oshmasin)
+- Aniq va tushunarli javob ber (300 so'zgacha)
 - Emoji ishlat: ✅ ❌ 💡 📝 🎯
 
 MUHIM CHEKLOV:
@@ -369,7 +369,7 @@ QOIDALAR:
 - Oddiy, tushunarli tilda tushuntir
 - Hayotiy misollar bilan (bozor, sport, ovqat pishirish, pul hisoblash)
 - Savolga ANIQ javob ber, mavzudan chiqma
-- Qisqa va aniq javob ber (200 so'zdan oshmasin)
+- Aniq va tushunarli javob ber (300 so'zgacha)
 - Emoji ishlat: ✅ ❌ 💡 📝 🎯
 
 MUHIM CHEKLOV:
@@ -397,7 +397,10 @@ MUHIM CHEKLOV:
             return f"Javob olishda xatolik: {str(e)[:100]}"
 
     def _extract_json(self, text: str) -> Dict:
-        """Gemini javobidan JSON ajratib olish (3 usul bilan)."""
+        """Gemini javobidan JSON ajratib olish (4 usul bilan)."""
+        # Boshidagi/oxiridagi bo'sh joylarni tozalash
+        text = text.strip()
+
         # 1. To'g'ridan-to'g'ri parse
         try:
             return json.loads(text)
@@ -405,7 +408,7 @@ MUHIM CHEKLOV:
             pass
 
         # 2. ```json ... ``` ichidan
-        json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
+        json_match = re.search(r'```(?:json)?\s*(.*?)\s*```', text, re.DOTALL)
         if json_match:
             try:
                 return json.loads(json_match.group(1))
@@ -415,6 +418,7 @@ MUHIM CHEKLOV:
         # 3. { ... } ichidan (eng katta JSON blokni topish)
         brace_count = 0
         start = -1
+        candidates = []
         for i, char in enumerate(text):
             if char == '{':
                 if brace_count == 0:
@@ -423,15 +427,34 @@ MUHIM CHEKLOV:
             elif char == '}':
                 brace_count -= 1
                 if brace_count == 0 and start != -1:
-                    try:
-                        return json.loads(text[start:i + 1])
-                    except json.JSONDecodeError:
-                        start = -1
+                    candidates.append(text[start:i + 1])
+                    start = -1
 
+        # Eng uzun kandidatni parse qilish
+        for candidate in sorted(candidates, key=len, reverse=True):
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+
+        # 4. Yarim JSON ni tuzatishga harakat qilish (oxiri kesilgan bo'lishi mumkin)
+        first_brace = text.find('{')
+        if first_brace != -1:
+            json_text = text[first_brace:]
+            # Yopilmagan qavslarni yopish
+            open_braces = json_text.count('{') - json_text.count('}')
+            open_brackets = json_text.count('[') - json_text.count(']')
+            json_text += ']' * max(0, open_brackets)
+            json_text += '}' * max(0, open_braces)
+            try:
+                return json.loads(json_text)
+            except json.JSONDecodeError:
+                pass
+
+        logger.warning(f"JSON parse xatosi. Javob boshi: {text[:200]}")
         return {
             "error": True,
-            "error_message": "AI javobini parse qilib bo'lmadi",
-            "raw_response": text[:500],
+            "error_message": "AI javobini parse qilib bo'lmadi. Qayta urinib ko'ring.",
             "problems": []
         }
 
