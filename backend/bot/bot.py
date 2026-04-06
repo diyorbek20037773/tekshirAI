@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 from backend.config import settings
-from backend.bot.handlers.start import start_command, handle_contact
+from backend.bot.handlers.start import start_command, handle_contact, handle_consent
 from backend.bot.handlers.register import get_registration_handler
 from backend.bot.handlers.submit import handle_photo
 from backend.bot.handlers.explain import handle_explain_callback
@@ -51,6 +51,9 @@ def create_bot() -> Application:
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
     # === Callback Query handlers ===
+    # Rozilik (consent)
+    app.add_handler(CallbackQueryHandler(handle_consent, pattern=r"^consent_agree$"))
+
     # Tushuntirish
     app.add_handler(CallbackQueryHandler(handle_explain_callback, pattern=r"^explain_"))
 

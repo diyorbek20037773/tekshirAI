@@ -1,10 +1,9 @@
 #!/bin/bash
-# Railway build script — frontend build + backend start
+# Railway build script — frontend + admin panel build
 
 echo "=== Frontend build boshlandi ==="
 cd frontend
 
-# Node.js o'rnatilganmi tekshirish
 if command -v node &> /dev/null; then
     echo "Node.js: $(node -v)"
     npm install
@@ -12,6 +11,19 @@ if command -v node &> /dev/null; then
     echo "=== Frontend build tayyor! ==="
 else
     echo "Node.js topilmadi, frontend build o'tkazib yuborildi"
+fi
+
+cd ..
+
+echo "=== Admin panel build boshlandi ==="
+cd admin_panel
+
+if command -v node &> /dev/null; then
+    npm install
+    npm run build
+    echo "=== Admin panel build tayyor! ==="
+else
+    echo "Node.js topilmadi, admin panel build o'tkazib yuborildi"
 fi
 
 cd ..
