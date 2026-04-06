@@ -117,8 +117,11 @@ def user_to_response(user: User) -> dict:
 async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
     """Mini App dan ro'yxatdan o'tish. Agar mavjud bo'lsa — profilni yangilaydi."""
 
-    if not data.telegram_id:
-        raise HTTPException(status_code=400, detail="Telegram ID majburiy")
+    if data.telegram_id is None or data.telegram_id == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Telegram ID aniqlanmadi. Iltimos, ilovani Telegram orqali oching."
+        )
 
     if data.role not in ("student", "teacher", "parent", "director"):
         raise HTTPException(status_code=400, detail="Noto'g'ri rol")

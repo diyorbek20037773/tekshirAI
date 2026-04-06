@@ -4,6 +4,12 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
 
+// Telegram WebApp SDK — ilovani tayyor ekanligini xabar berish
+if (window.Telegram?.WebApp) {
+  window.Telegram.WebApp.ready()
+  window.Telegram.WebApp.expand()
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
