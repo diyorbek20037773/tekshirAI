@@ -23,7 +23,7 @@ def _webapp_url():
 def _mini_app_keyboard():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(
-            text="📱 Ilovani ochish",
+            text="🚀 Ilovani ochish",
             web_app=WebAppInfo(url=_webapp_url())
         )],
     ])
@@ -48,12 +48,10 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if existing_user:
         # MAVJUD user — to'g'ridan-to'g'ri mini app
-        text = (
-            f"Salom, {name}! 👋\n\n"
-            f"Xush kelibsiz! Ilovani ochish uchun quyidagi tugmani bosing:"
-        )
         await update.message.reply_text(
-            text,
+            f"👋 Salom, *{name}*! Xush kelibsiz!\n\n"
+            f"👇 Ilovani ochish uchun tugmani bosing:",
+            parse_mode="Markdown",
             reply_markup=_mini_app_keyboard(),
         )
     else:
@@ -123,13 +121,20 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Telefon raqamni context da saqlash (keyingi register uchun)
     context.user_data["phone_number"] = phone
 
+    name = user.first_name or "do'stim"
+
     await update.message.reply_text(
-        "✅ Rahmat! Telefon raqamingiz qabul qilindi.\n\n"
-        "⬇️ Ilovani ochish uchun quyidagi tugmani bosing:",
+        "✅ Telefon raqamingiz qabul qilindi!",
         reply_markup=ReplyKeyboardRemove(),
     )
 
     await update.message.reply_text(
-        "📱 Ilovani ochish:",
+        f"🎓 *{name}, TekshirAI ga xush kelibsiz!*\n\n"
+        f"📸 Daftaringizni suratga oling\n"
+        f"🤖 AI har bir masalani tekshiradi\n"
+        f"📝 Xatolarni o'zbek tilida tushuntiradi\n"
+        f"🎮 XP, darajalar va nishonlar yig'ing!\n\n"
+        f"👇 Boshlash uchun tugmani bosing:",
+        parse_mode="Markdown",
         reply_markup=_mini_app_keyboard(),
     )
