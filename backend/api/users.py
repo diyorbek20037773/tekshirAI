@@ -28,6 +28,7 @@ class UserRegister(BaseModel):
     viloyat: str | None = None
     tuman: str | None = None
     maktab: str | None = None
+    phone_number: str | None = None
     teacher_class: str | None = None
 
 
@@ -141,6 +142,8 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
             existing.tuman = data.tuman
         if data.maktab:
             existing.maktab = data.maktab
+        if data.phone_number:
+            existing.phone_number = data.phone_number
         existing.updated_at = datetime.utcnow()
         await db.flush()
         return user_to_response(existing)
@@ -158,6 +161,7 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
         viloyat=data.viloyat,
         tuman=data.tuman,
         maktab=data.maktab,
+        phone_number=data.phone_number,
         is_approved=data.role != "director",  # Direktor admin tasdiqlashi kerak
         daily_reset_date=date.today(),
     )

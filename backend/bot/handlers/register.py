@@ -148,6 +148,7 @@ async def _save_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             role=data["role"],
             grade=data.get("grade"),
             subject=data.get("subject"),
+            phone_number=data.get("phone_number"),
             daily_reset_date=date.today(),
         )
         session.add(user)

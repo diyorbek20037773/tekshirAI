@@ -24,6 +24,7 @@ class User(Base):
     viloyat: Mapped[str | None] = mapped_column(String(100))  # Surxondaryo viloyati
     tuman: Mapped[str | None] = mapped_column(String(100))  # Termiz Tumani
     maktab: Mapped[str | None] = mapped_column(String(200))  # 1-sonli umumta'lim maktabi
+    phone_number: Mapped[str | None] = mapped_column(String(20))  # Telegram dan olingan telefon raqam
 
     # Premium
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False)

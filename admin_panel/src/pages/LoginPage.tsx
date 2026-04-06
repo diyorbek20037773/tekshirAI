@@ -1,29 +1,36 @@
 import { useState } from 'react';
-import { Shield, ArrowRight } from 'lucide-react';
+import { Shield, ArrowRight, Lock, Key } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface Props {
-  onLogin: (telegramId: string) => void;
+  onLogin: (token: string) => void;
 }
 
 export default function LoginPage({ onLogin }: Props) {
-  const [telegramId, setTelegramId] = useState('');
+  const [password, setPassword] = useState('');
+  const [secret, setSecret] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!telegramId.trim()) return;
+    if (!password.trim() || !secret.trim()) return;
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE}/api/admin/verify?telegram_id=${telegramId.trim()}`);
+      const res = await fetch(`${API_BASE}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password.trim(), secret: secret.trim() }),
+      });
       if (res.ok) {
-        onLogin(telegramId.trim());
+        const data = await res.json();
+        onLogin(data.token);
       } else {
-        setError('Admin huquqi yo\'q. Faqat ruxsat etilgan foydalanuvchilar kirishi mumkin.');
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || 'Parol yoki maxfiy so\'z noto\'g\'ri');
       }
     } catch {
       setError('Server bilan bog\'lanib bo\'lmadi');
@@ -42,28 +49,43 @@ export default function LoginPage({ onLogin }: Props) {
           <p className="text-slate-400 mt-2">Admin paneliga kirish</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50">
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-300 mb-2">Telegram ID</label>
+        <form onSubmit={handleSubmit} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              <Lock className="w-4 h-4 inline mr-1" /> Parol
+            </label>
             <input
-              type="text"
-              value={telegramId}
-              onChange={e => setTelegramId(e.target.value)}
-              placeholder="Telegram ID raqamingizni kiriting"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Admin parolini kiriting"
               className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
               autoFocus
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              <Key className="w-4 h-4 inline mr-1" /> Maxfiy so'z
+            </label>
+            <input
+              type="password"
+              value={secret}
+              onChange={e => setSecret(e.target.value)}
+              placeholder="Maxfiy so'zni kiriting"
+              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+            />
+          </div>
+
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
               <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
-            disabled={loading || !telegramId.trim()}
+            disabled={loading || !password.trim() || !secret.trim()}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition disabled:opacity-40"
           >
             {loading ? (
@@ -75,7 +97,7 @@ export default function LoginPage({ onLogin }: Props) {
         </form>
 
         <p className="text-center text-slate-500 text-xs mt-6">
-          Faqat 3 ta admin ruxsat etilgan
+          Parol va maxfiy so'z Railway Variables da sozlanadi
         </p>
       </div>
     </div>

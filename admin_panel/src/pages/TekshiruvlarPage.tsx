@@ -33,9 +33,10 @@ export default function TekshiruvlarPage({ adminId }: Props) {
 
   const fetchData = async () => {
     try {
+      const headers = { 'X-Admin-Token': adminId };
       const [statsRes, activeRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/submissions-stats?telegram_id=${adminId}`),
-        fetch(`${API_BASE}/api/admin/active-users?telegram_id=${adminId}`),
+        fetch(`${API_BASE}/api/admin/submissions-stats`, { headers }),
+        fetch(`${API_BASE}/api/admin/active-users`, { headers }),
       ]);
       if (statsRes.ok) setStats(await statsRes.json());
       if (activeRes.ok) setActiveUsers(await activeRes.json());

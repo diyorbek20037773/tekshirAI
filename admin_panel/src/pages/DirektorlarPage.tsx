@@ -25,7 +25,9 @@ export default function DirektorlarPage({ adminId }: Props) {
 
   const fetchPending = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/pending-directors?telegram_id=${adminId}`);
+      const res = await fetch(`${API_BASE}/api/admin/pending-directors`, {
+        headers: { 'X-Admin-Token': adminId },
+      });
       if (res.ok) setPending(await res.json());
     } catch (err) {
       console.error(err);
@@ -43,8 +45,8 @@ export default function DirektorlarPage({ adminId }: Props) {
     setActionLoading(directorId);
     try {
       const res = await fetch(
-        `${API_BASE}/api/admin/approve-director?telegram_id=${adminId}&director_id=${directorId}&approve=${approve}`,
-        { method: 'POST' }
+        `${API_BASE}/api/admin/approve-director?director_id=${directorId}&approve=${approve}`,
+        { method: 'POST', headers: { 'X-Admin-Token': adminId } }
       );
       if (res.ok) {
         setPending(prev => prev.filter(d => d.id !== directorId));

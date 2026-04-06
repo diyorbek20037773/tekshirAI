@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Layout from './components/layout/Layout';
 import DashboardPage from './pages/DashboardPage';
 import FoydalanuvchilarPage from './pages/FoydalanuvchilarPage';
@@ -9,21 +9,21 @@ import ProfilPage from './pages/ProfilPage';
 import LoginPage from './pages/LoginPage';
 
 export default function App() {
-  const [adminId, setAdminId] = useState<string | null>(
-    localStorage.getItem('adminTelegramId')
+  const [adminToken, setAdminToken] = useState<string | null>(
+    localStorage.getItem('adminToken')
   );
 
-  const handleLogin = (telegramId: string) => {
-    localStorage.setItem('adminTelegramId', telegramId);
-    setAdminId(telegramId);
+  const handleLogin = (token: string) => {
+    localStorage.setItem('adminToken', token);
+    setAdminToken(token);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('adminTelegramId');
-    setAdminId(null);
+    localStorage.removeItem('adminToken');
+    setAdminToken(null);
   };
 
-  if (!adminId) {
+  if (!adminToken) {
     return (
       <BrowserRouter>
         <LoginPage onLogin={handleLogin} />
@@ -34,12 +34,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout adminId={adminId} onLogout={handleLogout} />}>
-          <Route index element={<DashboardPage adminId={adminId} />} />
-          <Route path="foydalanuvchilar" element={<FoydalanuvchilarPage adminId={adminId} />} />
-          <Route path="tekshiruvlar" element={<TekshiruvlarPage adminId={adminId} />} />
-          <Route path="direktorlar" element={<DirektorlarPage adminId={adminId} />} />
-          <Route path="profil" element={<ProfilPage adminId={adminId} onLogout={handleLogout} />} />
+        <Route element={<Layout adminId={adminToken} onLogout={handleLogout} />}>
+          <Route index element={<DashboardPage adminId={adminToken} />} />
+          <Route path="foydalanuvchilar" element={<FoydalanuvchilarPage adminId={adminToken} />} />
+          <Route path="tekshiruvlar" element={<TekshiruvlarPage adminId={adminToken} />} />
+          <Route path="direktorlar" element={<DirektorlarPage adminId={adminToken} />} />
+          <Route path="profil" element={<ProfilPage adminId={adminToken} onLogout={handleLogout} />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

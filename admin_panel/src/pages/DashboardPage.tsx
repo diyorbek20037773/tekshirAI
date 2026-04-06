@@ -30,7 +30,9 @@ export default function DashboardPage({ adminId }: Props) {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/stats?telegram_id=${adminId}`);
+      const res = await fetch(`${API_BASE}/api/admin/stats`, {
+        headers: { 'X-Admin-Token': adminId },
+      });
       if (res.ok) setStats(await res.json());
     } catch (err) {
       console.error(err);

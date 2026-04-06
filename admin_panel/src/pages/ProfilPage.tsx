@@ -5,7 +5,7 @@ interface Props {
   onLogout: () => void;
 }
 
-export default function ProfilPage({ adminId, onLogout }: Props) {
+export default function ProfilPage({ onLogout }: Props) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="bg-white border-b border-slate-200 px-8 py-6">
@@ -21,7 +21,7 @@ export default function ProfilPage({ adminId, onLogout }: Props) {
             </div>
             <div>
               <h2 className="text-xl font-bold">Admin</h2>
-              <p className="text-slate-400 text-sm">Telegram ID: {adminId}</p>
+              <p className="text-slate-400 text-sm">Parol + maxfiy so'z bilan himoyalangan</p>
             </div>
           </div>
         </div>
@@ -31,7 +31,7 @@ export default function ProfilPage({ adminId, onLogout }: Props) {
           <div className="space-y-3">
             <InfoRow label="Platforma" value="TekshirAI v2.0" />
             <InfoRow label="AI Model" value="Gemini 2.5 Flash" />
-            <InfoRow label="Admin soni" value="3 ta" />
+            <InfoRow label="Himoya" value="Parol + Maxfiy so'z (Railway Variables)" />
             <InfoRow label="Rollar" value="O'quvchi, O'qituvchi, Ota-ona, Direktor, Admin" />
           </div>
         </div>

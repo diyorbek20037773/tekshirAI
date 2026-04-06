@@ -31,6 +31,8 @@ class Settings(BaseSettings):
 
     # Admin
     ADMIN_TELEGRAM_IDS: str = ""
+    ADMIN_PASSWORD: str = ""
+    ADMIN_SECRET: str = ""
 
     # Limits
     FREE_DAILY_LIMIT: int = 3

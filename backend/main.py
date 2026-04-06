@@ -66,6 +66,7 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS maktab VARCHAR(200)",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT true",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS class_letter VARCHAR(5)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20)",
                     # Bitta telegram_id dan bir nechta rol (ota-ona + farzand)
                     "DROP INDEX IF EXISTS ix_users_telegram_id",
                     "CREATE INDEX IF NOT EXISTS ix_users_telegram_id ON users (telegram_id)",

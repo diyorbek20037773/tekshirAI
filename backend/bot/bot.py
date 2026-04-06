@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 from backend.config import settings
-from backend.bot.handlers.start import start_command
+from backend.bot.handlers.start import start_command, handle_contact
 from backend.bot.handlers.register import get_registration_handler
 from backend.bot.handlers.submit import handle_photo
 from backend.bot.handlers.explain import handle_explain_callback
@@ -43,6 +43,9 @@ def create_bot() -> Application:
 
     # === Registration (ConversationHandler) ===
     app.add_handler(get_registration_handler())
+
+    # === Contact handler (telefon raqam) ===
+    app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
 
     # === Photo handler (asosiy — rasm tekshirish) ===
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))

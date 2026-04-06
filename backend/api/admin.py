@@ -1,10 +1,14 @@
-"""Admin API — real foydalanuvchilar statistikasi + rating. Faqat 3 ta admin."""
+"""Admin API — parol + maxfiy so'z bilan himoyalangan. Foydalanuvchilar, tekshiruvlar, direktorlar."""
 
-from datetime import date, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Query
+import secrets
+from datetime import date, timedelta, datetime
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from pydantic import BaseModel
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import select, func, and_, desc, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from backend.config import settings
 from backend.database import get_db
@@ -18,30 +22,59 @@ class RatingCreate(BaseModel):
     stars: int
     comment: str = ""
 
+
+class AdminLogin(BaseModel):
+    password: str
+    secret: str
+
+
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    username: str | None = None
+    role: str | None = None
+    gender: str | None = None
+    grade: int | None = None
+    class_letter: str | None = None
+    subject: str | None = None
+    viloyat: str | None = None
+    tuman: str | None = None
+    maktab: str | None = None
+    phone_number: str | None = None
+
+
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
+# Tokenlar xotirada saqlanadi
+_admin_tokens: set[str] = set()
 
-def verify_admin(telegram_id: int):
-    """Admin telegram_id ni tekshirish."""
-    if telegram_id not in settings.admin_telegram_ids:
+
+def verify_admin_token(x_admin_token: str = Header(...)):
+    """Admin tokenni tekshirish (barcha endpointlar uchun)."""
+    if x_admin_token not in _admin_tokens:
         raise HTTPException(status_code=403, detail="Admin huquqi yo'q")
 
 
-@router.get("/verify")
-async def verify_admin_access(telegram_id: int = Query(...)):
-    """Admin ekanligini tekshirish (admin panel login uchun)."""
-    if telegram_id in settings.admin_telegram_ids:
-        return {"is_admin": True, "telegram_id": telegram_id}
-    raise HTTPException(status_code=403, detail="Admin huquqi yo'q")
+@router.post("/login")
+async def admin_login(data: AdminLogin):
+    """Admin login — parol + maxfiy so'z bilan."""
+    if not settings.ADMIN_PASSWORD or not settings.ADMIN_SECRET:
+        raise HTTPException(status_code=500, detail="Admin login sozlanmagan (ADMIN_PASSWORD va ADMIN_SECRET o'rnating)")
+    if data.password != settings.ADMIN_PASSWORD or data.secret != settings.ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Parol yoki maxfiy so'z noto'g'ri")
+    token = secrets.token_hex(32)
+    _admin_tokens.add(token)
+    return {"token": token}
 
+
+# ============================================================
+# STATS
+# ============================================================
 
 @router.get("/stats")
-async def get_admin_stats(telegram_id: int = Query(...), db: AsyncSession = Depends(get_db)):
+async def get_admin_stats(_=Depends(verify_admin_token), db: AsyncSession = Depends(get_db)):
     """Real ro'yxatdan o'tish va tekshiruv statistikasi."""
-    verify_admin(telegram_id)
     today = date.today()
 
-    # Rollar bo'yicha
     students = await db.execute(select(func.count()).select_from(User).where(User.role == "student"))
     teachers = await db.execute(select(func.count()).select_from(User).where(User.role == "teacher"))
     parents = await db.execute(select(func.count()).select_from(User).where(User.role == "parent"))
@@ -52,12 +85,10 @@ async def get_admin_stats(telegram_id: int = Query(...), db: AsyncSession = Depe
     parents_count = parents.scalar() or 0
     directors_count = directors.scalar() or 0
 
-    # Bugungi
     today_users = await db.execute(
         select(func.count()).select_from(User).where(func.date(User.created_at) == today)
     )
 
-    # Tekshiruvlar
     total_subs = await db.execute(
         select(func.count()).select_from(Submission).where(Submission.status == "completed")
     )
@@ -67,14 +98,12 @@ async def get_admin_stats(telegram_id: int = Query(...), db: AsyncSession = Depe
         )
     )
 
-    # Viloyat bo'yicha
     viloyat_stats = await db.execute(
         select(User.viloyat, func.count()).select_from(User)
         .where(User.viloyat.isnot(None))
         .group_by(User.viloyat)
     )
 
-    # Haftalik ro'yxatdan o'tish dinamikasi (oxirgi 7 kun)
     weekly = []
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
@@ -83,7 +112,6 @@ async def get_admin_stats(telegram_id: int = Query(...), db: AsyncSession = Depe
         )
         weekly.append({"date": d.isoformat(), "count": count_result.scalar() or 0})
 
-    # Rol bo'yicha bugungi
     today_by_role = {}
     for role_name in ["student", "teacher", "parent", "director"]:
         r = await db.execute(
@@ -108,17 +136,19 @@ async def get_admin_stats(telegram_id: int = Query(...), db: AsyncSession = Depe
     }
 
 
+# ============================================================
+# USERS — ro'yxat + edit + submission soni
+# ============================================================
+
 @router.get("/users")
 async def get_admin_users(
-    telegram_id: int = Query(...),
+    _=Depends(verify_admin_token),
     role: str = None,
     viloyat: str = None,
-    limit: int = 50,
+    limit: int = 100,
     db: AsyncSession = Depends(get_db),
 ):
-    """Barcha foydalanuvchilar ro'yxati (filtr bilan)."""
-    verify_admin(telegram_id)
-
+    """Barcha foydalanuvchilar ro'yxati + har birining submission soni."""
     query = select(User)
     if role:
         query = query.where(User.role == role)
@@ -128,8 +158,13 @@ async def get_admin_users(
     result = await db.execute(query.order_by(User.created_at.desc()).limit(limit))
     users = result.scalars().all()
 
-    return [
-        {
+    user_list = []
+    for u in users:
+        sub_count = await db.execute(
+            select(func.count()).select_from(Submission)
+            .where(Submission.student_id == u.id, Submission.status == "completed")
+        )
+        user_list.append({
             "id": str(u.id),
             "telegram_id": u.telegram_id,
             "full_name": u.full_name,
@@ -137,19 +172,86 @@ async def get_admin_users(
             "role": u.role,
             "gender": u.gender,
             "grade": u.grade,
+            "class_letter": u.class_letter,
             "subject": u.subject,
             "viloyat": u.viloyat,
             "tuman": u.tuman,
             "maktab": u.maktab,
+            "phone_number": u.phone_number if hasattr(u, 'phone_number') else None,
+            "submission_count": sub_count.scalar() or 0,
             "created_at": u.created_at.isoformat() if u.created_at else None,
-        }
-        for u in users
-    ]
+        })
 
+    return user_list
+
+
+@router.put("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    data: UserUpdate,
+    _=Depends(verify_admin_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin tomonidan foydalanuvchi ma'lumotlarini tahrirlash."""
+    result = await db.execute(select(User).where(User.id == UUID(user_id)))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if data.username is not None:
+        user.username = data.username
+    if data.role is not None:
+        user.role = data.role
+    if data.gender is not None:
+        user.gender = data.gender
+    if data.grade is not None:
+        user.grade = data.grade
+    if data.class_letter is not None:
+        user.class_letter = data.class_letter
+    if data.subject is not None:
+        user.subject = data.subject
+    if data.viloyat is not None:
+        user.viloyat = data.viloyat
+    if data.tuman is not None:
+        user.tuman = data.tuman
+    if data.maktab is not None:
+        user.maktab = data.maktab
+    if data.phone_number is not None:
+        user.phone_number = data.phone_number
+
+    user.updated_at = datetime.utcnow()
+    await db.flush()
+
+    return {"status": "updated", "message": f"{user.full_name} yangilandi"}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    _=Depends(verify_admin_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin tomonidan foydalanuvchini o'chirish."""
+    result = await db.execute(select(User).where(User.id == UUID(user_id)))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+
+    name = user.full_name
+    await db.delete(user)
+    await db.flush()
+    return {"status": "deleted", "message": f"{name} o'chirildi"}
+
+
+# ============================================================
+# RATINGS
+# ============================================================
 
 @router.post("/rating")
 async def create_rating(data: RatingCreate, db: AsyncSession = Depends(get_db)):
-    """Mini app ga baho berish (5 yulduz + izoh)."""
+    """Mini app ga baho berish (5 yulduz + izoh). Auth kerak emas."""
     user = None
     if data.telegram_id:
         result = await db.execute(select(User).where(User.telegram_id == data.telegram_id).limit(1))
@@ -167,10 +269,8 @@ async def create_rating(data: RatingCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/ratings")
-async def get_ratings(telegram_id: int = Query(...), db: AsyncSession = Depends(get_db)):
+async def get_ratings(_=Depends(verify_admin_token), db: AsyncSession = Depends(get_db)):
     """Barcha baholar va o'rtacha reyting."""
-    verify_admin(telegram_id)
-
     result = await db.execute(select(Rating).order_by(desc(Rating.created_at)).limit(50))
     ratings = result.scalars().all()
 
@@ -193,11 +293,13 @@ async def get_ratings(telegram_id: int = Query(...), db: AsyncSession = Depends(
     }
 
 
-@router.get("/pending-directors")
-async def get_pending_directors(telegram_id: int = Query(...), db: AsyncSession = Depends(get_db)):
-    """Tasdiqlanmagan direktorlar ro'yxati."""
-    verify_admin(telegram_id)
+# ============================================================
+# DIRECTORS
+# ============================================================
 
+@router.get("/pending-directors")
+async def get_pending_directors(_=Depends(verify_admin_token), db: AsyncSession = Depends(get_db)):
+    """Tasdiqlanmagan direktorlar ro'yxati."""
     result = await db.execute(
         select(User).where(User.role == "director", User.is_approved == False)
         .order_by(User.created_at.desc())
@@ -221,15 +323,12 @@ async def get_pending_directors(telegram_id: int = Query(...), db: AsyncSession 
 
 @router.post("/approve-director")
 async def approve_director(
-    telegram_id: int = Query(...),
     director_id: str = Query(...),
     approve: bool = Query(True),
+    _=Depends(verify_admin_token),
     db: AsyncSession = Depends(get_db),
 ):
     """Direktorni tasdiqlash yoki rad etish."""
-    verify_admin(telegram_id)
-
-    from uuid import UUID
     result = await db.execute(select(User).where(User.id == UUID(director_id)))
     director = result.scalar_one_or_none()
 
@@ -246,20 +345,21 @@ async def approve_director(
         return {"status": "rejected", "message": f"{director.full_name} rad etildi"}
 
 
+# ============================================================
+# SUBMISSIONS STATS
+# ============================================================
+
 @router.get("/submissions-stats")
-async def get_submissions_stats(telegram_id: int = Query(...), db: AsyncSession = Depends(get_db)):
+async def get_submissions_stats(_=Depends(verify_admin_token), db: AsyncSession = Depends(get_db)):
     """Tekshiruvlar bo'yicha batafsil statistika."""
-    verify_admin(telegram_id)
     today = date.today()
 
-    # Fan bo'yicha
     by_subject = await db.execute(
         select(Submission.subject, func.count(), func.avg(Submission.score))
         .where(Submission.status == "completed")
         .group_by(Submission.subject)
     )
 
-    # Sinf bo'yicha
     by_grade = await db.execute(
         select(Submission.grade, func.count(), func.avg(Submission.score))
         .where(Submission.status == "completed")
@@ -267,7 +367,6 @@ async def get_submissions_stats(telegram_id: int = Query(...), db: AsyncSession 
         .order_by(Submission.grade)
     )
 
-    # Kunlik trend (oxirgi 14 kun)
     daily_subs = []
     for i in range(13, -1, -1):
         d = today - timedelta(days=i)
@@ -287,7 +386,6 @@ async def get_submissions_stats(telegram_id: int = Query(...), db: AsyncSession 
             "avg_score": round(avg_result.scalar() or 0, 1),
         })
 
-    # Oxirgi 20 ta tekshiruv
     recent = await db.execute(
         select(Submission, User.full_name, User.username, User.grade.label("user_grade"), User.maktab)
         .join(User, Submission.student_id == User.id)
@@ -312,7 +410,6 @@ async def get_submissions_stats(telegram_id: int = Query(...), db: AsyncSession 
             "created_at": sub.created_at.isoformat() if sub.created_at else None,
         })
 
-    # O'rtacha ball
     overall_avg = await db.execute(
         select(func.avg(Submission.score)).where(Submission.status == "completed")
     )
@@ -333,10 +430,8 @@ async def get_submissions_stats(telegram_id: int = Query(...), db: AsyncSession 
 
 
 @router.get("/active-users")
-async def get_active_users(telegram_id: int = Query(...), db: AsyncSession = Depends(get_db)):
+async def get_active_users(_=Depends(verify_admin_token), db: AsyncSession = Depends(get_db)):
     """Eng faol foydalanuvchilar (ko'p tekshiruv yuborganlar)."""
-    verify_admin(telegram_id)
-
     result = await db.execute(
         select(
             User.full_name,
