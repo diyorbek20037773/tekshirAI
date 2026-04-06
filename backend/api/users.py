@@ -23,6 +23,7 @@ class UserRegister(BaseModel):
     role: str  # student, teacher, parent, director
     gender: str | None = None  # male, female
     grade: int | None = None
+    class_letter: str | None = None  # A, B, C, D, F
     subject: str | None = None
     viloyat: str | None = None
     tuman: str | None = None
@@ -38,6 +39,7 @@ class UserResponse(BaseModel):
     role: str
     gender: str | None = None
     grade: int | None
+    class_letter: str | None = None
     subject: str | None
     viloyat: str | None = None
     tuman: str | None = None
@@ -92,6 +94,7 @@ def user_to_response(user: User) -> dict:
         "role": user.role,
         "gender": user.gender,
         "grade": user.grade,
+        "class_letter": user.class_letter,
         "subject": user.subject,
         "viloyat": user.viloyat,
         "tuman": user.tuman,
@@ -128,6 +131,8 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
             existing.gender = data.gender
         if data.grade is not None:
             existing.grade = data.grade
+        if data.class_letter:
+            existing.class_letter = data.class_letter
         if data.subject:
             existing.subject = data.subject
         if data.viloyat:
@@ -148,6 +153,7 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
         role=data.role,
         gender=data.gender,
         grade=data.grade,
+        class_letter=data.class_letter,
         subject=data.subject,
         viloyat=data.viloyat,
         tuman=data.tuman,
@@ -352,6 +358,7 @@ async def get_all_students(maktab: str = None, db: AsyncSession = Depends(get_db
             "full_name": s.full_name,
             "gender": s.gender,
             "grade": s.grade,
+            "class_letter": s.class_letter,
             "subject": s.subject,
             "viloyat": s.viloyat,
             "tuman": s.tuman,
@@ -384,6 +391,7 @@ async def get_student_submissions(telegram_id: int, db: AsyncSession = Depends(g
             "full_name": user.full_name,
             "username": user.username,
             "grade": user.grade,
+            "class_letter": user.class_letter,
             "subject": user.subject,
             "gender": user.gender,
         },
@@ -441,6 +449,7 @@ async def get_child_data(parent_telegram_id: int, db: AsyncSession = Depends(get
             "full_name": child.full_name,
             "username": child.username,
             "grade": child.grade,
+            "class_letter": child.class_letter,
             "subject": child.subject,
             "gender": child.gender,
             "telegram_id": child.telegram_id,

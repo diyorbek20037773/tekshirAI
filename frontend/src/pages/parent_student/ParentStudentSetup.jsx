@@ -9,6 +9,14 @@ const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({
   label: `${i + 1}-sinf`,
 }))
 
+const CLASS_LETTER_ITEMS = [
+  { value: 'A', label: 'A' },
+  { value: 'B', label: 'B' },
+  { value: 'C', label: 'C' },
+  { value: 'D', label: 'D' },
+  { value: 'F', label: 'F' },
+]
+
 const GENDER_ITEMS = [
   { value: 'male', label: "O'g'il bola" },
   { value: 'female', label: 'Qiz bola' },
@@ -17,13 +25,15 @@ const GENDER_ITEMS = [
 export default function ParentStudentSetup() {
   const navigate = useNavigate()
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
-  const telegramId = tgUser?.id || 0
+  if (tgUser?.id) localStorage.setItem('telegramId', String(tgUser.id))
+  const telegramId = tgUser?.id || Number(localStorage.getItem('telegramId')) || 0
   const userUsername = tgUser?.username || ''
 
   const [firstName, setFirstName] = useState(tgUser?.first_name || '')
   const [lastName, setLastName] = useState(tgUser?.last_name || '')
   const [gender, setGender] = useState('male')
   const [grade, setGrade] = useState(5)
+  const [classLetter, setClassLetter] = useState('A')
   const [subject, setSubject] = useState('')
 
   const [viloyatlar, setViloyatlar] = useState([])
@@ -85,7 +95,7 @@ export default function ParentStudentSetup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           telegram_id: telegramId, username: userUsername, full_name: fullName,
-          role: 'parent', gender, grade, subject,
+          role: 'parent', gender, grade, class_letter: classLetter, subject,
           viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
         }),
       })
@@ -100,7 +110,7 @@ export default function ParentStudentSetup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           telegram_id: telegramId, username: userUsername, full_name: fullName,
-          role: 'student', gender, grade, subject,
+          role: 'student', gender, grade, class_letter: classLetter, subject,
           viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
         }),
       })
@@ -201,10 +211,14 @@ export default function ParentStudentSetup() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Sinf</label>
               <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={g => { setGrade(g); setSubject('') }} visibleItems={3} itemHeight={40} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Harf</label>
+              <WheelPicker items={CLASS_LETTER_ITEMS} selectedValue={classLetter} onSelect={setClassLetter} visibleItems={3} itemHeight={40} />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Fan</label>

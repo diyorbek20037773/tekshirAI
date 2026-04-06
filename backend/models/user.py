@@ -19,6 +19,7 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False)  # student, teacher, parent, director, admin
     gender: Mapped[str | None] = mapped_column(String(10))  # male, female
     grade: Mapped[int | None] = mapped_column(Integer)  # 1-11 sinf
+    class_letter: Mapped[str | None] = mapped_column(String(5))  # A, B, C, D, F
     subject: Mapped[str | None] = mapped_column(String(100))  # o'qituvchi fani
     viloyat: Mapped[str | None] = mapped_column(String(100))  # Surxondaryo viloyati
     tuman: Mapped[str | None] = mapped_column(String(100))  # Termiz Tumani

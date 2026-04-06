@@ -34,6 +34,7 @@ function AutoLogin() {
     const checkAuth = async () => {
       // Telegram WebApp dan telegram_id olish
       const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
+      if (tgUser?.id) localStorage.setItem('telegramId', String(tgUser.id))
       const telegramId = tgUser?.id || localStorage.getItem('telegramId')
 
       if (telegramId && telegramId !== '0') {

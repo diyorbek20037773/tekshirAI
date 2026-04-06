@@ -13,7 +13,8 @@ const SUBJECT_ITEMS = [
 export default function TeacherSetup() {
   const navigate = useNavigate()
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
-  const telegramId = tgUser?.id || 0
+  if (tgUser?.id) localStorage.setItem('telegramId', String(tgUser.id))
+  const telegramId = tgUser?.id || Number(localStorage.getItem('telegramId')) || 0
   const userUsername = tgUser?.username || ''
 
   const [firstName, setFirstName] = useState(tgUser?.first_name || '')
