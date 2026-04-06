@@ -55,6 +55,7 @@ async def lifespan(app: FastAPI):
             import backend.models.classroom
             import backend.models.conversation
             import backend.models.rating
+            import backend.models.assignment
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
                 # Yangi ustunlar qo'shish (create_all mavjud jadvalga ustun qo'shmaydi)

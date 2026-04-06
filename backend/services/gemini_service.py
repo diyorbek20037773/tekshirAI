@@ -12,6 +12,7 @@ from typing import Dict, List
 import google.generativeai as genai
 
 from backend.services.key_manager import KeyManager
+from backend.services.subject_prompts import get_subject_prompt
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -137,7 +138,11 @@ MUHIM: Agar rasmdagi yozuv o'qib bo'lmaydigan bo'lsa, quyidagi JSON qaytar:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(self.model_name)
 
-        user_prompt = f"""Fan: {subject}
+        subject_specific = get_subject_prompt(subject)
+
+        user_prompt = f"""{subject_specific}
+
+Fan: {subject}
 Sinf: {grade}-sinf
 Mavzu: {topic or "umumiy"}
 

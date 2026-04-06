@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X } from 'lucide-react'
+import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X, ClipboardList } from 'lucide-react'
 import { getQuoteByScore, getDailyQuote, getRandomErrorMotivation, POINTS } from '../../data/quotes'
 import RiskDashboard from '../../components/RiskDashboard'
 import AiChat from '../../components/AiChat'
@@ -22,6 +22,14 @@ export default function StudentHome() {
   const [analysis, setAnalysis] = useState(null)
   const [lastSubmissionId, setLastSubmissionId] = useState(null)
   const [showRating, setShowRating] = useState(false)
+  const [assignments, setAssignments] = useState([])
+
+  // Topshiriqlarni yuklash
+  useEffect(() => {
+    if (!telegramId || telegramId === '0') return
+    fetch(`/api/assignments/student?telegram_id=${telegramId}`)
+      .then(r => r.json()).then(data => { if (Array.isArray(data)) setAssignments(data) }).catch(() => {})
+  }, [telegramId])
 
   // Bilim tahlilini yuklash
   useEffect(() => {
@@ -245,6 +253,34 @@ export default function StudentHome() {
                 className="flex-1 bg-gray-200 text-gray-700 py-2.5 rounded-lg font-medium text-sm disabled:opacity-50">
                 Yo'q
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* === TOPSHIRIQLAR === */}
+        {assignments.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <ClipboardList className="w-5 h-5 text-primary-500" />
+              <h2 className="text-base font-semibold text-gray-800">Topshiriqlar</h2>
+              <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">{assignments.length}</span>
+            </div>
+            <div className="space-y-2">
+              {assignments.map(a => (
+                <div key={a.id} className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                  <p className="text-sm font-medium text-gray-800">{a.title}</p>
+                  {a.description && <p className="text-xs text-gray-500 mt-1">{a.description}</p>}
+                  <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
+                    <span>{a.subject}</span>
+                    <span>{a.grade}-sinf</span>
+                    <span>{a.teacher_name}</span>
+                    <span>{new Date(a.created_at).toLocaleDateString('uz')}</span>
+                  </div>
+                  {a.due_date && (
+                    <p className="text-xs text-accent-600 mt-1">Muddat: {new Date(a.due_date).toLocaleDateString('uz')}</p>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}

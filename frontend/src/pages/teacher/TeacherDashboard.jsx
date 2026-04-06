@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, BookCheck, TrendingUp, Clock, LogOut, Camera, X, Send, Loader2, Image, Compass } from 'lucide-react'
+import { Users, BookCheck, TrendingUp, Clock, LogOut, Camera, X, Send, Loader2, Image, Compass, ClipboardList, Plus, Trash2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getRandomTeacherQuote } from '../../data/quotes'
 
@@ -53,6 +53,53 @@ export default function TeacherDashboard() {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
+
+  // Topshiriqlar
+  const [showNewAssignment, setShowNewAssignment] = useState(false)
+  const [assignments, setAssignments] = useState([])
+  const [assignTitle, setAssignTitle] = useState('')
+  const [assignDesc, setAssignDesc] = useState('')
+  const [assignGrade, setAssignGrade] = useState(7)
+  const [assignSubject, setAssignSubject] = useState(teacherSubject || 'Matematika')
+  const [assignSaving, setAssignSaving] = useState(false)
+
+  const fetchAssignments = () => {
+    if (!telegramId) return
+    fetch(`/api/assignments/teacher?telegram_id=${telegramId}`)
+      .then(r => r.json()).then(setAssignments).catch(() => {})
+  }
+  useEffect(() => { fetchAssignments() }, [])
+
+  const handleCreateAssignment = async () => {
+    if (!assignTitle.trim()) return
+    setAssignSaving(true)
+    try {
+      const res = await fetch('/api/assignments/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teacher_telegram_id: Number(telegramId),
+          title: assignTitle.trim(),
+          description: assignDesc.trim() || null,
+          subject: assignSubject,
+          grade: assignGrade,
+        }),
+      })
+      if (res.ok) {
+        setAssignTitle('')
+        setAssignDesc('')
+        setShowNewAssignment(false)
+        fetchAssignments()
+      }
+    } catch {}
+    setAssignSaving(false)
+  }
+
+  const handleDeleteAssignment = async (id) => {
+    if (!confirm("O'chirishni xohlaysizmi?")) return
+    await fetch(`/api/assignments/${id}?telegram_id=${telegramId}`, { method: 'DELETE' }).catch(() => {})
+    fetchAssignments()
+  }
 
   const fetchData = () => {
     Promise.all([
@@ -305,6 +352,72 @@ export default function TeacherDashboard() {
                 className="w-full bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition">
                 Yangi tekshirish
               </button>
+            </div>
+          )}
+        </div>
+
+        {/* === TOPSHIRIQ YUBORISH === */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary-500" /> Topshiriqlar
+            </h2>
+            <button onClick={() => setShowNewAssignment(!showNewAssignment)}
+              className="flex items-center gap-1 text-xs font-medium text-primary-600 bg-primary-50 px-3 py-1.5 rounded-lg hover:bg-primary-100">
+              <Plus className="w-4 h-4" /> Yangi
+            </button>
+          </div>
+
+          {showNewAssignment && (
+            <div className="bg-gray-50 rounded-xl p-3 mb-3 space-y-2">
+              <input type="text" value={assignTitle} onChange={e => setAssignTitle(e.target.value)}
+                placeholder="Topshiriq nomi (masalan: 5-bob, 3-mashq)"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400" />
+              <textarea value={assignDesc} onChange={e => setAssignDesc(e.target.value)}
+                placeholder="Topshiriq matni (ixtiyoriy)"
+                rows={3}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none" />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-500">Sinf</label>
+                  <select value={assignGrade} onChange={e => setAssignGrade(Number(e.target.value))}
+                    className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm bg-white">
+                    {Array.from({ length: 11 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}-sinf</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Fan</label>
+                  <input type="text" value={assignSubject} onChange={e => setAssignSubject(e.target.value)}
+                    className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setShowNewAssignment(false)}
+                  className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-100">Bekor</button>
+                <button onClick={handleCreateAssignment} disabled={assignSaving || !assignTitle.trim()}
+                  className="flex-1 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-40 flex items-center justify-center gap-1">
+                  {assignSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Yuborish
+                </button>
+              </div>
+            </div>
+          )}
+
+          {assignments.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-3">Hali topshiriq yo'q</p>
+          ) : (
+            <div className="space-y-2">
+              {assignments.slice(0, 5).map(a => (
+                <div key={a.id} className="flex items-start justify-between p-2.5 rounded-lg border border-gray-100 bg-gray-50">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-700 truncate">{a.title}</p>
+                    {a.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{a.description}</p>}
+                    <p className="text-[10px] text-gray-400 mt-1">{a.grade}-sinf | {a.subject} | {new Date(a.created_at).toLocaleDateString('uz')}</p>
+                  </div>
+                  <button onClick={() => handleDeleteAssignment(a.id)} className="p-1 text-gray-400 hover:text-red-500 shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
