@@ -32,6 +32,12 @@ function AutoLogin() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Agar logout qilingan bo'lsa — auto-login qilma
+      if (sessionStorage.getItem('loggedOut')) {
+        setChecked(true)
+        return
+      }
+
       // Telegram WebApp dan telegram_id olish
       const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
       if (tgUser?.id) localStorage.setItem('telegramId', String(tgUser.id))

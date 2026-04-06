@@ -76,6 +76,16 @@ export default function StudentHome() {
   const openCamera = useCallback(async () => {
     setCameraError('')
     try {
+      // Oldindan ruxsatni tekshirish
+      if (navigator.permissions) {
+        try {
+          const perm = await navigator.permissions.query({ name: 'camera' })
+          if (perm.state === 'denied') {
+            setCameraError('Kamera ruxsati berilmagan. Brauzer sozlamalaridan ruxsat bering.')
+            return
+          }
+        } catch {}
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
@@ -160,6 +170,7 @@ export default function StudentHome() {
 
   const handleLogout = () => {
     localStorage.clear()
+    sessionStorage.setItem('loggedOut', 'true')
     navigate('/')
   }
 

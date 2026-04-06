@@ -39,8 +39,10 @@ async def get_student_analysis(telegram_id: int, db: AsyncSession = Depends(get_
     """O'quvchining to'liq bilim tahlili — mavzu bo'yicha risk management."""
 
     # O'quvchini topish
-    result = await db.execute(select(User).where(User.telegram_id == telegram_id))
-    user = result.scalar_one_or_none()
+    result = await db.execute(
+        select(User).where(User.telegram_id == telegram_id, User.role == "student")
+    )
+    user = result.scalars().first()
     if not user:
         return JSONResponse(status_code=404, content={"detail": "O'quvchi topilmadi"})
 
@@ -246,8 +248,10 @@ async def get_career_prediction(telegram_id: int, db: AsyncSession = Depends(get
     """O'quvchining fan natijalariga qarab kasbiy yo'nalish bashorati."""
 
     # O'quvchini topish
-    result = await db.execute(select(User).where(User.telegram_id == telegram_id))
-    user = result.scalar_one_or_none()
+    result = await db.execute(
+        select(User).where(User.telegram_id == telegram_id, User.role == "student")
+    )
+    user = result.scalars().first()
     if not user:
         return JSONResponse(status_code=404, content={"detail": "O'quvchi topilmadi"})
 

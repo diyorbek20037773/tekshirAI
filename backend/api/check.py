@@ -86,8 +86,10 @@ async def check_homework(
         # DB ga submission saqlash
         student_id = None
         if telegram_id and telegram_id != 0:
-            result = await db.execute(select(User).where(User.telegram_id == telegram_id))
-            user = result.scalar_one_or_none()
+            result = await db.execute(
+                select(User).where(User.telegram_id == telegram_id, User.role == "student")
+            )
+            user = result.scalars().first()
             if user:
                 student_id = user.id
 

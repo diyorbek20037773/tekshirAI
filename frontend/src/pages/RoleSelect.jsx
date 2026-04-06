@@ -5,8 +5,8 @@ export default function RoleSelect() {
   const navigate = useNavigate()
 
   const selectRole = (role) => {
+    sessionStorage.removeItem('loggedOut')
     if (role === 'admin') {
-      // Admin panelga yo'naltirish (shu backend dan serve)
       window.open('/admin', '_blank')
       return
     }

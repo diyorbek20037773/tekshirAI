@@ -38,8 +38,8 @@ async def chat_message(req: ChatRequest, db: AsyncSession = Depends(get_db)):
     """O'quvchi AI bilan suhbatlashadi — masala yoki mavzu haqida."""
 
     # User olish
-    result = await db.execute(select(User).where(User.telegram_id == req.telegram_id))
-    user = result.scalar_one_or_none()
+    result = await db.execute(select(User).where(User.telegram_id == req.telegram_id).limit(1))
+    user = result.scalars().first()
     grade = user.grade if user else 7
     subject = user.subject if user else "matematika"
 
