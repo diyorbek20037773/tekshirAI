@@ -83,7 +83,7 @@ function AutoLogin() {
                 // Bitta rol — to'g'ridan-to'g'ri dashboardga
                 const r = data.roles[0]
                 _saveRoleData(r, telegramId)
-                navigate(`/${r.role}`, { replace: true })
+                window.location.replace(`/${r.role}`)
                 return
               }
 
@@ -96,7 +96,7 @@ function AutoLogin() {
                 localStorage.setItem('userRole', 'student')
                 localStorage.setItem('hasParentRole', 'true')
                 if (parentRole.full_name) localStorage.setItem('parentName', parentRole.full_name)
-                navigate('/student', { replace: true })
+                window.location.replace('/student')
                 return
               }
 
@@ -114,7 +114,7 @@ function AutoLogin() {
       const savedRole = localStorage.getItem('userRole')
       const userId = localStorage.getItem('userId')
       if (savedRole && userId) {
-        navigate(`/${savedRole}`, { replace: true })
+        window.location.replace(`/${savedRole}`)
         return
       }
 
@@ -127,8 +127,15 @@ function AutoLogin() {
   // Rol tanlash UI (ko'p rolli foydalanuvchilar uchun)
   if (roles && roles.length > 1) {
     const selectRole = (r) => {
-      _saveRoleData(r, localStorage.getItem('telegramId'))
-      navigate(`/${r.role}`, { replace: true })
+      try {
+        sessionStorage.removeItem('loggedOut')
+        _saveRoleData(r, localStorage.getItem('telegramId'))
+        // navigate o'rniga window.location ishlatamiz — Telegram WebView da ishonchli
+        window.location.href = `/${r.role}`
+      } catch (e) {
+        console.error('selectRole xatosi:', e)
+        window.location.href = `/${r.role}`
+      }
     }
 
     const roleLabels = {
