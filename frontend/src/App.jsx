@@ -66,6 +66,12 @@ function AutoLogin() {
         return
       }
 
+      // Agar rol menyusiga qaytish so'ralgan bo'lsa — rollarni ko'rsat, auto-redirect qilma
+      const showMenu = sessionStorage.getItem('showRoleMenu')
+      if (showMenu) {
+        sessionStorage.removeItem('showRoleMenu')
+      }
+
       // Telegram WebApp dan telegram_id olish
       const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
       if (tgUser?.id) localStorage.setItem('telegramId', String(tgUser.id))
@@ -79,28 +85,29 @@ function AutoLogin() {
             if (data.roles && data.roles.length > 0) {
               setRoles(data.roles)
 
-              if (data.roles.length === 1) {
-                // Bitta rol — to'g'ridan-to'g'ri dashboardga
-                const r = data.roles[0]
-                _saveRoleData(r, telegramId)
-                window.location.replace(`/${r.role}`)
-                return
+              // Agar showMenu — doim rol menyusini ko'rsat
+              if (!showMenu) {
+                if (data.roles.length === 1) {
+                  const r = data.roles[0]
+                  _saveRoleData(r, telegramId)
+                  window.location.replace(`/${r.role}`)
+                  return
+                }
+
+                const roleSet = new Set(data.roles.map(r => r.role))
+                if (roleSet.has('parent') && roleSet.has('student') && data.roles.length === 2) {
+                  const studentRole = data.roles.find(r => r.role === 'student')
+                  const parentRole = data.roles.find(r => r.role === 'parent')
+                  _saveRoleData(studentRole, telegramId)
+                  localStorage.setItem('userRole', 'student')
+                  localStorage.setItem('hasParentRole', 'true')
+                  if (parentRole.full_name) localStorage.setItem('parentName', parentRole.full_name)
+                  window.location.replace('/student')
+                  return
+                }
               }
 
-              // Agar parent + student bo'lsa — parent_student sifatida kirsin
-              const roleSet = new Set(data.roles.map(r => r.role))
-              if (roleSet.has('parent') && roleSet.has('student') && data.roles.length === 2) {
-                const studentRole = data.roles.find(r => r.role === 'student')
-                const parentRole = data.roles.find(r => r.role === 'parent')
-                _saveRoleData(studentRole, telegramId)
-                localStorage.setItem('userRole', 'student')
-                localStorage.setItem('hasParentRole', 'true')
-                if (parentRole.full_name) localStorage.setItem('parentName', parentRole.full_name)
-                window.location.replace('/student')
-                return
-              }
-
-              // Ko'p rol — tanlash kerak (render da ko'rsatiladi)
+              // Rol menyusini ko'rsat
               setChecked(true)
               return
             }

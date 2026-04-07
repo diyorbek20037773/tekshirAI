@@ -41,9 +41,29 @@ export default function DirectorDashboard() {
 
   useEffect(() => { fetchData() }, [])
 
+  // Orqaga — rol menyusiga qaytish
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    const handlePopState = () => {
+      sessionStorage.setItem('showRoleMenu', 'true')
+      window.location.href = '/'
+    }
+    window.addEventListener('popstate', handlePopState)
+    const tg = window.Telegram?.WebApp
+    if (tg?.BackButton) {
+      tg.BackButton.show()
+      tg.BackButton.onClick(handlePopState)
+    }
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      if (tg?.BackButton) { tg.BackButton.offClick(handlePopState); tg.BackButton.hide() }
+    }
+  }, [])
+
   const logout = () => {
     localStorage.clear()
-    navigate('/')
+    sessionStorage.setItem('loggedOut', 'true')
+    window.location.href = '/'
   }
 
   if (loading) return (

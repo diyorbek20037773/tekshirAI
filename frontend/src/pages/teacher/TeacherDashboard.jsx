@@ -206,9 +206,30 @@ export default function TeacherDashboard() {
   const totalStudents = students.length
   const avgScore = globalStats?.avg_score || 0
 
+  // Orqaga — rol menyusiga qaytish
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    const handlePopState = () => {
+      sessionStorage.setItem('showRoleMenu', 'true')
+      window.location.href = '/'
+    }
+    window.addEventListener('popstate', handlePopState)
+    // Telegram BackButton
+    const tg = window.Telegram?.WebApp
+    if (tg?.BackButton) {
+      tg.BackButton.show()
+      tg.BackButton.onClick(handlePopState)
+    }
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      if (tg?.BackButton) { tg.BackButton.offClick(handlePopState); tg.BackButton.hide() }
+    }
+  }, [])
+
   const handleLogout = () => {
     localStorage.clear()
-    navigate('/')
+    sessionStorage.setItem('loggedOut', 'true')
+    window.location.href = '/'
   }
 
   // Kamera fullscreen

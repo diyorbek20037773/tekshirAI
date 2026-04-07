@@ -110,8 +110,12 @@ export default function StudentHome() {
     const handlePopState = () => {
       if (selectedSubject) {
         setSelectedSubject(null)
+        window.history.pushState(null, '', window.location.href)
+      } else {
+        // Fan gridda — rol menyusiga qaytish
+        sessionStorage.setItem('showRoleMenu', 'true')
+        window.location.href = '/'
       }
-      window.history.pushState(null, '', window.location.href)
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
@@ -121,14 +125,17 @@ export default function StudentHome() {
   useEffect(() => {
     const tg = window.Telegram?.WebApp
     if (tg?.BackButton) {
-      if (selectedSubject) {
-        tg.BackButton.show()
-        const handler = () => { setSelectedSubject(null) }
-        tg.BackButton.onClick(handler)
-        return () => { tg.BackButton.offClick(handler); tg.BackButton.hide() }
-      } else {
-        tg.BackButton.hide()
+      tg.BackButton.show()
+      const handler = () => {
+        if (selectedSubject) {
+          setSelectedSubject(null)
+        } else {
+          sessionStorage.setItem('showRoleMenu', 'true')
+          window.location.href = '/'
+        }
       }
+      tg.BackButton.onClick(handler)
+      return () => { tg.BackButton.offClick(handler) }
     }
   }, [selectedSubject])
 
@@ -245,7 +252,7 @@ export default function StudentHome() {
   const handleLogout = () => {
     localStorage.clear()
     sessionStorage.setItem('loggedOut', 'true')
-    navigate('/')
+    window.location.href = '/'
   }
 
   const handleBackToSubjects = () => {
