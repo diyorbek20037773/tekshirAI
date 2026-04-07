@@ -334,11 +334,20 @@ async def confirm_parent(data: ConfirmLink, db: AsyncSession = Depends(get_db)):
 # === O'qituvchi uchun ===
 
 @router.get("/students")
-async def get_all_students(maktab: str = None, db: AsyncSession = Depends(get_db)):
-    """O'quvchilar ro'yxati. maktab parametri bo'lsa — faqat shu maktab o'quvchilari."""
+async def get_all_students(
+    maktab: str = None,
+    grade: int = None,
+    subject: str = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """O'quvchilar ro'yxati. maktab, sinf, fan parametrlari bilan filtr."""
     query = select(User).where(User.role == "student")
     if maktab:
         query = query.where(User.maktab == maktab)
+    if grade:
+        query = query.where(User.grade == grade)
+    if subject:
+        query = query.where(User.subject == subject)
     result = await db.execute(query.order_by(User.created_at.desc()))
     students = result.scalars().all()
 

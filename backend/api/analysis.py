@@ -163,11 +163,15 @@ async def get_student_analysis(telegram_id: int, db: AsyncSession = Depends(get_
 
 
 @router.get("/classroom-risks")
-async def get_classroom_risks(db: AsyncSession = Depends(get_db)):
-    """Barcha o'quvchilarni 3 guruhga bo'lish — o'qituvchi uchun risk management."""
+async def get_classroom_risks(
+    maktab: str = None,
+    grade: int = None,
+    subject: str = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """O'quvchilarni 3 guruhga bo'lish — maktab/sinf/fan filtri bilan."""
 
-    # Barcha o'quvchilarni olish
-    result = await db.execute(
+    query = (
         select(
             User.id, User.telegram_id, User.full_name, User.grade, User.subject,
             func.avg(Submission.score).label("avg_score"),
@@ -178,8 +182,15 @@ async def get_classroom_risks(db: AsyncSession = Depends(get_db)):
             Submission.status == "completed",
         ))
         .where(User.role == "student")
-        .group_by(User.id)
     )
+    if maktab:
+        query = query.where(User.maktab == maktab)
+    if grade:
+        query = query.where(User.grade == grade)
+    if subject:
+        query = query.where(User.subject == subject)
+
+    result = await db.execute(query.group_by(User.id))
     rows = result.all()
 
     green, yellow, red = [], [], []

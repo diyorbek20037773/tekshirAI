@@ -202,15 +202,22 @@ class AnalyticsService:
         ]
 
 
-    async def get_global_recent(self, session: AsyncSession, limit: int = 20) -> List[Dict]:
-        """Barcha o'quvchilarning oxirgi tekshiruvlari (classroom filtersiz)."""
-        result = await session.execute(
+    async def get_global_recent(self, session: AsyncSession, limit: int = 20,
+                               maktab: str = None, grade: int = None, subject: str = None) -> List[Dict]:
+        """Oxirgi tekshiruvlar (maktab/sinf/fan filtri bilan)."""
+        query = (
             select(Submission, User)
             .join(User, Submission.student_id == User.id)
             .where(Submission.status == "completed")
-            .order_by(desc(Submission.created_at))
-            .limit(limit)
         )
+        if maktab:
+            query = query.where(User.maktab == maktab)
+        if grade:
+            query = query.where(User.grade == grade)
+        if subject:
+            query = query.where(Submission.subject == subject)
+
+        result = await session.execute(query.order_by(desc(Submission.created_at)).limit(limit))
         rows = result.all()
         return [
             {
@@ -226,14 +233,22 @@ class AnalyticsService:
             for sub, user in rows
         ]
 
-    async def get_global_topic_errors(self, session: AsyncSession) -> List[Dict]:
-        """Barcha mavzu xatolari (classroom filtersiz)."""
-        result = await session.execute(
+    async def get_global_topic_errors(self, session: AsyncSession,
+                                      maktab: str = None, grade: int = None, subject: str = None) -> List[Dict]:
+        """Mavzu xatolari (maktab/sinf/fan filtri bilan)."""
+        query = (
             select(Submission.ai_result)
+            .join(User, Submission.student_id == User.id)
             .where(Submission.status == "completed")
-            .order_by(desc(Submission.created_at))
-            .limit(100)
         )
+        if maktab:
+            query = query.where(User.maktab == maktab)
+        if grade:
+            query = query.where(User.grade == grade)
+        if subject:
+            query = query.where(Submission.subject == subject)
+
+        result = await session.execute(query.order_by(desc(Submission.created_at)).limit(100))
         topic_errors = {}
         for (ai_result,) in result.all():
             if ai_result:
@@ -244,24 +259,53 @@ class AnalyticsService:
             for topic, count in sorted(topic_errors.items(), key=lambda x: -x[1])[:10]
         ]
 
-    async def get_global_stats(self, session: AsyncSession) -> Dict:
-        """Umumiy statistika."""
+    async def get_global_stats(self, session: AsyncSession,
+                               maktab: str = None, grade: int = None, subject: str = None) -> Dict:
+        """Statistika (maktab/sinf/fan filtri bilan)."""
         today = date.today()
 
-        total_students = await session.execute(
-            select(func.count()).select_from(User).where(User.role == "student")
+        student_q = select(func.count()).select_from(User).where(User.role == "student")
+        if maktab:
+            student_q = student_q.where(User.maktab == maktab)
+        if grade:
+            student_q = student_q.where(User.grade == grade)
+        if subject:
+            student_q = student_q.where(User.subject == subject)
+        total_students = await session.execute(student_q)
+
+        sub_q = select(func.count()).select_from(Submission).join(User, Submission.student_id == User.id).where(
+            and_(func.date(Submission.created_at) == today, Submission.status == "completed")
         )
-        today_subs = await session.execute(
-            select(func.count()).select_from(Submission).where(
-                and_(func.date(Submission.created_at) == today, Submission.status == "completed")
-            )
-        )
-        avg_result = await session.execute(
-            select(func.avg(Submission.score)).where(Submission.status == "completed")
-        )
+        if maktab:
+            sub_q = sub_q.where(User.maktab == maktab)
+        if grade:
+            sub_q = sub_q.where(User.grade == grade)
+        if subject:
+            sub_q = sub_q.where(Submission.subject == subject)
+        today_subs = await session.execute(sub_q)
+
+        avg_q = select(func.avg(Submission.score)).join(User, Submission.student_id == User.id).where(Submission.status == "completed")
+        if maktab:
+            avg_q = avg_q.where(User.maktab == maktab)
+        if grade:
+            avg_q = avg_q.where(User.grade == grade)
+        if subject:
+            avg_q = avg_q.where(Submission.subject == subject)
+        avg_result = await session.execute(avg_q)
+
+        total_q = select(func.count()).select_from(Submission).join(User, Submission.student_id == User.id).where(Submission.status == "completed")
+        if maktab:
+            total_q = total_q.where(User.maktab == maktab)
+        if grade:
+            total_q = total_q.where(User.grade == grade)
+        if subject:
+            total_q = total_q.where(Submission.subject == subject)
+        total_subs = await session.execute(total_q)
+
         return {
             "total_students": total_students.scalar() or 0,
             "today_submissions": today_subs.scalar() or 0,
+            "total_submissions": total_subs.scalar() or 0,
             "avg_score": round(avg_result.scalar() or 0, 1),
         }
 

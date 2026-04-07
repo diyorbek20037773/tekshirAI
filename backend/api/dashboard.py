@@ -43,18 +43,34 @@ async def get_topic_errors(
 
 
 @router.get("/recent-all")
-async def get_recent_all(limit: int = 20, db: AsyncSession = Depends(get_db)):
-    """Barcha o'quvchilarning oxirgi tekshiruvlari (autentifikatsiyasiz)."""
-    return await analytics_service.get_global_recent(db, limit)
+async def get_recent_all(
+    limit: int = 20,
+    maktab: str = None,
+    grade: int = None,
+    subject: str = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Oxirgi tekshiruvlar (maktab/sinf/fan filtri bilan)."""
+    return await analytics_service.get_global_recent(db, limit, maktab=maktab, grade=grade, subject=subject)
 
 
 @router.get("/topic-errors-all")
-async def get_topic_errors_all(db: AsyncSession = Depends(get_db)):
-    """Barcha mavzu xatolari (autentifikatsiyasiz)."""
-    return await analytics_service.get_global_topic_errors(db)
+async def get_topic_errors_all(
+    maktab: str = None,
+    grade: int = None,
+    subject: str = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Mavzu xatolari (maktab/sinf/fan filtri bilan)."""
+    return await analytics_service.get_global_topic_errors(db, maktab=maktab, grade=grade, subject=subject)
 
 
 @router.get("/stats-all")
-async def get_stats_all(db: AsyncSession = Depends(get_db)):
-    """Umumiy statistika (autentifikatsiyasiz)."""
-    return await analytics_service.get_global_stats(db)
+async def get_stats_all(
+    maktab: str = None,
+    grade: int = None,
+    subject: str = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Statistika (maktab/sinf/fan filtri bilan)."""
+    return await analytics_service.get_global_stats(db, maktab=maktab, grade=grade, subject=subject)
