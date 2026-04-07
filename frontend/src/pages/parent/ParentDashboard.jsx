@@ -19,10 +19,17 @@ export default function ParentDashboard() {
   // Farzand qidirish
   const [searchMode, setSearchMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchGrade, setSearchGrade] = useState(0)
+  const [searchResults, setSearchResults] = useState([])
   const [searchResult, setSearchResult] = useState(null)
   const [searchError, setSearchError] = useState('')
   const [linking, setLinking] = useState(false)
   const [linkStatus, setLinkStatus] = useState(null)
+
+  // Setup dan kiritilgan farzandlar
+  const parentChildren = (() => {
+    try { return JSON.parse(localStorage.getItem('parentChildren') || '[]') } catch { return [] }
+  })()
 
   // Kasb yo'nalishi
   const [careerPrediction, setCareerPrediction] = useState(null)
@@ -47,18 +54,27 @@ export default function ParentDashboard() {
 
   useEffect(() => { fetchChildData() }, [telegramId])
 
-  // Farzand qidirish
+  // Farzand qidirish — ism + sinf bo'yicha
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
     setSearchError('')
+    setSearchResults([])
     setSearchResult(null)
     try {
-      const res = await fetch(`/api/users/search?username=${encodeURIComponent(searchQuery.trim())}`)
+      const params = new URLSearchParams({ name: searchQuery.trim() })
+      if (searchGrade > 0) params.append('grade', searchGrade)
+      const parentMaktab = localStorage.getItem('parentMaktab')
+      if (parentMaktab) params.append('maktab', parentMaktab)
+      const res = await fetch(`/api/users/search-students?${params}`)
       if (res.ok) {
-        setSearchResult(await res.json())
+        const data = await res.json()
+        if (data.length === 0) {
+          setSearchError("O'quvchi topilmadi. Ismni tekshiring.")
+        } else {
+          setSearchResults(data)
+        }
       } else {
-        const d = await res.json()
-        setSearchError(d.detail || "O'quvchi topilmadi")
+        setSearchError("Qidiruvda xatolik")
       }
     } catch {
       setSearchError('Xatolik yuz berdi')
@@ -66,8 +82,9 @@ export default function ParentDashboard() {
   }
 
   // Farzandga bog'lanish
-  const handleLink = async () => {
-    if (!searchResult) return
+  const handleLink = async (student) => {
+    const target = student || searchResult
+    if (!target) return
     setLinking(true)
     try {
       const res = await fetch('/api/users/link-parent', {
@@ -75,17 +92,17 @@ export default function ParentDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           parent_telegram_id: Number(telegramId),
-          child_username: searchResult.username,
+          child_username: target.username,
         }),
       })
       const data = await res.json()
       if (res.ok) {
         setLinkStatus(data)
         if (data.status === 'confirmed') {
-          // Avtomatik bog'landi — qayta yuklash
           setTimeout(() => {
             setSearchMode(false)
             setLinkStatus(null)
+            setSearchResults([])
             fetchChildData()
           }, 2000)
         }
@@ -118,8 +135,7 @@ export default function ParentDashboard() {
   }, [])
 
   const handleLogout = () => {
-    localStorage.clear()
-    sessionStorage.setItem('loggedOut', 'true')
+    sessionStorage.setItem('showRoleMenu', 'true')
     window.location.href = '/'
   }
 
@@ -159,66 +175,95 @@ export default function ParentDashboard() {
 
         {/* === FARZAND BOG'LANMAGAN === */}
         {childLinked === false && !searchMode && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
-            <div className="w-16 h-16 bg-accent-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Link2 className="w-8 h-8 text-accent-500" />
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div className="text-center mb-4">
+              <div className="w-16 h-16 bg-accent-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Link2 className="w-8 h-8 text-accent-500" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-1">Farzandingizni bog'lang</h2>
+              <p className="text-sm text-gray-500">Farzandingiz natijalarini kuzatish uchun uni toping</p>
             </div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">Farzandingizni bog'lang</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              Farzandingiz natijalarini kuzatish uchun uni o'z profilingizga bog'lang
-            </p>
+
+            {/* Setup da kiritilgan farzandlar */}
+            {parentChildren.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 mb-2">Ro'yxatdan o'tishda kiritilgan farzandlar:</p>
+                <div className="space-y-2">
+                  {parentChildren.map((child, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-accent-50 rounded-xl border border-accent-100">
+                      <span className="text-sm font-medium text-accent-700">{i + 1}-farzand: {child.grade}-sinf {child.classLetter || ''}</span>
+                      <button onClick={() => { setSearchMode(true); setSearchGrade(child.grade) }}
+                        className="text-xs bg-accent-500 text-white px-3 py-1.5 rounded-lg font-medium">
+                        Topish
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button onClick={() => setSearchMode(true)}
-              className="inline-flex items-center gap-2 bg-accent-500 text-white px-5 py-3 rounded-xl font-semibold hover:bg-accent-600 transition">
-              <UserPlus className="w-5 h-5" /> Farzand qo'shish
+              className="w-full inline-flex items-center justify-center gap-2 bg-accent-500 text-white px-5 py-3 rounded-xl font-semibold hover:bg-accent-600 transition">
+              <Search className="w-5 h-5" /> Farzandni qidirish
             </button>
           </div>
         )}
 
-        {/* === FARZAND QIDIRISH === */}
+        {/* === FARZAND QIDIRISH (ism + sinf) === */}
         {searchMode && (
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
             <h2 className="text-base font-semibold text-gray-800 mb-3">Farzandni qidirish</h2>
-            <p className="text-xs text-gray-500 mb-3">
-              Farzandingizning Telegram username'ini kiriting (masalan: @username)
-            </p>
+            <p className="text-xs text-gray-500 mb-3">Farzandingiz ismini kiriting</p>
 
-            <div className="flex gap-2 mb-3">
+            <div className="space-y-2 mb-3">
               <input
                 type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="@username"
-                className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-accent-400 focus:ring-1 focus:ring-accent-400"
+                placeholder="Farzand ismi (masalan: Ali)"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-accent-400 focus:ring-1 focus:ring-accent-400"
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
               />
-              <button onClick={handleSearch}
-                className="px-4 py-2.5 bg-accent-500 text-white rounded-xl hover:bg-accent-600 transition">
-                <Search className="w-5 h-5" />
-              </button>
+              <div className="flex gap-2">
+                <select value={searchGrade} onChange={e => setSearchGrade(Number(e.target.value))}
+                  className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white">
+                  <option value={0}>Barcha sinflar</option>
+                  {Array.from({ length: 11 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}-sinf</option>)}
+                </select>
+                <button onClick={handleSearch}
+                  className="px-5 py-2.5 bg-accent-500 text-white rounded-xl hover:bg-accent-600 transition font-medium text-sm">
+                  Qidirish
+                </button>
+              </div>
             </div>
 
             {searchError && <p className="text-sm text-danger-500 mb-3">{searchError}</p>}
 
-            {/* Qidiruv natijasi */}
-            {searchResult && !linkStatus && (
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-blue-700" />
+            {/* Qidiruv natijalari (ro'yxat) */}
+            {searchResults.length > 0 && !linkStatus && (
+              <div className="space-y-2 mb-3">
+                <p className="text-xs text-gray-500">{searchResults.length} ta o'quvchi topildi:</p>
+                {searchResults.map(s => (
+                  <div key={s.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-blue-200 rounded-full flex items-center justify-center">
+                        <GraduationCap className="w-4 h-4 text-blue-700" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{s.full_name}</p>
+                        <p className="text-[11px] text-gray-500">{s.grade}-sinf {s.class_letter || ''} {s.maktab ? `| ${s.maktab}` : ''}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => handleLink(s)} disabled={linking}
+                      className="text-xs bg-accent-500 text-white px-3 py-1.5 rounded-lg font-medium disabled:opacity-50">
+                      Bog'lash
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{searchResult.full_name}</p>
-                    <p className="text-xs text-gray-500">@{searchResult.username} | {searchResult.grade}-sinf</p>
-                  </div>
-                </div>
-                <button onClick={handleLink} disabled={linking}
-                  className="w-full bg-accent-500 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-accent-600 transition disabled:opacity-50">
-                  {linking ? 'Yuborilmoqda...' : "Bog'lanish so'rovi yuborish"}
-                </button>
+                ))}
               </div>
             )}
 
             {/* Link natijasi */}
             {linkStatus && (
-              <div className={`rounded-xl p-4 border ${linkStatus.status === 'confirmed' ? 'bg-success-50 border-success-200' : 'bg-accent-50 border-accent-200'}`}>
+              <div className={`rounded-xl p-4 border mb-3 ${linkStatus.status === 'confirmed' ? 'bg-success-50 border-success-200' : 'bg-accent-50 border-accent-200'}`}>
                 <div className="flex items-center gap-2 mb-1">
                   {linkStatus.status === 'confirmed' ? (
                     <CheckCircle className="w-5 h-5 text-success-500" />
@@ -233,8 +278,8 @@ export default function ParentDashboard() {
               </div>
             )}
 
-            <button onClick={() => { setSearchMode(false); setSearchResult(null); setLinkStatus(null); setSearchError('') }}
-              className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700">
+            <button onClick={() => { setSearchMode(false); setSearchResults([]); setSearchResult(null); setLinkStatus(null); setSearchError('') }}
+              className="w-full mt-1 text-sm text-gray-500 hover:text-gray-700">
               Bekor qilish
             </button>
           </div>

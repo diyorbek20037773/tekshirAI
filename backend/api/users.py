@@ -248,6 +248,39 @@ async def search_user(username: str, db: AsyncSession = Depends(get_db)):
     }
 
 
+@router.get("/search-students")
+async def search_students(
+    name: str = "",
+    grade: int = 0,
+    maktab: str = "",
+    db: AsyncSession = Depends(get_db),
+):
+    """Ism, sinf, maktab bo'yicha o'quvchilarni qidirish (ota-ona uchun)."""
+    query = select(User).where(User.role == "student")
+
+    if name.strip():
+        query = query.where(User.full_name.ilike(f"%{name.strip()}%"))
+    if grade > 0:
+        query = query.where(User.grade == grade)
+    if maktab.strip():
+        query = query.where(User.maktab.ilike(f"%{maktab.strip()}%"))
+
+    result = await db.execute(query.order_by(User.full_name).limit(20))
+    students = result.scalars().all()
+
+    return [
+        {
+            "id": str(s.id),
+            "username": s.username,
+            "full_name": s.full_name,
+            "grade": s.grade,
+            "class_letter": s.class_letter,
+            "maktab": s.maktab,
+        }
+        for s in students
+    ]
+
+
 @router.post("/link-parent")
 async def link_parent(data: LinkRequest, db: AsyncSession = Depends(get_db)):
     """Ota-ona farzandga bog'lanish so'rovi yuboradi."""

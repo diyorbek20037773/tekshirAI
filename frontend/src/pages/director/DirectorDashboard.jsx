@@ -61,8 +61,7 @@ export default function DirectorDashboard() {
   }, [])
 
   const logout = () => {
-    localStorage.clear()
-    sessionStorage.setItem('loggedOut', 'true')
+    sessionStorage.setItem('showRoleMenu', 'true')
     window.location.href = '/'
   }
 

@@ -62,6 +62,8 @@ export default function TeacherDashboard() {
   const [assignGrade, setAssignGrade] = useState(7)
   const [assignSubject, setAssignSubject] = useState(teacherSubject || 'Matematika')
   const [assignSaving, setAssignSaving] = useState(false)
+  const [assignImage, setAssignImage] = useState(null)
+  const assignImageRef = useRef(null)
 
   const fetchAssignments = () => {
     if (!telegramId) return
@@ -86,8 +88,17 @@ export default function TeacherDashboard() {
         }),
       })
       if (res.ok) {
+        const data = await res.json()
+        // Rasm yuklash (agar tanlangan bo'lsa)
+        if (assignImage && data.id) {
+          const formData = new FormData()
+          formData.append('file', assignImage)
+          await fetch(`/api/assignments/${data.id}/image`, { method: 'POST', body: formData }).catch(() => {})
+        }
         setAssignTitle('')
         setAssignDesc('')
+        setAssignImage(null)
+        if (assignImageRef.current) assignImageRef.current.value = ''
         setShowNewAssignment(false)
         fetchAssignments()
       }
@@ -227,8 +238,7 @@ export default function TeacherDashboard() {
   }, [])
 
   const handleLogout = () => {
-    localStorage.clear()
-    sessionStorage.setItem('loggedOut', 'true')
+    sessionStorage.setItem('showRoleMenu', 'true')
     window.location.href = '/'
   }
 
@@ -412,8 +422,22 @@ export default function TeacherDashboard() {
                     className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm" />
                 </div>
               </div>
+              {/* Rasm/fayl yuklash */}
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Rasm yoki fayl (ixtiyoriy)</label>
+                <input ref={assignImageRef} type="file" accept="image/*,application/pdf"
+                  onChange={e => setAssignImage(e.target.files?.[0] || null)}
+                  className="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-600 hover:file:bg-primary-100" />
+                {assignImage && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-500">{assignImage.name}</span>
+                    <button onClick={() => { setAssignImage(null); if (assignImageRef.current) assignImageRef.current.value = '' }}
+                      className="text-xs text-red-500">O'chirish</button>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2">
-                <button onClick={() => setShowNewAssignment(false)}
+                <button onClick={() => { setShowNewAssignment(false); setAssignImage(null) }}
                   className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-100">Bekor</button>
                 <button onClick={handleCreateAssignment} disabled={assignSaving || !assignTitle.trim()}
                   className="flex-1 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-40 flex items-center justify-center gap-1">
