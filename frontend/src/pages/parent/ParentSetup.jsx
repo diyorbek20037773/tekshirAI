@@ -188,36 +188,41 @@ export default function ParentSetup() {
               className="w-full px-3 py-2.5 rounded-xl border border-accent-400 text-sm focus:outline-none focus:border-accent-400 focus:ring-1 focus:ring-accent-400" />
           </div>
 
-          {/* Farzandlar */}
+          {/* Farzandlar — ixcham ro'yxat */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-2">Farzandlaringiz</label>
-            <div className="space-y-3">
-              {children.map((child, index) => (
-                <div key={index} className="bg-white rounded-xl border border-gray-200 p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-gray-700">{index + 1}-farzand</p>
+            {/* Qo'shilgan farzandlar — ixcham chips */}
+            {children.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {children.map((child, index) => (
+                  <div key={index} className="inline-flex items-center gap-1.5 bg-accent-50 border border-accent-200 rounded-full px-3 py-1.5">
+                    <span className="text-xs font-medium text-accent-700">{index + 1}-farzand: {child.grade}-sinf {child.classLetter}</span>
                     {children.length > 1 && (
-                      <button onClick={() => removeChild(index)} className="p-1 text-gray-400 hover:text-danger-500">
-                        <X className="w-4 h-4" />
+                      <button onClick={() => removeChild(index)} className="text-accent-400 hover:text-danger-500">
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] text-gray-500 mb-1">Sinf</label>
-                      <WheelPicker items={GRADE_ITEMS} selectedValue={child.grade} onSelect={v => updateChild(index, 'grade', v)} />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-gray-500 mb-1">Harf</label>
-                      <WheelPicker items={CLASS_LETTER_ITEMS} selectedValue={child.classLetter} onSelect={v => updateChild(index, 'classLetter', v)} />
-                    </div>
-                  </div>
+                ))}
+              </div>
+            )}
+            {/* Farzand sinf/harf tanlash — faqat oxirgi qo'shilgan */}
+            <div className="bg-white rounded-xl border border-gray-200 p-3">
+              <p className="text-xs font-semibold text-gray-700 mb-2">{children.length}-farzand sinfi</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-gray-500 mb-1">Sinf</label>
+                  <WheelPicker items={GRADE_ITEMS} selectedValue={children[children.length - 1].grade} onSelect={v => updateChild(children.length - 1, 'grade', v)} />
                 </div>
-              ))}
+                <div>
+                  <label className="block text-[10px] text-gray-500 mb-1">Harf</label>
+                  <WheelPicker items={CLASS_LETTER_ITEMS} selectedValue={children[children.length - 1].classLetter} onSelect={v => updateChild(children.length - 1, 'classLetter', v)} />
+                </div>
+              </div>
             </div>
             <button onClick={addChild}
-              className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-accent-300 text-accent-600 text-sm font-medium hover:bg-accent-50 transition">
-              <UserPlus className="w-4 h-4" /> Yana farzand qo'shish
+              className="w-full mt-2 flex items-center justify-center gap-2 py-2 rounded-xl border-2 border-dashed border-accent-300 text-accent-600 text-xs font-medium hover:bg-accent-50 transition">
+              <UserPlus className="w-3.5 h-3.5" /> Yana farzand qo'shish
             </button>
           </div>
 
