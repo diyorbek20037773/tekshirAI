@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Loader2, MapPin, UserPlus } from 'lucide-react'
+import { ArrowLeft, Loader2, MapPin, UserPlus, X } from 'lucide-react'
 import WheelPicker from '../../components/WheelPicker'
 
 const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({ value: i + 1, label: `${i + 1}-sinf` }))
-const SUBJECT_ITEMS = [
-  'Ona tili', 'Ingliz tili', 'Matematika', 'Algebra', 'Geometriya',
-  'Fizika', 'Kimyo', 'Biologiya', 'Tabiatshunoslik', 'Informatika',
-].map(s => ({ value: s, label: s }))
+
+const CLASS_LETTER_ITEMS = [
+  { value: 'A', label: 'A' },
+  { value: 'B', label: 'B' },
+  { value: 'C', label: 'C' },
+  { value: 'D', label: 'D' },
+  { value: 'F', label: 'F' },
+]
 
 export default function ParentSetup() {
   const navigate = useNavigate()
@@ -19,14 +23,15 @@ export default function ParentSetup() {
   const [firstName, setFirstName] = useState(tgUser?.first_name || '')
   const [lastName, setLastName] = useState(tgUser?.last_name || '')
 
+  // Farzandlar ro'yxati
+  const [children, setChildren] = useState([{ grade: 5, classLetter: 'A' }])
+
   // Geolokatsiya
   const [viloyatlar, setViloyatlar] = useState([])
   const [tumanlar, setTumanlar] = useState([])
   const [selectedViloyat, setSelectedViloyat] = useState('')
   const [selectedTuman, setSelectedTuman] = useState('')
   const [selectedMaktab, setSelectedMaktab] = useState('')
-  const [grade, setGrade] = useState(5)
-  const [subject, setSubject] = useState('')
   const [geoLoading, setGeoLoading] = useState(false)
   const [geoStatus, setGeoStatus] = useState('')
 
@@ -65,6 +70,21 @@ export default function ParentSetup() {
       .then(r => r.json()).then(setTumanlar).catch(() => setTumanlar([]))
   }, [selectedViloyat])
 
+  const addChild = () => {
+    setChildren([...children, { grade: 5, classLetter: 'A' }])
+  }
+
+  const removeChild = (index) => {
+    if (children.length <= 1) return
+    setChildren(children.filter((_, i) => i !== index))
+  }
+
+  const updateChild = (index, field, value) => {
+    const updated = [...children]
+    updated[index] = { ...updated[index], [field]: value }
+    setChildren(updated)
+  }
+
   const handleSubmit = async () => {
     if (!firstName.trim() || !selectedMaktab) return
     setLoading(true); setError('')
@@ -78,7 +98,7 @@ export default function ParentSetup() {
           telegram_id: telegramId, username: parentUsername, full_name: fullName,
           role: 'parent',
           viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
-          grade, subject,
+          grade: children[0].grade,
         }),
       })
       const data = await res.json()
@@ -88,6 +108,7 @@ export default function ParentSetup() {
       localStorage.setItem('parentMaktab', selectedMaktab)
       localStorage.setItem('parentViloyat', selectedViloyat)
       localStorage.setItem('parentTuman', selectedTuman)
+      localStorage.setItem('parentChildren', JSON.stringify(children))
       localStorage.setItem('userId', data.id)
       localStorage.setItem('telegramId', data.telegram_id)
       navigate('/parent')
@@ -96,7 +117,7 @@ export default function ParentSetup() {
     }
   }
 
-  const isReady = firstName.trim() && selectedMaktab && subject
+  const isReady = firstName.trim() && selectedMaktab
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -167,16 +188,37 @@ export default function ParentSetup() {
               className="w-full px-3 py-2.5 rounded-xl border border-accent-400 text-sm focus:outline-none focus:border-accent-400 focus:ring-1 focus:ring-accent-400" />
           </div>
 
-          {/* Sinf va Fan */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Sinf</label>
-              <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={setGrade} />
+          {/* Farzandlar */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">Farzandlaringiz</label>
+            <div className="space-y-3">
+              {children.map((child, index) => (
+                <div key={index} className="bg-white rounded-xl border border-gray-200 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-gray-700">{index + 1}-farzand</p>
+                    {children.length > 1 && (
+                      <button onClick={() => removeChild(index)} className="p-1 text-gray-400 hover:text-danger-500">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-gray-500 mb-1">Sinf</label>
+                      <WheelPicker items={GRADE_ITEMS} selectedValue={child.grade} onSelect={v => updateChild(index, 'grade', v)} />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-gray-500 mb-1">Harf</label>
+                      <WheelPicker items={CLASS_LETTER_ITEMS} selectedValue={child.classLetter} onSelect={v => updateChild(index, 'classLetter', v)} />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Fan</label>
-              <WheelPicker items={SUBJECT_ITEMS} selectedValue={subject} onSelect={setSubject} />
-            </div>
+            <button onClick={addChild}
+              className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-accent-300 text-accent-600 text-sm font-medium hover:bg-accent-50 transition">
+              <UserPlus className="w-4 h-4" /> Yana farzand qo'shish
+            </button>
           </div>
 
           {error && <p className="text-sm text-danger-500 text-center">{error}</p>}

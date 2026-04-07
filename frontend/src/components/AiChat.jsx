@@ -11,13 +11,18 @@ export default function AiChat({ telegramId, submissionId, problemNumber, topic 
     "Masala ber",
   ])
   const messagesEndRef = useRef(null)
+  const chatContainerRef = useRef(null)
+  const userInteracted = useRef(false)
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (userInteracted.current && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
   }, [messages])
 
   const sendMessage = async (text) => {
     if (!text.trim() || loading) return
+    userInteracted.current = true
 
     const userMsg = { role: 'student', text: text.trim() }
     const updated = [...messages, userMsg]

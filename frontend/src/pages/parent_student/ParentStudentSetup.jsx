@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, MapPin } from 'lucide-react'
 import WheelPicker from '../../components/WheelPicker'
-import { GRADE_SUBJECTS } from '../../data/gradeSubjects'
 
 const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({
   value: i + 1,
@@ -34,7 +33,6 @@ export default function ParentStudentSetup() {
   const [gender, setGender] = useState('male')
   const [grade, setGrade] = useState(5)
   const [classLetter, setClassLetter] = useState('A')
-  const [subject, setSubject] = useState('')
 
   const [viloyatlar, setViloyatlar] = useState([])
   const [tumanlar, setTumanlar] = useState([])
@@ -79,12 +77,8 @@ export default function ParentStudentSetup() {
       .then(r => r.json()).then(setTumanlar).catch(() => setTumanlar([]))
   }, [selectedViloyat])
 
-  const subjectItems = useMemo(() => {
-    return (GRADE_SUBJECTS[grade] || []).map(s => ({ value: s, label: s }))
-  }, [grade])
-
   const handleSubmit = async () => {
-    if (!firstName.trim() || !subject || !grade || !selectedMaktab) return
+    if (!firstName.trim() || !grade || !selectedMaktab) return
     setLoading(true); setError('')
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
 
@@ -95,7 +89,7 @@ export default function ParentStudentSetup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           telegram_id: telegramId, username: userUsername, full_name: fullName,
-          role: 'parent', gender, grade, class_letter: classLetter, subject,
+          role: 'parent', gender, grade, class_letter: classLetter,
           viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
         }),
       })
@@ -110,7 +104,7 @@ export default function ParentStudentSetup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           telegram_id: telegramId, username: userUsername, full_name: fullName,
-          role: 'student', gender, grade, class_letter: classLetter, subject,
+          role: 'student', gender, grade, class_letter: classLetter,
           viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
         }),
       })
@@ -119,7 +113,6 @@ export default function ParentStudentSetup() {
 
       localStorage.setItem('studentName', studentData.full_name)
       localStorage.setItem('studentGrade', grade)
-      localStorage.setItem('studentSubject', subject)
       localStorage.setItem('studentGender', gender)
       localStorage.setItem('studentMaktab', selectedMaktab)
       localStorage.setItem('userId', studentData.id)
@@ -132,7 +125,7 @@ export default function ParentStudentSetup() {
     }
   }
 
-  const isReady = firstName.trim() && subject && grade && selectedMaktab
+  const isReady = firstName.trim() && grade && selectedMaktab
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -211,18 +204,14 @@ export default function ParentStudentSetup() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Sinf</label>
-              <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={g => { setGrade(g); setSubject('') }} visibleItems={3} itemHeight={40} />
+              <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={setGrade} visibleItems={3} itemHeight={40} />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Harf</label>
               <WheelPicker items={CLASS_LETTER_ITEMS} selectedValue={classLetter} onSelect={setClassLetter} visibleItems={3} itemHeight={40} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Fan</label>
-              <WheelPicker items={subjectItems} selectedValue={subject} onSelect={setSubject} visibleItems={3} itemHeight={40} />
             </div>
           </div>
 

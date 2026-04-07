@@ -246,7 +246,7 @@ QOIDALAR:
 - Sodda va tushunarli qilib tushuntir (maktab o'quvchisi tushunsin)
 - Real hayotdan misol keltir (bozor, sport, ovqat pishirish)
 - Qadam-baqadam ko'rsat
-- Eng ko'pi bilan 300 so'z ishlat
+- Batafsil tushuntir, fikrni oxirigacha yetkazib ber
 - Emoji ishlat: ✅ ❌ 💡 📝
 - FAQAT shu masala haqida gaplash, boshqa mavzularga o'tma
 - Agar savol fanga aloqador bo'lmasa: "Men faqat fan bo'yicha yordam beraman 📚" de"""
@@ -310,7 +310,7 @@ QOIDALAR:
 - Agar o'quvchi "tushundim" desa — tabrikla va rag'batlantir
 - Agar o'quvchi "boshqa usulda" desa — boshqa usul bilan tushuntir
 - Agar "shunga o'xshash masala" desa — o'xshash yangi masala ber
-- Aniq va tushunarli javob ber (300 so'zgacha)
+- Batafsil va tushunarli javob ber, fikrni oxirigacha yetkazib ber
 - Emoji ishlat: ✅ ❌ 💡 📝 🎯
 
 MUHIM CHEKLOV:
@@ -320,10 +320,10 @@ MUHIM CHEKLOV:
 - Hech qachon fan mavzusidan tashqari ma'lumot berma"""
 
         try:
-            gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=1024)
+            gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=4096)
             def _call():
                 return model.generate_content(prompt, generation_config=gen_config)
-            response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=30)
+            response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=45)
             self.key_manager.record_usage()
             return response.text
         except asyncio.TimeoutError:
@@ -369,7 +369,7 @@ QOIDALAR:
 - Oddiy, tushunarli tilda tushuntir
 - Hayotiy misollar bilan (bozor, sport, ovqat pishirish, pul hisoblash)
 - Savolga ANIQ javob ber, mavzudan chiqma
-- Aniq va tushunarli javob ber (300 so'zgacha)
+- Batafsil va tushunarli javob ber, fikrni oxirigacha yetkazib ber
 - Emoji ishlat: ✅ ❌ 💡 📝 🎯
 
 MUHIM CHEKLOV:
@@ -379,10 +379,10 @@ MUHIM CHEKLOV:
 - Hech qachon fan mavzusidan tashqari ma'lumot berma"""
 
         try:
-            gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=1024)
+            gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=4096)
             def _call():
                 return model.generate_content(prompt, generation_config=gen_config)
-            response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=30)
+            response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=45)
             self.key_manager.record_usage()
             return response.text
         except asyncio.TimeoutError:

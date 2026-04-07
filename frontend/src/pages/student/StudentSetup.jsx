@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, MapPin } from 'lucide-react'
 import WheelPicker from '../../components/WheelPicker'
-import { GRADE_SUBJECTS } from '../../data/gradeSubjects'
 
 const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({
   value: i + 1,
@@ -34,7 +33,6 @@ export default function StudentSetup() {
   const [gender, setGender] = useState('male')
   const [grade, setGrade] = useState(5)
   const [classLetter, setClassLetter] = useState('A')
-  const [subject, setSubject] = useState('')
 
   // Geolokatsiya
   const [viloyatlar, setViloyatlar] = useState([])
@@ -92,14 +90,8 @@ export default function StudentSetup() {
       .then(r => r.json()).then(setTumanlar).catch(() => setTumanlar([]))
   }, [selectedViloyat])
 
-  const subjectItems = useMemo(() => {
-    return (GRADE_SUBJECTS[grade] || []).map(s => ({ value: s, label: s }))
-  }, [grade])
-
-  const handleGradeChange = (g) => { setGrade(g); setSubject('') }
-
   const handleSubmit = async () => {
-    if (!firstName.trim() || !subject || !grade || !selectedMaktab) return
+    if (!firstName.trim() || !grade || !selectedMaktab) return
     setLoading(true)
     setError('')
 
@@ -117,7 +109,6 @@ export default function StudentSetup() {
           gender,
           grade,
           class_letter: classLetter,
-          subject,
           viloyat: selectedViloyat,
           tuman: selectedTuman,
           maktab: selectedMaktab,
@@ -129,7 +120,6 @@ export default function StudentSetup() {
 
       localStorage.setItem('studentName', data.full_name)
       localStorage.setItem('studentUsername', data.username || userUsername)
-      localStorage.setItem('studentSubject', subject)
       localStorage.setItem('studentGrade', grade)
       localStorage.setItem('studentGender', gender)
       localStorage.setItem('studentMaktab', selectedMaktab)
@@ -145,7 +135,7 @@ export default function StudentSetup() {
   }
 
   const avatarSrc = gender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'
-  const isReady = firstName.trim() && subject && grade && selectedMaktab
+  const isReady = firstName.trim() && grade && selectedMaktab
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -227,19 +217,15 @@ export default function StudentSetup() {
             </div>
           )}
 
-          {/* Sinf, Harf va Fan */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* Sinf va Harf */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Sinf</label>
-              <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={handleGradeChange} visibleItems={3} itemHeight={40} />
+              <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={setGrade} visibleItems={3} itemHeight={40} />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Harf</label>
               <WheelPicker items={CLASS_LETTER_ITEMS} selectedValue={classLetter} onSelect={setClassLetter} visibleItems={3} itemHeight={40} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Fan</label>
-              <WheelPicker items={subjectItems} selectedValue={subject} onSelect={setSubject} visibleItems={3} itemHeight={40} />
             </div>
           </div>
 

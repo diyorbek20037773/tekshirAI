@@ -153,7 +153,7 @@ async def get_student_assignments(
     )
     classroom_ids = [row[0] for row in classroom_ids_result.all()]
 
-    # Topshiriqlar: shu sinflarga yoki umumiy (classroom_id=None, grade va subject mos)
+    # Topshiriqlar: shu sinflarga yoki umumiy (classroom_id=None, grade mos)
     query = select(Assignment).where(
         Assignment.grade == student.grade
     )
@@ -163,12 +163,8 @@ async def get_student_assignments(
         query = query.where(
             or_(
                 Assignment.classroom_id.in_(classroom_ids),
-                and_(Assignment.classroom_id.is_(None), Assignment.subject == student.subject),
+                Assignment.classroom_id.is_(None),
             )
-        )
-    else:
-        query = query.where(
-            and_(Assignment.classroom_id.is_(None), Assignment.subject == student.subject)
         )
 
     assignments = await db.execute(

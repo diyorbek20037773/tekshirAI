@@ -30,6 +30,19 @@ function AutoLogin() {
   const [checked, setChecked] = useState(false)
   const [roles, setRoles] = useState(null)
 
+  // Ortga qaytish — browser back button ni ushlab qolish
+  useEffect(() => {
+    const handlePopState = () => {
+      const savedRole = localStorage.getItem('userRole')
+      const userId = localStorage.getItem('userId')
+      if (savedRole && userId && !sessionStorage.getItem('loggedOut')) {
+        navigate(`/${savedRole}`, { replace: true })
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [navigate])
+
   useEffect(() => {
     const checkAuth = async () => {
       // Agar logout qilingan bo'lsa — auto-login qilma
