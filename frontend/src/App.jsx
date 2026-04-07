@@ -25,6 +25,21 @@ function RoleGuard({ role, children }) {
   return children
 }
 
+// Rol ma'lumotlarini localStorage ga saqlash
+function _saveRoleData(r, telegramId) {
+  localStorage.setItem('userRole', r.role)
+  localStorage.setItem('userId', r.id)
+  localStorage.setItem('telegramId', String(telegramId))
+  if (r.full_name) localStorage.setItem(`${r.role}Name`, r.full_name)
+  if (r.maktab) localStorage.setItem(`${r.role}Maktab`, r.maktab)
+  if (r.viloyat) localStorage.setItem(`${r.role}Viloyat`, r.viloyat)
+  if (r.tuman) localStorage.setItem(`${r.role}Tuman`, r.tuman)
+  if (r.grade) localStorage.setItem(`${r.role}Grade`, String(r.grade))
+  if (r.class_letter) localStorage.setItem(`${r.role}ClassLetter`, r.class_letter)
+  if (r.gender) localStorage.setItem(`${r.role}Gender`, r.gender)
+  if (r.subject) localStorage.setItem(`${r.role}Subject`, r.subject)
+}
+
 function AutoLogin() {
   const navigate = useNavigate()
   const [checked, setChecked] = useState(false)
@@ -67,11 +82,7 @@ function AutoLogin() {
               if (data.roles.length === 1) {
                 // Bitta rol — to'g'ridan-to'g'ri dashboardga
                 const r = data.roles[0]
-                localStorage.setItem('userRole', r.role)
-                localStorage.setItem('userId', r.id)
-                localStorage.setItem('telegramId', String(telegramId))
-                if (r.full_name) localStorage.setItem(`${r.role}Name`, r.full_name)
-                if (r.maktab) localStorage.setItem(`${r.role}Maktab`, r.maktab)
+                _saveRoleData(r, telegramId)
                 navigate(`/${r.role}`, { replace: true })
                 return
               }
@@ -81,11 +92,9 @@ function AutoLogin() {
               if (roleSet.has('parent') && roleSet.has('student') && data.roles.length === 2) {
                 const studentRole = data.roles.find(r => r.role === 'student')
                 const parentRole = data.roles.find(r => r.role === 'parent')
+                _saveRoleData(studentRole, telegramId)
                 localStorage.setItem('userRole', 'student')
                 localStorage.setItem('hasParentRole', 'true')
-                localStorage.setItem('userId', studentRole.id)
-                localStorage.setItem('telegramId', String(telegramId))
-                if (studentRole.full_name) localStorage.setItem('studentName', studentRole.full_name)
                 if (parentRole.full_name) localStorage.setItem('parentName', parentRole.full_name)
                 navigate('/student', { replace: true })
                 return
@@ -118,10 +127,7 @@ function AutoLogin() {
   // Rol tanlash UI (ko'p rolli foydalanuvchilar uchun)
   if (roles && roles.length > 1) {
     const selectRole = (r) => {
-      localStorage.setItem('userRole', r.role)
-      localStorage.setItem('userId', r.id)
-      if (r.full_name) localStorage.setItem(`${r.role}Name`, r.full_name)
-      if (r.maktab) localStorage.setItem(`${r.role}Maktab`, r.maktab)
+      _saveRoleData(r, localStorage.getItem('telegramId'))
       navigate(`/${r.role}`, { replace: true })
     }
 
