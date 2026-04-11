@@ -1,8 +1,20 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GraduationCap, BookOpen, Users, Building2, UserPlus, Shield } from 'lucide-react'
 
 export default function RoleSelect() {
   const navigate = useNavigate()
+
+  // Orqaga — Telegram ga qaytish
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp
+    if (tg?.BackButton) {
+      tg.BackButton.show()
+      const handler = () => tg.close()
+      tg.BackButton.onClick(handler)
+      return () => { tg.BackButton.offClick(handler); tg.BackButton.hide() }
+    }
+  }, [])
 
   const selectRole = (role) => {
     sessionStorage.removeItem('loggedOut')

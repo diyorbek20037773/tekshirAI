@@ -338,26 +338,49 @@ export default function StudentHome() {
 
           {/* Topshiriqlar shu fan uchun */}
           {subjectAssignments.length > 0 && (
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border-2 border-amber-200">
               <div className="flex items-center gap-2 mb-3">
-                <ClipboardList className="w-5 h-5 text-primary-500" />
+                <div className="relative">
+                  <ClipboardList className="w-5 h-5 text-amber-500" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                </div>
                 <h2 className="text-base font-semibold text-gray-800">Topshiriqlar</h2>
-                <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">{subjectAssignments.length}</span>
+                <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">{subjectAssignments.length} yangi</span>
               </div>
               <div className="space-y-2">
-                {subjectAssignments.map(a => (
-                  <div key={a.id} className="p-3 rounded-xl bg-gray-50 border border-gray-100">
-                    <p className="text-sm font-medium text-gray-800">{a.title}</p>
-                    {a.description && <p className="text-xs text-gray-500 mt-1">{a.description}</p>}
-                    <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
-                      <span>{a.teacher_name}</span>
-                      <span>{new Date(a.created_at).toLocaleDateString('uz')}</span>
+                {subjectAssignments.map(a => {
+                  const isDone = localStorage.getItem(`done_${a.id}`)
+                  return (
+                    <div key={a.id} className={`p-3 rounded-xl border ${isDone ? 'bg-success-50 border-success-200' : 'bg-amber-50 border-amber-200'}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {!isDone && <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />}
+                            {isDone && <span className="text-sm">✅</span>}
+                            <p className={`text-sm font-medium ${isDone ? 'text-success-700 line-through' : 'text-gray-800'}`}>{a.title}</p>
+                          </div>
+                          {a.description && <p className="text-xs text-gray-500 mt-1 ml-6">{a.description}</p>}
+                          {a.image_url && (
+                            <img src={a.image_url} alt="Topshiriq" className="mt-2 ml-6 rounded-lg max-h-40 object-contain border border-gray-200" />
+                          )}
+                          <div className="flex items-center gap-3 mt-2 ml-6 text-[10px] text-gray-400">
+                            <span>{a.teacher_name}</span>
+                            <span>{new Date(a.created_at).toLocaleDateString('uz')}</span>
+                          </div>
+                          {a.due_date && (
+                            <p className="text-xs text-red-500 mt-1 ml-6 font-medium">Muddat: {new Date(a.due_date).toLocaleDateString('uz')}</p>
+                          )}
+                        </div>
+                        {!isDone && (
+                          <button onClick={() => { localStorage.setItem(`done_${a.id}`, '1'); setAssignments([...assignments]) }}
+                            className="text-[10px] bg-success-500 text-white px-2 py-1 rounded-lg font-medium flex-shrink-0">
+                            Bajarildi
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {a.due_date && (
-                      <p className="text-xs text-accent-600 mt-1">Muddat: {new Date(a.due_date).toLocaleDateString('uz')}</p>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -607,21 +630,23 @@ export default function StudentHome() {
           <div className="grid grid-cols-2 gap-3">
             {subjects.map(subj => {
               const style = getSubjectStyle(subj)
-              // Shu fandagi topshiriqlar soni
-              const count = assignments.filter(a => a.subject?.toLowerCase() === subj.toLowerCase()).length
+              // Shu fandagi topshiriqlar soni (bajarilmaganlar)
+              const subjectTasks = assignments.filter(a => a.subject?.toLowerCase() === subj.toLowerCase())
+              const newCount = subjectTasks.filter(a => !localStorage.getItem(`done_${a.id}`)).length
               return (
                 <button
                   key={subj}
                   onClick={() => setSelectedSubject(subj)}
-                  className={`${style.bg} ${style.border} border rounded-2xl p-4 text-left hover:shadow-md transition-all active:scale-[0.97]`}
+                  className={`${style.bg} ${style.border} border rounded-2xl p-4 text-left hover:shadow-md transition-all active:scale-[0.97] relative`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-2xl">{style.icon}</span>
-                    {count > 0 && (
-                      <span className={`${style.badge} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full`}>{count}</span>
+                    {newCount > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">{newCount}</span>
                     )}
                   </div>
                   <p className={`text-sm font-semibold ${style.text}`}>{subj}</p>
+                  {newCount > 0 && <p className="text-[10px] text-red-500 font-medium mt-0.5">Yangi topshiriq!</p>}
                 </button>
               )
             })}
