@@ -1,5 +1,10 @@
 """Fan bo'yicha maxsus promptlar — har bir fan uchun alohida tekshirish ko'rsatmalari."""
 
+# Barcha fanlarga qo'shiladigan umumiy ko'rsatma
+CHILD_HANDWRITING_NOTE = """
+ESLATMA: Bu BOLANING qo'lyozmasi. Harflar/raqamlar noaniq bo'lishi mumkin.
+Kontekstdan tushun, shubhali bo'lsa o'quvchi foydasiga hal qil.
+Kichik xatolarga sabr bilan yondash, rag'batlantirib tushuntir."""
 
 SUBJECT_PROMPTS = {
     "Matematika": """MATEMATIKA FANI BO'YICHA TEKSHIRISH:
@@ -101,25 +106,35 @@ SUBJECT_PROMPTS = {
 
 
 def get_subject_prompt(subject: str) -> str:
-    """Fan nomiga mos promptni qaytaradi. Topilmasa umumiy prompt."""
+    """Fan nomiga mos promptni qaytaradi + bolalar yozuvi eslatmasi."""
+    prompt = None
+
     # Aniq moslik
     if subject in SUBJECT_PROMPTS:
-        return SUBJECT_PROMPTS[subject]
+        prompt = SUBJECT_PROMPTS[subject]
 
-    # Kichik harf bilan qidirish
-    subject_lower = subject.lower()
-    for key, prompt in SUBJECT_PROMPTS.items():
-        if key.lower() == subject_lower:
-            return prompt
+    if not prompt:
+        # Kichik harf bilan qidirish
+        subject_lower = subject.lower()
+        for key, p in SUBJECT_PROMPTS.items():
+            if key.lower() == subject_lower:
+                prompt = p
+                break
 
-    # Qisman moslik
-    for key, prompt in SUBJECT_PROMPTS.items():
-        if key.lower() in subject_lower or subject_lower in key.lower():
-            return prompt
+    if not prompt:
+        # Qisman moslik
+        subject_lower = subject.lower()
+        for key, p in SUBJECT_PROMPTS.items():
+            if key.lower() in subject_lower or subject_lower in key.lower():
+                prompt = p
+                break
 
-    # Default — umumiy
-    return f"""{subject.upper()} FANI BO'YICHA TEKSHIRISH:
+    if not prompt:
+        # Default — umumiy
+        prompt = f"""{subject.upper()} FANI BO'YICHA TEKSHIRISH:
 - O'quvchining javoblarini diqqat bilan tekshir
 - Har bir savolga to'g'ri javob berganmi aniqla
 - Xato bo'lsa sababini tushuntir va to'g'ri javobni ko'rsat
 - Fan terminologiyasi to'g'ri ishlatilganmi tekshir"""
+
+    return prompt + CHILD_HANDWRITING_NOTE

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class ImageProcessor:
     """Daftar rasmlarini optimal holatga keltiradi."""
 
-    MAX_DIMENSION = 1200
+    MAX_DIMENSION = 1600
 
     def process(self, image_bytes: bytes) -> bytes:
         """
@@ -40,20 +40,20 @@ class ImageProcessor:
         # 3. Deskew (egrilikni to'g'rilash)
         gray = self._deskew(gray)
 
-        # 4. Noise removal
-        gray = cv2.fastNlMeansDenoising(gray, h=10)
+        # 4. Noise removal (kamroq blur — bolalar yozuvi detail saqlanadi)
+        gray = cv2.fastNlMeansDenoising(gray, h=7)
 
         # 5. Contrast enhancement (CLAHE)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
         gray = clahe.apply(gray)
 
-        # 6. Adaptive threshold — qo'lyozmani aniqroq qiladi
+        # 6. Adaptive threshold — bolalar yozuviga moslashtirilgan
         processed = cv2.adaptiveThreshold(
             gray, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY,
-            blockSize=11,
-            C=2
+            blockSize=9,
+            C=4
         )
 
         # PNG formatda qaytarish (sifat saqlanadi)
@@ -78,12 +78,12 @@ class ImageProcessor:
         # Faqat contrast oshirish
         lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
         l, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=3.5, tileGridSize=(8, 8))
         l = clahe.apply(l)
         lab = cv2.merge([l, a, b])
         img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
-        success, buffer = cv2.imencode('.jpeg', img, [cv2.IMWRITE_JPEG_QUALITY, 70])
+        success, buffer = cv2.imencode('.jpeg', img, [cv2.IMWRITE_JPEG_QUALITY, 85])
         return buffer.tobytes()
 
     def _resize(self, img: np.ndarray) -> np.ndarray:
