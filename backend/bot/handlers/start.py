@@ -105,15 +105,28 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phone = contact.phone_number
     telegram_id = user.id
 
-    # Telefon raqamni bazaga saqlash (agar user mavjud bo'lsa)
+    # Telefon raqamni bazaga saqlash
     try:
         async with async_session() as session:
             result = await session.execute(
                 select(User).where(User.telegram_id == telegram_id)
             )
             users = result.scalars().all()
-            for u in users:
-                u.phone_number = phone
+            if users:
+                # Mavjud userlarda telefon yangilash
+                for u in users:
+                    u.phone_number = phone
+            else:
+                # Yangi user — placeholder record yaratish (faqat telefon)
+                placeholder = User(
+                    telegram_id=telegram_id,
+                    username=user.username,
+                    full_name=user.first_name or "Foydalanuvchi",
+                    role="pending",
+                    phone_number=phone,
+                    is_approved=False,
+                )
+                session.add(placeholder)
             await session.commit()
     except Exception as e:
         logger.error(f"Telefon raqam saqlashda xato: {e}")

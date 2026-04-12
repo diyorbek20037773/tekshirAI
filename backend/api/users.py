@@ -120,6 +120,26 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
     if data.role not in ("student", "teacher", "parent", "director"):
         raise HTTPException(status_code=400, detail="Noto'g'ri rol")
 
+    # Boshqa rolli userlardan (yoki "pending" placeholder dan) telefon olib o'tish
+    other_users_result = await db.execute(
+        select(User).where(User.telegram_id == data.telegram_id)
+    )
+    other_users = other_users_result.scalars().all()
+    inherited_phone = None
+    placeholder_to_delete = None
+    for u in other_users:
+        if u.phone_number and not inherited_phone:
+            inherited_phone = u.phone_number
+        if u.role == "pending":
+            placeholder_to_delete = u
+            if u.phone_number and not inherited_phone:
+                inherited_phone = u.phone_number
+
+    # Placeholder (pending) record ni o'chirish
+    if placeholder_to_delete:
+        await db.delete(placeholder_to_delete)
+        await db.flush()
+
     existing = await find_user_by_telegram_id(data.telegram_id, db, role=data.role)
     if existing:
         existing.full_name = data.full_name
@@ -141,6 +161,8 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
             existing.maktab = data.maktab
         if data.phone_number:
             existing.phone_number = data.phone_number
+        elif inherited_phone and not existing.phone_number:
+            existing.phone_number = inherited_phone
         existing.updated_at = datetime.utcnow()
         await db.flush()
         return user_to_response(existing)
@@ -158,7 +180,7 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
         viloyat=data.viloyat,
         tuman=data.tuman,
         maktab=data.maktab,
-        phone_number=data.phone_number,
+        phone_number=data.phone_number or inherited_phone,
         is_approved=data.role != "director",  # Direktor admin tasdiqlashi kerak
         daily_reset_date=date.today(),
     )
