@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from './components/layout/Layout';
 import DashboardPage from './pages/DashboardPage';
 import FoydalanuvchilarPage from './pages/FoydalanuvchilarPage';
@@ -12,6 +12,19 @@ export default function App() {
   const [adminToken, setAdminToken] = useState<string | null>(
     localStorage.getItem('adminToken')
   );
+
+  // Eski tokenni tekshirish — agar 403 qaytarsa, login sahifasiga qaytarish
+  useEffect(() => {
+    if (!adminToken) return;
+    fetch('/api/admin/stats', {
+      headers: { 'Authorization': `Bearer ${adminToken}` },
+    }).then(res => {
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('adminToken');
+        setAdminToken(null);
+      }
+    }).catch(() => {});
+  }, [adminToken]);
 
   const handleLogin = (token: string) => {
     localStorage.setItem('adminToken', token);
