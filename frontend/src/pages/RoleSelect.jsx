@@ -125,6 +125,20 @@ export default function RoleSelect() {
               <p className="text-xs text-white/60">Platformani boshqarish</p>
             </div>
           </button>
+
+          {/* Vazirlik paneli */}
+          <button
+            onClick={() => window.open('https://tekshiraixalqtalimistatusi-production.up.railway.app/', '_blank')}
+            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center gap-4 hover:bg-white/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-base font-semibold text-white">Vazirlik paneli</h3>
+              <p className="text-xs text-white/60">Maktabgacha va maktab ta'limi vazirligi</p>
+            </div>
+          </button>
         </div>
 
         <p className="text-center text-white/50 text-xs mt-6">
