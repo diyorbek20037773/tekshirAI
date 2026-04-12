@@ -1,5 +1,7 @@
 """Admin API — parol + maxfiy so'z bilan himoyalangan. Foydalanuvchilar, tekshiruvlar, direktorlar."""
 
+import hashlib
+import hmac
 import secrets
 from datetime import date, timedelta, datetime
 from uuid import UUID
@@ -44,13 +46,22 @@ class UserUpdate(BaseModel):
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
-# Tokenlar xotirada saqlanadi
+# Tokenlar deterministik (HMAC) — restart ga chidamli
 _admin_tokens: set[str] = set()
+
+
+def _generate_admin_token() -> str:
+    """Parol+secret asosida deterministik token yaratish (restart ga chidamli)."""
+    pwd = settings.ADMIN_PASSWORD or ""
+    sec = settings.ADMIN_SECRET or ""
+    return hmac.new(sec.encode(), pwd.encode(), hashlib.sha256).hexdigest()
 
 
 def verify_admin_token(x_admin_token: str = Header(...)):
     """Admin tokenni tekshirish (barcha endpointlar uchun)."""
-    if x_admin_token not in _admin_tokens:
+    valid_token = _generate_admin_token()
+    # Deterministik token YOKI in-memory token (eski sessionlar uchun)
+    if x_admin_token != valid_token and x_admin_token not in _admin_tokens:
         raise HTTPException(status_code=403, detail="Admin huquqi yo'q")
 
 
@@ -61,7 +72,8 @@ async def admin_login(data: AdminLogin):
         raise HTTPException(status_code=500, detail="Admin login sozlanmagan (ADMIN_PASSWORD va ADMIN_SECRET o'rnating)")
     if data.password != settings.ADMIN_PASSWORD or data.secret != settings.ADMIN_SECRET:
         raise HTTPException(status_code=403, detail="Parol yoki maxfiy so'z noto'g'ri")
-    token = secrets.token_hex(32)
+    # Deterministik token — restart bo'lganda ham ishlaydi
+    token = _generate_admin_token()
     _admin_tokens.add(token)
     return {"token": token}
 
