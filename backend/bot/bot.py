@@ -1,6 +1,7 @@
 """Telegram bot — Application yaratish va handlerlarni register qilish."""
 
 import logging
+from telegram.request import HTTPXRequest
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -30,7 +31,21 @@ logger = logging.getLogger(__name__)
 
 def create_bot() -> Application:
     """Bot application yaratish va barcha handlerlarni qo'shish."""
-    app = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    # Tarmoq timeout'larini oshirish — Railway ↔ Telegram aloqasi turg'un emas
+    request = HTTPXRequest(
+        connection_pool_size=8,
+        read_timeout=60,
+        write_timeout=60,
+        connect_timeout=30,
+        pool_timeout=10,
+    )
+    app = (
+        Application.builder()
+        .token(settings.TELEGRAM_BOT_TOKEN)
+        .request(request)
+        .get_updates_request(request)
+        .build()
+    )
 
     # Notification service ga bot ni set qilish
     notification_service.set_bot(app.bot)
@@ -70,8 +85,26 @@ def create_bot() -> Application:
         _handle_text_message,
     ))
 
+    # Global error handler — tarmoq xatolari botni o'chirib qo'ymasin
+    app.add_error_handler(_global_error_handler)
+
     logger.info("Bot handlerlar ro'yxatdan o'tdi")
     return app
+
+
+async def _global_error_handler(update, context):
+    """Bot xatolarini logga yozish — crash bo'lmasin."""
+    err = context.error
+    err_str = str(err)
+    # Tarmoq timeout'lari — kutilgan, ovoz ko'tarmasin
+    if "TimedOut" in err_str or "timeout" in err_str.lower() or "ReadTimeout" in err_str:
+        logger.warning(f"Telegram tarmoq timeout (qayta urinilyapti): {err_str[:100]}")
+        return
+    # Conflict — boshqa bot instance ishlayapti
+    if "Conflict" in err_str:
+        logger.warning(f"Bot conflict (boshqa instance?): {err_str[:100]}")
+        return
+    logger.error(f"Bot xatosi: {err}", exc_info=err)
 
 
 async def _handle_text_message(update, context):
