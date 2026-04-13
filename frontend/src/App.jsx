@@ -131,6 +131,18 @@ function AutoLogin() {
     checkAuth()
   }, [navigate])
 
+  // Telegram BackButton — rol tanlash sahifasidan Telegram ga qaytish
+  useEffect(() => {
+    if (!roles || roles.length <= 1) return
+    const tg = window.Telegram?.WebApp
+    if (tg?.BackButton) {
+      tg.BackButton.show()
+      const handler = () => tg.close()
+      tg.BackButton.onClick(handler)
+      return () => { tg.BackButton.offClick(handler); tg.BackButton.hide() }
+    }
+  }, [roles])
+
   // Rol tanlash UI (ko'p rolli foydalanuvchilar uchun)
   if (roles && roles.length > 1) {
     const selectRole = (r) => {

@@ -74,7 +74,10 @@ export default function TeacherDashboard() {
   useEffect(() => { fetchAssignments() }, [])
 
   const handleCreateAssignment = async () => {
-    if (!assignTitle.trim()) return
+    if (!assignTitle.trim()) {
+      alert('Iltimos, topshiriq nomini kiriting')
+      return
+    }
     setAssignSaving(true)
     try {
       const res = await fetch('/api/assignments/', {
@@ -406,9 +409,14 @@ export default function TeacherDashboard() {
 
           {showNewAssignment && (
             <div className="bg-gray-50 rounded-xl p-3 mb-3 space-y-2">
-              <input type="text" value={assignTitle} onChange={e => setAssignTitle(e.target.value)}
-                placeholder="Topshiriq nomi (masalan: 5-bob, 3-mashq)"
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400" />
+              <div>
+                <input type="text" value={assignTitle} onChange={e => setAssignTitle(e.target.value)}
+                  placeholder="Topshiriq nomi (masalan: 5-bob, 3-mashq) *"
+                  className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 ${!assignTitle.trim() ? 'border-red-300 bg-red-50/30' : 'border-gray-200'}`} />
+                {!assignTitle.trim() && (
+                  <p className="text-[10px] text-red-500 mt-0.5">Topshiriq nomi majburiy</p>
+                )}
+              </div>
               <textarea value={assignDesc} onChange={e => setAssignDesc(e.target.value)}
                 placeholder="Topshiriq matni (ixtiyoriy)"
                 rows={3}
