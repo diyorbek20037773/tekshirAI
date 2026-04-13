@@ -1,11 +1,15 @@
 """
-Gemini API kalitlarni boshqarish — round-robin rotation.
-Har bir Gmail akkaunt: 250 so'rov/kun (bepul).
-5 ta kalit = 1,250 so'rov/kun.
+Gemini API kalitlarni boshqarish — random tanlash + smart cooldown.
+- Random kalit tanlash (bitta kalit bloklab qolmaydi)
+- Rate limit (429) — kalitga 60s cooldown
+- Invalid (400 API_KEY_INVALID) — kalit umuman ishlatilmaydi
+- Daily limit — kalit ertaga qayta ishlatiladi
 """
 
 import logging
-from datetime import datetime, date
+import random
+import time
+from datetime import date
 from typing import List, Dict
 
 from backend.config import settings
@@ -14,14 +18,16 @@ logger = logging.getLogger(__name__)
 
 
 class KeyManager:
-    """Gemini API kalitlarni rotate qilish."""
+    """Gemini API kalitlarni boshqarish."""
+
+    RATE_LIMIT_COOLDOWN = 70  # 429 keyin necha sekund kutish (Gemini 60s tavsiya qiladi)
 
     def __init__(self):
         self.keys: List[str] = settings.gemini_keys
         if not self.keys:
             raise ValueError("GEMINI_API_KEYS .env da topilmadi!")
 
-        self.current_index: int = 0
+        self.current_key: str = self.keys[0]  # Hozirgi tanlangan kalit
         self.daily_limit: int = 250  # Har bir kalit uchun kunlik limit
 
         # Har bir kalit uchun statistika
@@ -30,39 +36,69 @@ class KeyManager:
             self._usage[key] = {
                 "count": 0,
                 "date": date.today(),
-                "exhausted": False,
+                "exhausted": False,        # Kunlik limit tugagan
+                "rate_limited_until": 0,   # Rate limit tugaydigan vaqt (timestamp)
+                "invalid": False,          # API kalit noto'g'ri (umuman ishlatmaslik)
             }
 
+    def _is_available(self, key: str) -> bool:
+        """Kalit hozir ishlatilishi mumkinmi?"""
+        u = self._usage[key]
+        if u["invalid"]:
+            return False
+        if u["exhausted"]:
+            return False
+        if u["rate_limited_until"] > time.time():
+            return False
+        return True
+
     def get_current_key(self) -> str:
-        """Hozirgi faol kalitni qaytarish."""
+        """Tasodifiy ishlatilishi mumkin bo'lgan kalitni qaytarish."""
         self._reset_if_new_day()
 
-        # Tugagan kalitlarni o'tkazib yuborish
-        attempts = 0
-        while attempts < len(self.keys):
-            key = self.keys[self.current_index]
-            if not self._usage[key]["exhausted"]:
-                return key
-            self.current_index = (self.current_index + 1) % len(self.keys)
-            attempts += 1
+        available = [k for k in self.keys if self._is_available(k)]
 
-        # Barcha kalitlar tugagan — birinchisini qaytarish (xato beradi)
-        logger.error("Barcha API kalitlar tugagan!")
-        return self.keys[0]
+        if not available:
+            # Hech qaysi kalit ishlamayapti — eng erta cooldown tugaydigan kalit
+            now = time.time()
+            valid_keys = [k for k in self.keys if not self._usage[k]["invalid"] and not self._usage[k]["exhausted"]]
+            if valid_keys:
+                # Cooldown da bo'lganlardan eng yaqin tugaydiganini tanlash
+                soonest = min(valid_keys, key=lambda k: self._usage[k]["rate_limited_until"])
+                wait = max(0, self._usage[soonest]["rate_limited_until"] - now)
+                logger.warning(f"Barcha kalitlar band! Eng yaqini ...{soonest[-6:]} ({wait:.0f}s kuting)")
+                self.current_key = soonest
+                return soonest
+            # Umuman ishlamaydi — birinchi kalitni qaytarish (xato beradi)
+            logger.error("Barcha API kalitlar invalid yoki exhausted!")
+            self.current_key = self.keys[0]
+            return self.keys[0]
+
+        # Random tanlash — bitta kalitga zo'r berib bloklanib qolmaslik
+        chosen = random.choice(available)
+        self.current_key = chosen
+        return chosen
+
+    def mark_rate_limited(self, key: str = None):
+        """Kalit 429 oldi — cooldown ga qo'yish."""
+        k = key or self.current_key
+        self._usage[k]["rate_limited_until"] = time.time() + self.RATE_LIMIT_COOLDOWN
+        logger.warning(f"Kalit ...{k[-6:]} rate limited, {self.RATE_LIMIT_COOLDOWN}s cooldown")
+
+    def mark_invalid(self, key: str = None):
+        """Kalit umuman ishlamayapti (400 API_KEY_INVALID) — qora ro'yxatga qo'shish."""
+        k = key or self.current_key
+        self._usage[k]["invalid"] = True
+        logger.error(f"Kalit ...{k[-6:]} INVALID — endi ishlatilmaydi")
 
     def rotate_key(self):
-        """Keyingi kalitga o'tish (429 xatolikda chaqiriladi)."""
-        old_key = self.keys[self.current_index]
-        self._usage[old_key]["exhausted"] = True
-        self.current_index = (self.current_index + 1) % len(self.keys)
-        new_key = self.keys[self.current_index]
-        logger.info(
-            f"Kalit almashtirildi: ...{old_key[-6:]} -> ...{new_key[-6:]}"
-        )
+        """Eski API ga moslik — hozirgi kalitni cooldownga qo'yib, yangi tanlash."""
+        self.mark_rate_limited(self.current_key)
+        return self.get_current_key()
 
     def record_usage(self):
         """Muvaffaqiyatli so'rovni qayd qilish."""
-        key = self.keys[self.current_index]
+        key = self.current_key
         self._usage[key]["count"] += 1
 
         if self._usage[key]["count"] >= self.daily_limit:
@@ -72,9 +108,9 @@ class KeyManager:
     def get_stats(self) -> dict:
         """API kalitlar statistikasi."""
         self._reset_if_new_day()
+        now = time.time()
         stats = {
             "total_keys": len(self.keys),
-            "current_index": self.current_index,
             "daily_limit_per_key": self.daily_limit,
             "total_daily_capacity": self.daily_limit * len(self.keys),
             "keys": [],
@@ -83,23 +119,31 @@ class KeyManager:
         for i, key in enumerate(self.keys):
             usage = self._usage[key]
             total_used += usage["count"]
+            cooldown_remaining = max(0, usage["rate_limited_until"] - now)
             stats["keys"].append({
                 "index": i,
                 "key_suffix": f"...{key[-6:]}",
                 "used_today": usage["count"],
                 "exhausted": usage["exhausted"],
-                "is_current": i == self.current_index,
+                "invalid": usage["invalid"],
+                "cooldown_seconds": int(cooldown_remaining),
+                "available": self._is_available(key),
+                "is_current": key == self.current_key,
             })
         stats["total_used_today"] = total_used
+        stats["available_keys"] = sum(1 for k in self.keys if self._is_available(k))
         return stats
 
     def _reset_if_new_day(self):
-        """Yangi kun boshlansa hisoblagichlarni nolga tushirish."""
+        """Yangi kun boshlansa hisoblagichlarni nolga tushirish (invalid kalitlar saqlanadi)."""
         today = date.today()
         for key in self.keys:
             if self._usage[key]["date"] != today:
+                was_invalid = self._usage[key]["invalid"]
                 self._usage[key] = {
                     "count": 0,
                     "date": today,
                     "exhausted": False,
+                    "rate_limited_until": 0,
+                    "invalid": was_invalid,  # Invalid kalit invalid qoladi
                 }

@@ -156,7 +156,8 @@ Mavzu: {topic or "umumiy"}
 
 Yuqoridagi rasmdagi uyga vazifa yechimini tekshir va JSON formatda natija qaytar."""
 
-        max_retries = 3
+        # Barcha mavjud kalitlar bo'yicha urinish (kamida 5 marta)
+        max_retries = max(5, len(self.key_manager.keys))
 
         for attempt in range(max_retries):
             try:
@@ -196,22 +197,36 @@ Yuqoridagi rasmdagi uyga vazifa yechimini tekshir va JSON formatda natija qaytar
                 return result
 
             except asyncio.TimeoutError:
-                logger.warning(f"Gemini timeout! (urinish {attempt + 1})")
+                logger.warning(f"Gemini timeout! (urinish {attempt + 1}/{max_retries})")
                 if attempt == max_retries - 1:
                     return {
                         "error": True,
                         "error_message": "AI javob bermadi (timeout). Qayta urinib ko'ring.",
                         "problems": []
                     }
+                # Yangi random kalit
+                api_key = self.key_manager.get_current_key()
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel(self.model_name)
                 continue
 
             except Exception as e:
                 error_str = str(e)
 
-                # Rate limit — keyingi kalitga o'tish
-                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                    logger.warning(f"Rate limit! Kalit almashtirilmoqda... (urinish {attempt + 1})")
-                    self.key_manager.rotate_key()
+                # Invalid kalit — qora ro'yxatga
+                if "API_KEY_INVALID" in error_str or "API key not valid" in error_str:
+                    logger.warning(f"Invalid kalit aniqlandi (urinish {attempt + 1})")
+                    self.key_manager.mark_invalid()
+                    if attempt < max_retries - 1:
+                        api_key = self.key_manager.get_current_key()
+                        genai.configure(api_key=api_key)
+                        model = genai.GenerativeModel(self.model_name)
+                        continue
+
+                # Rate limit — kalit cooldownga
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+                    logger.warning(f"Rate limit! Random yangi kalit tanlanmoqda... (urinish {attempt + 1}/{max_retries})")
+                    self.key_manager.mark_rate_limited()
 
                     if attempt < max_retries - 1:
                         api_key = self.key_manager.get_current_key()
@@ -327,23 +342,34 @@ MUHIM CHEKLOV:
 - Buning o'rniga ayt: "Men faqat {subject} fani bo'yicha yordam bera olaman. Shu fan bo'yicha savol bering! 📚"
 - Hech qachon fan mavzusidan tashqari ma'lumot berma"""
 
-        try:
-            gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=4096)
-            def _call():
-                return model.generate_content(prompt, generation_config=gen_config)
-            response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=45)
-            self.key_manager.record_usage()
-            return response.text
-        except asyncio.TimeoutError:
-            return "AI javob bermadi (timeout). Qayta urinib ko'ring."
-        except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                self.key_manager.rotate_key()
-                return await self.chat_about_problem(
-                    problem_data, conversation_history, student_message, grade, subject
-                )
-            logger.error(f"Chat xatosi: {e}")
-            return f"Javob olishda xatolik: {str(e)[:100]}"
+        gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=4096)
+        for attempt in range(max(3, len(self.key_manager.keys))):
+            try:
+                def _call():
+                    return model.generate_content(prompt, generation_config=gen_config)
+                response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=45)
+                self.key_manager.record_usage()
+                return response.text
+            except asyncio.TimeoutError:
+                if attempt < 2:
+                    api_key = self.key_manager.get_current_key()
+                    genai.configure(api_key=api_key)
+                    model = genai.GenerativeModel(self.model_name)
+                    continue
+                return "AI javob bermadi (timeout). Qayta urinib ko'ring."
+            except Exception as e:
+                err = str(e)
+                if "API_KEY_INVALID" in err or "API key not valid" in err:
+                    self.key_manager.mark_invalid()
+                elif "429" in err or "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
+                    self.key_manager.mark_rate_limited()
+                else:
+                    logger.error(f"Chat xatosi: {e}")
+                    return f"Javob olishda xatolik: {err[:100]}"
+                api_key = self.key_manager.get_current_key()
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel(self.model_name)
+        return "Hozir AI band, qayta urinib ko'ring."
 
     async def chat_about_topic(
         self,
@@ -386,23 +412,34 @@ MUHIM CHEKLOV:
 - Buning o'rniga ayt: "Men faqat {subject} fani bo'yicha yordam bera olaman. Shu fan bo'yicha savol bering! 📚"
 - Hech qachon fan mavzusidan tashqari ma'lumot berma"""
 
-        try:
-            gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=4096)
-            def _call():
-                return model.generate_content(prompt, generation_config=gen_config)
-            response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=45)
-            self.key_manager.record_usage()
-            return response.text
-        except asyncio.TimeoutError:
-            return "AI javob bermadi (timeout). Qayta urinib ko'ring."
-        except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                self.key_manager.rotate_key()
-                return await self.chat_about_topic(
-                    topic, conversation_history, student_message, grade, subject
-                )
-            logger.error(f"Chat topic xatosi: {e}")
-            return f"Javob olishda xatolik: {str(e)[:100]}"
+        gen_config = genai.GenerationConfig(temperature=0.3, max_output_tokens=4096)
+        for attempt in range(max(3, len(self.key_manager.keys))):
+            try:
+                def _call():
+                    return model.generate_content(prompt, generation_config=gen_config)
+                response = await asyncio.wait_for(asyncio.to_thread(_call), timeout=45)
+                self.key_manager.record_usage()
+                return response.text
+            except asyncio.TimeoutError:
+                if attempt < 2:
+                    api_key = self.key_manager.get_current_key()
+                    genai.configure(api_key=api_key)
+                    model = genai.GenerativeModel(self.model_name)
+                    continue
+                return "AI javob bermadi (timeout). Qayta urinib ko'ring."
+            except Exception as e:
+                err = str(e)
+                if "API_KEY_INVALID" in err or "API key not valid" in err:
+                    self.key_manager.mark_invalid()
+                elif "429" in err or "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
+                    self.key_manager.mark_rate_limited()
+                else:
+                    logger.error(f"Chat topic xatosi: {e}")
+                    return f"Javob olishda xatolik: {err[:100]}"
+                api_key = self.key_manager.get_current_key()
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel(self.model_name)
+        return "Hozir AI band, qayta urinib ko'ring."
 
     def _extract_json(self, text: str) -> Dict:
         """Gemini javobidan JSON ajratib olish (5 usul bilan)."""
