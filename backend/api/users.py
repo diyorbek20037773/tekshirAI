@@ -120,7 +120,7 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
     if data.role not in ("student", "teacher", "parent", "director"):
         raise HTTPException(status_code=400, detail="Noto'g'ri rol")
 
-    # Boshqa rolli userlardan (yoki "pending" placeholder dan) telefon olib o'tish
+    # Boshqa rolli userlardan telefonni meros olib o'tish
     other_users_result = await db.execute(
         select(User).where(User.telegram_id == data.telegram_id)
     )
@@ -130,12 +130,15 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
     for u in other_users:
         if u.phone_number and not inherited_phone:
             inherited_phone = u.phone_number
-        if u.role == "pending":
+        # Placeholder record: profil to'ldirilmagan, tasdiqlanmagan, faqat telefon bor
+        is_placeholder = (
+            not u.is_approved and u.grade is None and u.maktab is None
+            and u.role != data.role  # boshqa rol uchun
+        )
+        if is_placeholder:
             placeholder_to_delete = u
-            if u.phone_number and not inherited_phone:
-                inherited_phone = u.phone_number
 
-    # Placeholder (pending) record ni o'chirish
+    # Placeholder record ni o'chirish (faqat boshqa rol bo'lsa)
     if placeholder_to_delete:
         await db.delete(placeholder_to_delete)
         await db.flush()

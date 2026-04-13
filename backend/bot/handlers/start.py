@@ -117,12 +117,13 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 for u in users:
                     u.phone_number = phone
             else:
-                # Yangi user — placeholder record yaratish (faqat telefon)
+                # Yangi user — placeholder record (role='student' DB constraint uchun)
+                # Mini app ro'yxatdan o'tganda bu record yangilanadi yoki telefon ko'chiriladi
                 placeholder = User(
                     telegram_id=telegram_id,
                     username=user.username,
                     full_name=user.first_name or "Foydalanuvchi",
-                    role="pending",
+                    role="student",
                     phone_number=phone,
                     is_approved=False,
                 )
