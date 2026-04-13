@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Users, BookCheck, TrendingUp, Clock, LogOut, Camera, X, Send, Loader2, Image, Compass, ClipboardList, Plus, Trash2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getRandomTeacherQuote } from '../../data/quotes'
+import RatingModal from '../../components/RatingModal'
 
 function StatCard({ icon: Icon, title, value, color }) {
   const colors = {
@@ -237,9 +238,13 @@ export default function TeacherDashboard() {
     }
   }, [])
 
-  const handleLogout = () => {
+  const [showExitRating, setShowExitRating] = useState(false)
+  const doExit = () => {
     sessionStorage.setItem('showRoleMenu', 'true')
     window.location.href = '/'
+  }
+  const handleLogout = () => {
+    setShowExitRating(true)
   }
 
   // Kamera fullscreen
@@ -605,6 +610,7 @@ export default function TeacherDashboard() {
           </div>
         )}
       </div>
+      {showExitRating && <RatingModal onClose={() => { setShowExitRating(false); doExit() }} />}
     </div>
   )
 }

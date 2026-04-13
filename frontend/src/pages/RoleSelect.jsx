@@ -1,16 +1,24 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GraduationCap, BookOpen, Users, Building2, UserPlus, Shield } from 'lucide-react'
+import RatingModal from '../components/RatingModal'
 
 export default function RoleSelect() {
   const navigate = useNavigate()
+  const [showExitRating, setShowExitRating] = useState(false)
 
-  // Orqaga — Telegram ga qaytish
+  // Orqaga — ilgari kirgan foydalanuvchilar uchun rating, keyin Telegram ga qaytish
   useEffect(() => {
     const tg = window.Telegram?.WebApp
     if (tg?.BackButton) {
       tg.BackButton.show()
-      const handler = () => tg.close()
+      const handler = () => {
+        if (localStorage.getItem('hasSubmittedBefore')) {
+          setShowExitRating(true)
+        } else {
+          tg.close()
+        }
+      }
       tg.BackButton.onClick(handler)
       return () => { tg.BackButton.offClick(handler); tg.BackButton.hide() }
     }
@@ -145,6 +153,10 @@ export default function RoleSelect() {
           TekshirAI 2026
         </p>
       </div>
+      {showExitRating && <RatingModal onClose={() => {
+        setShowExitRating(false)
+        window.Telegram?.WebApp?.close()
+      }} />}
     </div>
   )
 }

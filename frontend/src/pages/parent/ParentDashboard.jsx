@@ -5,6 +5,7 @@ import {
   Star, Lightbulb, RefreshCw, Search, UserPlus, CheckCircle, XCircle, Link2
 } from 'lucide-react'
 import { getRandomParentQuote } from '../../data/quotes'
+import RatingModal from '../../components/RatingModal'
 
 export default function ParentDashboard() {
   const navigate = useNavigate()
@@ -134,9 +135,13 @@ export default function ParentDashboard() {
     }
   }, [])
 
-  const handleLogout = () => {
+  const [showExitRating, setShowExitRating] = useState(false)
+  const doExit = () => {
     sessionStorage.setItem('showRoleMenu', 'true')
     window.location.href = '/'
+  }
+  const handleLogout = () => {
+    setShowExitRating(true)
   }
 
   if (loading) return (
@@ -449,6 +454,7 @@ export default function ParentDashboard() {
           </>
         )}
       </div>
+      {showExitRating && <RatingModal onClose={() => { setShowExitRating(false); doExit() }} />}
     </div>
   )
 }

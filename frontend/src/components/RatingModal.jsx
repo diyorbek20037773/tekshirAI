@@ -19,7 +19,6 @@ export default function RatingModal({ onClose }) {
         body: JSON.stringify({ telegram_id: Number(telegramId), stars, comment }),
       })
     } catch {}
-    localStorage.setItem('ratingGiven', 'true')
     setSubmitted(true)
     setLoading(false)
     setTimeout(onClose, 2000)
@@ -42,7 +41,7 @@ export default function RatingModal({ onClose }) {
       <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-800">Ilovani baholang</h3>
-          <button onClick={() => { localStorage.setItem('ratingGiven', 'true'); onClose() }}
+          <button onClick={onClose}
             className="p-1 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
         </div>
 
@@ -73,7 +72,7 @@ export default function RatingModal({ onClose }) {
           className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none h-20 focus:outline-none focus:border-primary-400 mb-4" />
 
         <div className="flex gap-2">
-          <button onClick={() => { localStorage.setItem('ratingGiven', 'true'); onClose() }}
+          <button onClick={onClose}
             className="flex-1 py-2.5 rounded-xl text-sm text-gray-500 hover:bg-gray-50 border border-gray-200">
             Keyinroq
           </button>

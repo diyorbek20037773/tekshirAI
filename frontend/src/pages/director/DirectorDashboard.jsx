@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, GraduationCap, BookOpen, TrendingUp, BarChart3, LogOut, RefreshCw } from 'lucide-react'
+import RatingModal from '../../components/RatingModal'
 
 export default function DirectorDashboard() {
   const navigate = useNavigate()
@@ -60,9 +61,13 @@ export default function DirectorDashboard() {
     }
   }, [])
 
-  const logout = () => {
+  const [showExitRating, setShowExitRating] = useState(false)
+  const doExit = () => {
     sessionStorage.setItem('showRoleMenu', 'true')
     window.location.href = '/'
+  }
+  const logout = () => {
+    setShowExitRating(true)
   }
 
   if (loading) return (
@@ -236,6 +241,7 @@ export default function DirectorDashboard() {
           </div>
         )}
       </div>
+      {showExitRating && <RatingModal onClose={() => { setShowExitRating(false); doExit() }} />}
     </div>
   )
 }

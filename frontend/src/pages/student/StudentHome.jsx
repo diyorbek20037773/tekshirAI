@@ -13,15 +13,35 @@ const SUBJECT_STYLES = {
   'Algebra':         { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: '📐', badge: 'bg-blue-500' },
   'Geometriya':      { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', icon: '📏', badge: 'bg-indigo-500' },
   'Ona tili':        { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', icon: '📖', badge: 'bg-green-500' },
+  'Adabiyot':        { bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700', icon: '📚', badge: 'bg-pink-500' },
   'Ingliz tili':     { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', icon: '🇬🇧', badge: 'bg-purple-500' },
   'Fizika':          { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', icon: '⚡', badge: 'bg-orange-500' },
   'Kimyo':           { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', icon: '🧪', badge: 'bg-rose-500' },
   'Biologiya':       { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', icon: '🌿', badge: 'bg-emerald-500' },
   'Informatika':     { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', icon: '💻', badge: 'bg-cyan-500' },
   'Tabiatshunoslik': { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700', icon: '🌍', badge: 'bg-teal-500' },
+  'Geografiya':      { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', icon: '🗺️', badge: 'bg-sky-500' },
+  'Tarix':           { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: '🏛️', badge: 'bg-amber-500' },
 }
 
 const getSubjectStyle = (subject) => SUBJECT_STYLES[subject] || { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', icon: '📚', badge: 'bg-gray-500' }
+
+// Fan uchun maxsus ko'rsatma (kamera bo'limida ko'rinadi)
+const SUBJECT_HINTS = {
+  'Matematika':      'Masalangizni to\'liq yechib, daftarni suratga oling',
+  'Algebra':         'Tenglamani to\'liq yechib, barcha qadamlar bilan suratga oling',
+  'Geometriya':      'Chizma va hisoblashlarni birga suratga oling',
+  'Fizika':          'Formulalar va hisoblashni suratga oling',
+  'Kimyo':           'Reaksiya tenglamasi va hisoblashni suratga oling',
+  'Biologiya':       'Javob yoki tasnifni suratga oling — AI tekshiradi',
+  'Ona tili':        'Insho yoki mashqni suratga oling — AI imlo, tinish va grammatikani tekshiradi',
+  'Adabiyot':        'Asar tahlili yoki insho — AI badiiy vositalarni tahlil qiladi',
+  'Ingliz tili':     'Grammar exercise yoki essay — AI grammar va vocabulary ni tekshiradi',
+  'Tabiatshunoslik': 'Tabiat haqidagi javoblaringizni suratga oling',
+  'Geografiya':      'Xarita, joylashuv yoki tahlil — suratga oling',
+  'Tarix':           'Sana, voqea yoki insho — AI tahlil qiladi',
+  'Informatika':     'Algoritm, kod yoki javobni suratga oling',
+}
 
 export default function StudentHome() {
   const navigate = useNavigate()
@@ -112,9 +132,15 @@ export default function StudentHome() {
         setSelectedSubject(null)
         window.history.pushState(null, '', window.location.href)
       } else {
-        // Fan gridda — rol menyusiga qaytish
-        sessionStorage.setItem('showRoleMenu', 'true')
-        window.location.href = '/'
+        // Fan gridda — chiqishdan oldin rating
+        if (localStorage.getItem('hasSubmittedBefore')) {
+          setPendingExit(true)
+          setShowRating(true)
+          window.history.pushState(null, '', window.location.href)
+        } else {
+          sessionStorage.setItem('showRoleMenu', 'true')
+          window.location.href = '/'
+        }
       }
     }
     window.addEventListener('popstate', handlePopState)
@@ -129,6 +155,9 @@ export default function StudentHome() {
       const handler = () => {
         if (selectedSubject) {
           setSelectedSubject(null)
+        } else if (localStorage.getItem('hasSubmittedBefore')) {
+          setPendingExit(true)
+          setShowRating(true)
         } else {
           sessionStorage.setItem('showRoleMenu', 'true')
           window.location.href = '/'
@@ -225,9 +254,8 @@ export default function StudentHome() {
 
         if (data.success) {
           setResult(data.result)
-          if (!localStorage.getItem('ratingGiven')) {
-            setTimeout(() => setShowRating(true), 3000)
-          }
+          // Foydalanuvchi kamida 1 ta tekshiruv qilganini belgilash (chiqishda feedback uchun)
+          localStorage.setItem('hasSubmittedBefore', '1')
         } else if (data.ocr_error) {
           setError('Rasmdagi yozuvni o\'qib bo\'lmadi. Yaxshiroq sifatda qayta suratga oling.')
         } else {
@@ -249,9 +277,21 @@ export default function StudentHome() {
     setShowDetails(false)
   }
 
-  const handleLogout = () => {
+  // Chiqish harakati — agar foydalanuvchi tekshiruv qilgan bo'lsa, rating modalni ko'rsat
+  const [pendingExit, setPendingExit] = useState(false)
+
+  const doExit = () => {
     sessionStorage.setItem('showRoleMenu', 'true')
     window.location.href = '/'
+  }
+
+  const handleLogout = () => {
+    if (localStorage.getItem('hasSubmittedBefore')) {
+      setPendingExit(true)
+      setShowRating(true)
+    } else {
+      doExit()
+    }
   }
 
   const handleBackToSubjects = () => {
@@ -392,7 +432,7 @@ export default function StudentHome() {
                 <Camera className="w-10 h-10 text-success-500" />
               </div>
               <h2 className="text-lg font-semibold text-gray-800 mb-2">Vazifani tekshirish</h2>
-              <p className="text-sm text-gray-500 mb-5">Daftaringizni suratga olib yuboring</p>
+              <p className="text-sm text-gray-500 mb-3">{SUBJECT_HINTS[selectedSubject] || 'Daftaringizni suratga olib yuboring'}</p>
               {cameraError && (
                 <p className="text-xs text-danger-500 mb-3">{cameraError}</p>
               )}
@@ -540,7 +580,10 @@ export default function StudentHome() {
           />
         </div>
 
-        {showRating && <RatingModal onClose={() => setShowRating(false)} />}
+        {showRating && <RatingModal onClose={() => {
+          setShowRating(false)
+          if (pendingExit) doExit()
+        }} />}
       </div>
     )
   }
@@ -669,7 +712,10 @@ export default function StudentHome() {
         />
       </div>
 
-      {showRating && <RatingModal onClose={() => setShowRating(false)} />}
+      {showRating && <RatingModal onClose={() => {
+        setShowRating(false)
+        if (pendingExit) doExit()
+      }} />}
     </div>
   )
 }

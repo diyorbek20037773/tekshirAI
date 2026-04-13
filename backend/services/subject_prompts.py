@@ -41,6 +41,7 @@ SUBJECT_PROMPTS = {
 - INSHO/BAYON: agar insho bo'lsa — mazmun, mantiq, uslub, imlo tekshir
 - MASHQ JAVOBLARI: grammatik mashqlar to'g'ri bajarilganmi
 - FE'L ZAMONLARI: hozirgi, o'tgan, kelasi zamon to'g'ri ishlatilganmi
+- AGAR INSHO/ESSAY BO'LSA: bitta problem qilib qaytar (number=1, problem_text='Insho mavzusi', student_solution=o'quvchi matni, baho va tahlilni error_explanation/correct_answer ga yoz)
 - Xato bo'lsa qoidani eslatib, to'g'ri variantni ko'rsat""",
 
     "Ingliz tili": """INGLIZ TILI (ENGLISH) FANI BO'YICHA TEKSHIRISH:
@@ -51,6 +52,7 @@ SUBJECT_PROMPTS = {
 - TRANSLATION: tarjima to'g'rimi (o'zbek-ingliz yoki ingliz-o'zbek)
 - ESSAY/COMPOSITION: agar insho bo'lsa — structure, grammar, vocabulary, coherence
 - EXERCISES: gap to'ldirish, so'z tanlash, grammatik mashqlar
+- AGAR INSHO/ESSAY BO'LSA: bitta problem qilib qaytar (number=1, problem_text='Essay topic', student_solution=o'quvchi matni, baho va tahlilni error_explanation/correct_answer ga yoz)
 - Xatoni ingliz va o'zbek tilida tushuntir, to'g'ri variantni ko'rsat""",
 
     "Fizika": """FIZIKA FANI BO'YICHA TEKSHIRISH:
@@ -92,6 +94,39 @@ SUBJECT_PROMPTS = {
 - MA'LUMOTLAR BAZASI: SQL so'rovlar, jadval tuzilishi
 - KOMPYUTER TUZILISHI: qurilmalar, dasturiy ta'minot bilimi
 - Xato bo'lsa mantiqiy xatoni tushuntir va to'g'ri javobni ko'rsat""",
+
+    "Tarix": """TARIX FANI BO'YICHA TEKSHIRISH:
+- SANALAR: voqealar sanalari to'g'ri yozilganmi (masalan: 1917-yil, 1991-yil)
+- TARIXIY SHAXSLAR: ismi, roli, faoliyati to'g'ri ko'rsatilganmi
+- VOQEALAR KETMA-KETLIGI: xronologik tartib to'g'rimi
+- SABAB-OQIBAT: tarixiy voqealarning sabablari va natijalari to'g'ri tahlil qilinganmi
+- DAVRLAR: Qadimgi, O'rta, Yangi, Eng yangi davrlar — hodisalar to'g'ri davrlashtirilganmi
+- O'ZBEKISTON TARIXI: mahalliy voqealar, xonliklar, istiqlol davri
+- INSHO/TAHLIL: agar insho bo'lsa — mantiq, tarixiy aniqlik, dalillar
+- AGAR INSHO/ESSAY BO'LSA: bitta problem qilib qaytar (number=1, problem_text='Insho mavzusi', student_solution=o'quvchi matni, baho va tahlilni error_explanation/correct_answer ga yoz)
+- Xato bo'lsa to'g'ri sana yoki voqeani tushuntir""",
+
+    "Adabiyot": """ADABIYOT FANI BO'YICHA TEKSHIRISH:
+- ASAR TAHLILI: asar mazmuni, g'oyasi, mavzusi to'g'ri ochilganmi
+- QAHRAMONLAR: bosh va yordamchi qahramonlar obrazi to'g'ri tahlil qilinganmi
+- BADIIY VOSITALAR: o'xshatish, metafora, epitet, takror kabi vositalar topilganmi
+- SHE'R TAHLILI: vazn, qofiya, turoq, ritm — to'g'ri aniqlanganmi
+- MUALLIF VA DAVRI: adib hayoti, yozilgan davri, adabiy oqim
+- INSHO: g'oya, mantiq, til uslubi, badiiylik, imlo
+- O'ZBEK VA JAHON ADABIYOTI: Alisher Navoiy, Abdulla Qodiriy, Cho'lpon, Oybek va h.k.
+- AGAR INSHO/ESSAY BO'LSA: bitta problem qilib qaytar (number=1, problem_text='Insho mavzusi', student_solution=o'quvchi matni, baho va tahlilni error_explanation/correct_answer ga yoz)
+- Xato bo'lsa adabiy qoidani eslatib, to'g'ri variantni ko'rsat""",
+
+    "Geografiya": """GEOGRAFIYA FANI BO'YICHA TEKSHIRISH:
+- MATERIKLAR VA OKEANLAR: joylashuvi, nomlari to'g'ri ko'rsatilganmi
+- RELYEF: tog'lar, tekisliklar, cho'llar — to'g'ri aniqlanganmi
+- IQLIM: iqlim mintaqalari, ob-havo ko'rsatkichlari
+- DEMOGRAFIYA: aholi zichligi, urbanizatsiya, migratsiya
+- IQTISODIY GEOGRAFIYA: tarmoqlar, sanoat, qishloq xo'jaligi
+- O'ZBEKISTON GEOGRAFIYASI: viloyatlar, resurslar, daryolar, ko'llar
+- XARITA: xaritadan foydalanish, koordinatalar
+- AGAR INSHO/ESSAY BO'LSA: bitta problem qilib qaytar (number=1, problem_text='Insho mavzusi', student_solution=o'quvchi matni, baho va tahlilni error_explanation/correct_answer ga yoz)
+- Xato bo'lsa geografik ma'lumotni to'g'rilab tushuntir""",
 
     "Tabiatshunoslik": """TABIATSHUNOSLIK FANI BO'YICHA TEKSHIRISH:
 - TABIAT HODISALARI: ob-havo, iqlim, suv aylanishi to'g'ri tasvirlanganmi
