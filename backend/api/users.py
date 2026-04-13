@@ -130,10 +130,17 @@ async def register_user(data: UserRegister, db: AsyncSession = Depends(get_db)):
     for u in other_users:
         if u.phone_number and not inherited_phone:
             inherited_phone = u.phone_number
-        # Placeholder record: profil to'ldirilmagan, tasdiqlanmagan, faqat telefon bor
+        # Placeholder record (bot tomonidan yaratilgan): faqat phone bor,
+        # is_approved=False, grade/maktab/full_name='Foydalanuvchi'
+        # Director ham is_approved=False bo'lishi mumkin — full_name bilan ajratish
         is_placeholder = (
-            not u.is_approved and u.grade is None and u.maktab is None
-            and u.role != data.role  # boshqa rol uchun
+            u.role == "student"
+            and not u.is_approved
+            and u.grade is None
+            and u.maktab is None
+            and u.subject is None
+            and u.viloyat is None
+            and (u.full_name == "Foydalanuvchi" or not u.full_name)
         )
         if is_placeholder:
             placeholder_to_delete = u

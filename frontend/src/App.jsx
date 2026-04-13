@@ -149,11 +149,11 @@ function AutoLogin() {
       try {
         sessionStorage.removeItem('loggedOut')
         _saveRoleData(r, localStorage.getItem('telegramId'))
-        // navigate o'rniga window.location ishlatamiz — Telegram WebView da ishonchli
-        window.location.href = `/${r.role}`
+        // replace ishlatamiz — back tugmasi rol tanlash sahifasiga qaytarmasin
+        window.location.replace(`/${r.role}`)
       } catch (e) {
         console.error('selectRole xatosi:', e)
-        window.location.href = `/${r.role}`
+        window.location.replace(`/${r.role}`)
       }
     }
 

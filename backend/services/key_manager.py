@@ -82,14 +82,30 @@ class KeyManager:
     def mark_rate_limited(self, key: str = None):
         """Kalit 429 oldi — cooldown ga qo'yish."""
         k = key or self.current_key
+        if k not in self._usage:
+            return
         self._usage[k]["rate_limited_until"] = time.time() + self.RATE_LIMIT_COOLDOWN
         logger.warning(f"Kalit ...{k[-6:]} rate limited, {self.RATE_LIMIT_COOLDOWN}s cooldown")
 
     def mark_invalid(self, key: str = None):
         """Kalit umuman ishlamayapti (400 API_KEY_INVALID) — qora ro'yxatga qo'shish."""
         k = key or self.current_key
+        if k not in self._usage:
+            return
         self._usage[k]["invalid"] = True
         logger.error(f"Kalit ...{k[-6:]} INVALID — endi ishlatilmaydi")
+
+    def get_cooldown_wait(self) -> float:
+        """Eng yaqin kalit qachon ozod bo'ladi (sekund). 0 — hozir mavjud."""
+        self._reset_if_new_day()
+        now = time.time()
+        if any(self._is_available(k) for k in self.keys):
+            return 0
+        valid_keys = [k for k in self.keys if not self._usage[k]["invalid"] and not self._usage[k]["exhausted"]]
+        if not valid_keys:
+            return -1  # umuman kalit yo'q
+        soonest = min(self._usage[k]["rate_limited_until"] for k in valid_keys)
+        return max(0, soonest - now)
 
     def rotate_key(self):
         """Eski API ga moslik — hozirgi kalitni cooldownga qo'yib, yangi tanlash."""

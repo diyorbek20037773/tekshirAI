@@ -71,7 +71,7 @@ export default function TeacherDashboard() {
     fetch(`/api/assignments/teacher?telegram_id=${telegramId}`)
       .then(r => r.json()).then(setAssignments).catch(() => {})
   }
-  useEffect(() => { fetchAssignments() }, [])
+  useEffect(() => { fetchAssignments() }, [telegramId])
 
   const handleCreateAssignment = async () => {
     if (!assignTitle.trim()) {

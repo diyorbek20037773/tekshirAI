@@ -229,6 +229,12 @@ Yuqoridagi rasmdagi uyga vazifa yechimini tekshir va JSON formatda natija qaytar
                     self.key_manager.mark_rate_limited()
 
                     if attempt < max_retries - 1:
+                        # Agar barcha kalitlar bloklangan bo'lsa — qisqa kutish
+                        wait_sec = self.key_manager.get_cooldown_wait()
+                        if wait_sec > 0:
+                            wait_sec = min(wait_sec, 15)  # max 15s kutamiz
+                            logger.info(f"Barcha kalitlar band — {wait_sec:.0f}s kutilmoqda")
+                            await asyncio.sleep(wait_sec)
                         api_key = self.key_manager.get_current_key()
                         genai.configure(api_key=api_key)
                         model = genai.GenerativeModel(self.model_name)
@@ -444,6 +450,12 @@ MUHIM CHEKLOV:
     def _extract_json(self, text: str) -> Dict:
         """Gemini javobidan JSON ajratib olish (5 usul bilan)."""
         # Boshidagi/oxiridagi bo'sh joylarni tozalash
+        if not text or not text.strip():
+            return {
+                "error": True,
+                "error_message": "AI bo'sh javob qaytardi. Qayta urinib ko'ring.",
+                "problems": []
+            }
         text = text.strip()
 
         # Markdown prefix/suffix ni har qanday holatda olib tashlash
@@ -513,8 +525,10 @@ MUHIM CHEKLOV:
 
             # 4b. Oxirgi to'liq elementgacha qirqib, yopish
             # Oxirgi vergul yoki } dan keyin qirqish
-            last_complete = max(json_text.rfind('},'), json_text.rfind('},\n'))
-            if last_complete > 0:
+            r1 = json_text.rfind('},')
+            r2 = json_text.rfind('},\n')
+            last_complete = max(r1, r2)
+            if last_complete != -1 and last_complete > 0:
                 truncated = json_text[:last_complete + 1]
                 open_braces = truncated.count('{') - truncated.count('}')
                 open_brackets = truncated.count('[') - truncated.count(']')

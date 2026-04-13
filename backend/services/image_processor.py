@@ -84,11 +84,15 @@ class ImageProcessor:
         img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
         success, buffer = cv2.imencode('.jpeg', img, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        if not success:
+            raise ValueError("Rasmni encode qilib bo'lmadi")
         return buffer.tobytes()
 
     def _resize(self, img: np.ndarray) -> np.ndarray:
         """Rasmni max o'lchamga moslashtirish."""
         h, w = img.shape[:2]
+        if h <= 0 or w <= 0:
+            raise ValueError("Rasm o'lchami noto'g'ri")
         if max(h, w) > self.MAX_DIMENSION:
             scale = self.MAX_DIMENSION / max(h, w)
             img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)

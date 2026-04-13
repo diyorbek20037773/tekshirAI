@@ -122,7 +122,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 placeholder = User(
                     telegram_id=telegram_id,
                     username=user.username,
-                    full_name=user.first_name or "Foydalanuvchi",
+                    full_name="Foydalanuvchi",  # Placeholder belgisi — register endpoint shu nomni qidiradi
                     role="student",
                     phone_number=phone,
                     is_approved=False,

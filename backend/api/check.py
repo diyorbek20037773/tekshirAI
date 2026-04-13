@@ -93,15 +93,9 @@ async def check_homework(
             if user:
                 student_id = user.id
 
-        # Agar telegram_id orqali topilmasa — oxirgi ro'yxatdan o'tgan studentni olish
+        # Agar telegram_id orqali topilmasa — submission saqlanmaydi (boshqa userga yozilmasin)
         if not student_id:
-            result = await db.execute(
-                select(User).where(User.role == "student").order_by(User.created_at.desc()).limit(1)
-            )
-            last_student = result.scalar_one_or_none()
-            if last_student:
-                student_id = last_student.id
-                logger.info(f"telegram_id topilmadi, oxirgi student ishlatildi: {last_student.full_name}")
+            logger.warning(f"telegram_id={telegram_id} bo'yicha student topilmadi — submission saqlanmaydi")
 
         if student_id:
             # Rasmni base64 formatda saqlash
