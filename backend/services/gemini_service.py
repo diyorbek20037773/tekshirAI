@@ -55,7 +55,8 @@ TEKSHIRISH QOIDALARI:
    - To'g'ri yechimni ko'rsat
    - "Yaxshi urinish!" "Deyarli to'g'ri!" kabi rag'batlantir
 4. O'zbek tilida yoz (LOTIN alifbosida)
-5. Javobni FAQAT JSON formatda qaytar
+5. Javobni FAQAT toza JSON formatda qaytar. MARKDOWN ISHLATMA (```json bloklar yo'q). Faqat { bilan boshlanib } bilan tugasin
+6. Insholar uchun qisqa va aniq yoz — uzun tahlil qilma, JSON to'liq yopilsin
 6. Faqat butunlay o'qib bo'lmaydigan bo'lsa "ocr_error": true qo'y
 7. Bir-ikki so'z o'qilmasa ham — o'qilganlarini tekshir, ocr_error QILMA
 
@@ -166,7 +167,7 @@ Yuqoridagi rasmdagi uyga vazifa yechimini tekshir va JSON formatda natija qaytar
                 ]
                 gen_config = genai.GenerationConfig(
                     temperature=0.2,
-                    max_output_tokens=8192,
+                    max_output_tokens=16384,
                 )
 
                 def _call():
@@ -404,9 +405,19 @@ MUHIM CHEKLOV:
             return f"Javob olishda xatolik: {str(e)[:100]}"
 
     def _extract_json(self, text: str) -> Dict:
-        """Gemini javobidan JSON ajratib olish (4 usul bilan)."""
+        """Gemini javobidan JSON ajratib olish (5 usul bilan)."""
         # Boshidagi/oxiridagi bo'sh joylarni tozalash
         text = text.strip()
+
+        # Markdown prefix/suffix ni har qanday holatda olib tashlash
+        # (yopilmagan ```json ham bo'lishi mumkin — truncated javob)
+        if text.startswith('```'):
+            # Birinchi qator ```json yoki ``` ni olib tashlash
+            first_newline = text.find('\n')
+            if first_newline != -1:
+                text = text[first_newline + 1:]
+        if text.endswith('```'):
+            text = text[:-3].rstrip()
 
         # 1. To'g'ridan-to'g'ri parse
         try:
@@ -414,7 +425,7 @@ MUHIM CHEKLOV:
         except json.JSONDecodeError:
             pass
 
-        # 2. ```json ... ``` ichidan
+        # 2. ```json ... ``` ichidan (yopiq bloklar uchun)
         json_match = re.search(r'```(?:json)?\s*(.*?)\s*```', text, re.DOTALL)
         if json_match:
             try:
@@ -448,6 +459,11 @@ MUHIM CHEKLOV:
         first_brace = text.find('{')
         if first_brace != -1:
             json_text = text[first_brace:]
+            # Yopilmagan string literal ni yopish (toq " lar soni)
+            # Haqiqiy quote'lar — escape qilinmaganlar
+            unescaped_quotes = len(re.findall(r'(?<!\\)"', json_text))
+            if unescaped_quotes % 2 != 0:
+                json_text += '"'
             # Yopilmagan qavslarni yopish
             open_braces = json_text.count('{') - json_text.count('}')
             open_brackets = json_text.count('[') - json_text.count(']')
@@ -457,6 +473,20 @@ MUHIM CHEKLOV:
                 return json.loads(json_text)
             except json.JSONDecodeError:
                 pass
+
+            # 4b. Oxirgi to'liq elementgacha qirqib, yopish
+            # Oxirgi vergul yoki } dan keyin qirqish
+            last_complete = max(json_text.rfind('},'), json_text.rfind('},\n'))
+            if last_complete > 0:
+                truncated = json_text[:last_complete + 1]
+                open_braces = truncated.count('{') - truncated.count('}')
+                open_brackets = truncated.count('[') - truncated.count(']')
+                truncated += ']' * max(0, open_brackets)
+                truncated += '}' * max(0, open_braces)
+                try:
+                    return json.loads(truncated)
+                except json.JSONDecodeError:
+                    pass
 
         logger.warning(f"JSON parse xatosi. Javob boshi: {text[:200]}")
         return {
