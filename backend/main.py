@@ -74,6 +74,9 @@ async def lifespan(app: FastAPI):
                     # Yangi rollar: director, admin
                     "ALTER TABLE users DROP CONSTRAINT IF EXISTS check_user_role",
                     "ALTER TABLE users ADD CONSTRAINT check_user_role CHECK (role IN ('student', 'teacher', 'parent', 'director', 'admin'))",
+                    # Submission ↔ Assignment bog'lanishi (o'qituvchi topshiriq natijalarini ko'rishi uchun)
+                    "ALTER TABLE submissions ADD COLUMN IF NOT EXISTS assignment_id UUID REFERENCES assignments(id) ON DELETE SET NULL",
+                    "CREATE INDEX IF NOT EXISTS ix_submissions_assignment_id ON submissions (assignment_id)",
                 ]
                 for sql in migrations:
                     try:

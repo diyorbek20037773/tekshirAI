@@ -64,6 +64,7 @@ export default function StudentHome() {
   const [showRating, setShowRating] = useState(false)
   const [assignments, setAssignments] = useState([])
   const [showDetails, setShowDetails] = useState(false)
+  const [activeAssignment, setActiveAssignment] = useState(null)  // Bajarish rejimi: tanlangan topshiriq
 
   // Abort controller for fetch cleanup
   const abortControllerRef = useRef(null)
@@ -74,6 +75,7 @@ export default function StudentHome() {
     setError(null)
     setChecking(false)
     setShowDetails(false)
+    setActiveAssignment(null)
   }, [selectedSubject])
 
   // Topshiriqlarni yuklash
@@ -242,6 +244,10 @@ export default function StudentHome() {
         formData.append('subject', (selectedSubject || 'matematika').toLowerCase())
         formData.append('grade', grade)
         formData.append('telegram_id', telegramId || localStorage.getItem('telegramId') || '0')
+        // Agar topshiriq kontekstida bo'lsa — assignment_id ham yuboramiz
+        if (activeAssignment?.id) {
+          formData.append('assignment_id', activeAssignment.id)
+        }
 
         const response = await fetch('/api/check/homework', {
           method: 'POST',
@@ -256,6 +262,10 @@ export default function StudentHome() {
           setResult(data.result)
           // Foydalanuvchi kamida 1 ta tekshiruv qilganini belgilash (chiqishda feedback uchun)
           localStorage.setItem('hasSubmittedBefore', '1')
+          // Agar topshiriq kontekstida edi — "bajarildi" deb belgilash
+          if (activeAssignment?.id) {
+            localStorage.setItem(`done_${activeAssignment.id}`, '1')
+          }
         } else if (data.ocr_error) {
           setError('Rasmdagi yozuvni o\'qib bo\'lmadi. Yaxshiroq sifatda qayta suratga oling.')
         } else {
@@ -275,6 +285,7 @@ export default function StudentHome() {
     setResult(null)
     setError(null)
     setShowDetails(false)
+    setActiveAssignment(null)
   }
 
   // Chiqish harakati — agar foydalanuvchi tekshiruv qilgan bo'lsa, rating modalni ko'rsat
@@ -412,10 +423,21 @@ export default function StudentHome() {
                           )}
                         </div>
                         {!isDone && (
-                          <button onClick={() => { localStorage.setItem(`done_${a.id}`, '1'); setAssignments([...assignments]) }}
-                            className="text-[10px] bg-success-500 text-white px-2 py-1 rounded-lg font-medium flex-shrink-0">
-                            Bajarildi
-                          </button>
+                          <div className="flex flex-col gap-1 flex-shrink-0">
+                            <button onClick={() => {
+                                setActiveAssignment(a)
+                                // Topshiriqning fanini avtomatik tanlash (agar kerak bo'lsa)
+                                if (a.subject && !selectedSubject) setSelectedSubject(a.subject)
+                                openCamera()
+                              }}
+                              className="text-[10px] bg-primary-500 text-white px-2 py-1 rounded-lg font-medium whitespace-nowrap">
+                              📸 Bajarish
+                            </button>
+                            <button onClick={() => { localStorage.setItem(`done_${a.id}`, '1'); setAssignments([...assignments]) }}
+                              className="text-[10px] bg-success-500 text-white px-2 py-1 rounded-lg font-medium">
+                              ✓ Belgilash
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -428,6 +450,12 @@ export default function StudentHome() {
           {/* KAMERA OCHISH */}
           {!result && !error && !checking && (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+              {activeAssignment && (
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 mb-4 text-left">
+                  <p className="text-xs text-primary-600 font-medium">📋 Topshiriq: {activeAssignment.title}</p>
+                  {activeAssignment.description && <p className="text-xs text-gray-600 mt-1">{activeAssignment.description}</p>}
+                </div>
+              )}
               <div className="w-20 h-20 bg-success-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Camera className="w-10 h-10 text-success-500" />
               </div>
@@ -652,17 +680,32 @@ export default function StudentHome() {
               <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">{assignments.length}</span>
             </div>
             <div className="space-y-2">
-              {assignments.map(a => (
-                <div key={a.id} className="p-3 rounded-xl bg-gray-50 border border-gray-100">
-                  <p className="text-sm font-medium text-gray-800">{a.title}</p>
-                  {a.description && <p className="text-xs text-gray-500 mt-1">{a.description}</p>}
-                  <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
-                    <span className="bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded">{a.subject}</span>
-                    <span>{a.grade}-sinf</span>
-                    <span>{a.teacher_name}</span>
+              {assignments.map(a => {
+                const isDone = localStorage.getItem(`done_${a.id}`)
+                return (
+                  <div key={a.id} className={`p-3 rounded-xl border ${isDone ? 'bg-success-50 border-success-200' : 'bg-gray-50 border-gray-100'}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className={`text-sm font-medium ${isDone ? 'text-success-700' : 'text-gray-800'}`}>
+                          {isDone && '✅ '}{a.title}
+                        </p>
+                        {a.description && <p className="text-xs text-gray-500 mt-1">{a.description}</p>}
+                        <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
+                          <span className="bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded">{a.subject}</span>
+                          <span>{a.grade}-sinf</span>
+                          <span>{a.teacher_name}</span>
+                        </div>
+                      </div>
+                      {!isDone && (
+                        <button onClick={() => { setActiveAssignment(a); setSelectedSubject(a.subject) }}
+                          className="text-[10px] bg-primary-500 text-white px-2 py-1 rounded-lg font-medium flex-shrink-0 whitespace-nowrap">
+                          📸 Bajarish
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

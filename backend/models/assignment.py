@@ -26,3 +26,4 @@ class Assignment(Base):
     # Relationships
     teacher = relationship("User", lazy="selectin")
     classroom = relationship("Classroom", lazy="selectin")
+    submissions = relationship("Submission", back_populates="assignment", lazy="selectin")

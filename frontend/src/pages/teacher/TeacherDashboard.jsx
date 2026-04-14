@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, BookCheck, TrendingUp, Clock, LogOut, Camera, X, Send, Loader2, Image, Compass, ClipboardList, Plus, Trash2 } from 'lucide-react'
+import { Users, BookCheck, TrendingUp, Clock, LogOut, Camera, X, Send, Loader2, Image, Compass, ClipboardList, Plus, Trash2, ArrowLeft, Eye } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getRandomTeacherQuote } from '../../data/quotes'
 import RatingModal from '../../components/RatingModal'
@@ -65,6 +65,54 @@ export default function TeacherDashboard() {
   const [assignSaving, setAssignSaving] = useState(false)
   const [assignImage, setAssignImage] = useState(null)
   const assignImageRef = useRef(null)
+
+  // Topshiriq detail view uchun
+  const [selectedAssignment, setSelectedAssignment] = useState(null)
+  const [assignmentSubmissions, setAssignmentSubmissions] = useState([])
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false)
+  const [selectedSubmission, setSelectedSubmission] = useState(null)
+  const [loadingSubmissionDetail, setLoadingSubmissionDetail] = useState(false)
+
+  // Topshiriqni tanlash — o'quvchilar ro'yxatini yuklash
+  const openAssignmentDetail = async (a) => {
+    setSelectedAssignment(a)
+    setSelectedSubmission(null)
+    setLoadingSubmissions(true)
+    try {
+      const res = await fetch(`/api/assignments/${a.id}/submissions?telegram_id=${telegramId}`)
+      if (res.ok) {
+        setAssignmentSubmissions(await res.json())
+      } else {
+        setAssignmentSubmissions([])
+      }
+    } catch {
+      setAssignmentSubmissions([])
+    }
+    setLoadingSubmissions(false)
+  }
+
+  // Submission tanlash — tafsilot yuklash
+  const openSubmissionDetail = async (submissionId) => {
+    setLoadingSubmissionDetail(true)
+    try {
+      const res = await fetch(`/api/assignments/submission/${submissionId}?telegram_id=${telegramId}`)
+      if (res.ok) {
+        setSelectedSubmission(await res.json())
+      }
+    } catch {}
+    setLoadingSubmissionDetail(false)
+  }
+
+  // Topshiriqlarni sana bo'yicha guruhlash
+  const groupedAssignments = useMemo(() => {
+    const groups = {}
+    for (const a of assignments) {
+      const d = a.created_at ? new Date(a.created_at).toLocaleDateString('uz') : "Noma'lum"
+      if (!groups[d]) groups[d] = []
+      groups[d].push(a)
+    }
+    return groups
+  }, [assignments])
 
   const fetchAssignments = () => {
     if (!telegramId) return
@@ -248,6 +296,162 @@ export default function TeacherDashboard() {
   }
   const handleLogout = () => {
     setShowExitRating(true)
+  }
+
+  // === SUBMISSION TAFSILOTI VIEW (o'quvchi yechgan rasmi + AI natija) ===
+  if (selectedSubmission) {
+    const probs = selectedSubmission.ai_result?.problems || []
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
+          <div className="max-w-lg mx-auto flex items-center gap-3">
+            <button onClick={() => setSelectedSubmission(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-bold text-gray-800 truncate">{selectedSubmission.student_name}</h2>
+              <p className="text-[11px] text-gray-500">
+                {selectedSubmission.subject} · {selectedSubmission.grade}-sinf ·{' '}
+                {selectedSubmission.created_at ? new Date(selectedSubmission.created_at).toLocaleString('uz') : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto p-4 space-y-4">
+          {/* Rasm */}
+          {selectedSubmission.image_url && (
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+              <img src={selectedSubmission.image_url} alt="Vazifa" className="w-full max-h-96 object-contain bg-gray-50" />
+            </div>
+          )}
+
+          {/* Baho */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-success-50 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-success-600">{Math.round(selectedSubmission.score || 0)}%</p>
+              <p className="text-[10px] text-gray-500">Ball</p>
+            </div>
+            <div className="bg-primary-50 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-primary-600">{selectedSubmission.correct_count}/{selectedSubmission.total_problems}</p>
+              <p className="text-[10px] text-gray-500">To'g'ri</p>
+            </div>
+            <div className="bg-danger-50 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-danger-600">{selectedSubmission.incorrect_count}</p>
+              <p className="text-[10px] text-gray-500">Xato</p>
+            </div>
+          </div>
+
+          {/* Masalalar */}
+          {probs.length > 0 && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <h3 className="text-sm font-bold text-gray-800 mb-3">Masalalar tahlili</h3>
+              <div className="space-y-2">
+                {probs.map((p, i) => (
+                  <div key={i} className={`p-3 rounded-xl border ${p.is_correct ? 'bg-success-50 border-success-100' : 'bg-danger-50 border-danger-100'}`}>
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5">{p.is_correct ? '✅' : '❌'}</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-700">{p.number}-masala: {p.problem_text}</p>
+                        {p.student_solution && <p className="text-xs text-gray-500 mt-0.5">Yechim: {p.student_solution}</p>}
+                        {!p.is_correct && (
+                          <div className="mt-2 space-y-1">
+                            {p.error_explanation && <p className="text-xs text-danger-600">💡 {p.error_explanation}</p>}
+                            {p.correct_answer && <p className="text-xs text-success-600">✏️ To'g'ri: {p.correct_answer}</p>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedSubmission.ai_result?.recommendation && (
+            <div className="bg-primary-50 rounded-xl p-3">
+              <p className="text-xs text-primary-700">📌 {selectedSubmission.ai_result.recommendation}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // === ASSIGNMENT DETAIL VIEW (o'quvchilar ro'yxati) ===
+  if (selectedAssignment) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
+          <div className="max-w-lg mx-auto flex items-center gap-3">
+            <button onClick={() => { setSelectedAssignment(null); setAssignmentSubmissions([]) }} className="p-1.5 rounded-lg hover:bg-gray-100">
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-bold text-gray-800 truncate">{selectedAssignment.title}</h2>
+              <p className="text-[11px] text-gray-500">
+                {selectedAssignment.subject} · {selectedAssignment.grade}-sinf ·{' '}
+                {selectedAssignment.created_at ? new Date(selectedAssignment.created_at).toLocaleDateString('uz') : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto p-4 space-y-3">
+          {selectedAssignment.description && (
+            <div className="bg-white rounded-xl p-3 border border-gray-100">
+              <p className="text-sm text-gray-700">{selectedAssignment.description}</p>
+            </div>
+          )}
+
+          {loadingSubmissions ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-500" />
+              <p className="text-xs text-gray-500 mt-2">Yuklanmoqda...</p>
+            </div>
+          ) : assignmentSubmissions.length === 0 ? (
+            <div className="bg-white rounded-xl p-8 text-center border border-gray-100">
+              <ClipboardList className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Hali hech kim bajarmagan</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-800">Bajarganlar</h3>
+                <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">{assignmentSubmissions.length}</span>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {assignmentSubmissions.map((s, i) => (
+                  <button key={s.student_id} onClick={() => openSubmissionDetail(s.latest_submission_id)}
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition text-left">
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      i === 0 ? 'bg-yellow-100 text-yellow-700' : i === 1 ? 'bg-gray-100 text-gray-600' : i === 2 ? 'bg-orange-100 text-orange-700' : 'bg-gray-50 text-gray-500'
+                    }`}>{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{s.student_name}</p>
+                      <p className="text-[10px] text-gray-400">
+                        {s.grade}-sinf {s.class_letter || ''} · {s.attempts} urinish · {s.last_attempt_at ? new Date(s.last_attempt_at).toLocaleDateString('uz') : ''}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className={`text-sm font-bold ${
+                        s.latest_score >= 80 ? 'text-emerald-600' : s.latest_score >= 60 ? 'text-amber-600' : 'text-red-500'
+                      }`}>{Math.round(s.latest_score)}%</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {loadingSubmissionDetail && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Loader2 className="w-8 h-8 animate-spin text-white" />
+          </div>
+        )}
+      </div>
+    )
   }
 
   // Kamera fullscreen
@@ -463,17 +667,29 @@ export default function TeacherDashboard() {
           {assignments.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-3">Hali topshiriq yo'q</p>
           ) : (
-            <div className="space-y-2">
-              {assignments.slice(0, 5).map(a => (
-                <div key={a.id} className="flex items-start justify-between p-2.5 rounded-lg border border-gray-100 bg-gray-50">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-700 truncate">{a.title}</p>
-                    {a.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{a.description}</p>}
-                    <p className="text-[10px] text-gray-400 mt-1">{a.grade}-sinf | {a.subject} | {new Date(a.created_at).toLocaleDateString('uz')}</p>
+            <div className="space-y-3">
+              {Object.entries(groupedAssignments).map(([date, items]) => (
+                <div key={date}>
+                  <p className="text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">{date}</p>
+                  <div className="space-y-2">
+                    {items.map(a => (
+                      <div key={a.id} className="flex items-start justify-between p-2.5 rounded-lg border border-gray-100 bg-gray-50 hover:bg-white transition">
+                        <button onClick={() => openAssignmentDetail(a)} className="flex-1 min-w-0 text-left">
+                          <p className="text-sm font-medium text-gray-700 truncate">{a.title}</p>
+                          {a.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{a.description}</p>}
+                          <p className="text-[10px] text-gray-400 mt-1">{a.grade}-sinf | {a.subject}</p>
+                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button onClick={() => openAssignmentDetail(a)} className="p-1 text-primary-500 hover:bg-primary-50 rounded" title="Natijalarni ko'rish">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteAssignment(a.id)} className="p-1 text-gray-400 hover:text-red-500" title="O'chirish">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <button onClick={() => handleDeleteAssignment(a.id)} className="p-1 text-gray-400 hover:text-red-500 shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
               ))}
             </div>

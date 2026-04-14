@@ -28,6 +28,7 @@ async def check_homework(
     subject: str = Form(default="matematika"),
     grade: int = Form(default=7),
     telegram_id: int = Form(default=0),
+    assignment_id: str = Form(default=""),
     db: AsyncSession = Depends(get_db),
 ):
     start_time = time.time()
@@ -101,8 +102,18 @@ async def check_homework(
             # Rasmni base64 formatda saqlash
             image_base64 = f"data:image/jpeg;base64,{base64.b64encode(processed_image).decode()}"
 
+            # Assignment_id ni parse qilish (agar kelgan bo'lsa)
+            assignment_uuid = None
+            if assignment_id:
+                try:
+                    from uuid import UUID as _UUID
+                    assignment_uuid = _UUID(assignment_id)
+                except (ValueError, TypeError):
+                    assignment_uuid = None
+
             submission = Submission(
                 student_id=student_id,
+                assignment_id=assignment_uuid,
                 image_url=image_base64,
                 subject=subject,
                 grade=grade,
