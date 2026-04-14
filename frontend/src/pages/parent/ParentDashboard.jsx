@@ -64,8 +64,8 @@ export default function ParentDashboard() {
     try {
       const params = new URLSearchParams({ name: searchQuery.trim() })
       if (searchGrade > 0) params.append('grade', searchGrade)
-      const parentMaktab = localStorage.getItem('parentMaktab')
-      if (parentMaktab) params.append('maktab', parentMaktab)
+      // Maktab filtri olib tashlandi — qattiq mos kelmasligi uchun
+      // Ota-ona natijadan to'g'ri farzandni tanlaydi
       const res = await fetch(`/api/users/search-students?${params}`)
       if (res.ok) {
         const data = await res.json()

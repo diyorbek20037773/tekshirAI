@@ -207,13 +207,17 @@ export default function StudentSetup() {
             </div>
           )}
 
-          {/* Maktab */}
+          {/* Maktab — raqam dropdown (barcha formatlarni bir xil qilish) */}
           {selectedTuman && (
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Maktab</label>
-              <input type="text" value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
-                placeholder="Maktab nomini kiriting (masalan: 1-sonli maktab)"
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-success-400 focus:ring-1 focus:ring-success-400" />
+              <select value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-success-400">
+                <option value="">Maktab raqamini tanlang...</option>
+                {Array.from({ length: 100 }, (_, i) => i + 1).map(n => (
+                  <option key={n} value={`${n}-sonli maktab`}>{n}-sonli maktab</option>
+                ))}
+              </select>
             </div>
           )}
 

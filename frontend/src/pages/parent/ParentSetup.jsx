@@ -183,9 +183,13 @@ export default function ParentSetup() {
           {/* Maktab */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Farzandingiz maktabi</label>
-            <input type="text" value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
-              placeholder="Farzandingiz maktabini kiriting"
-              className="w-full px-3 py-2.5 rounded-xl border border-accent-400 text-sm focus:outline-none focus:border-accent-400 focus:ring-1 focus:ring-accent-400" />
+            <select value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-accent-400 text-sm bg-white focus:outline-none focus:border-accent-400">
+              <option value="">Maktab raqamini tanlang...</option>
+              {Array.from({ length: 100 }, (_, i) => i + 1).map(n => (
+                <option key={n} value={`${n}-sonli maktab`}>{n}-sonli maktab</option>
+              ))}
+            </select>
           </div>
 
           {/* Farzandlar — ixcham ro'yxat */}

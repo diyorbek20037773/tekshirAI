@@ -287,17 +287,38 @@ async def search_students(
     maktab: str = "",
     db: AsyncSession = Depends(get_db),
 ):
-    """Ism, sinf, maktab bo'yicha o'quvchilarni qidirish (ota-ona uchun)."""
+    """Ism, sinf, maktab bo'yicha o'quvchilarni qidirish (ota-ona uchun).
+
+    Qidiruv juda moslashuvchan:
+    - Ism bo'yicha — har bir so'zni alohida qidiradi (OR)
+    - Sinf — aniq moslik
+    - Maktab — ilike %filter% (ixtiyoriy, bo'sh bo'lsa hamma maktablarni qaytaradi)
+    """
+    from sqlalchemy import or_
+
     query = select(User).where(User.role == "student")
 
     if name.strip():
-        query = query.where(User.full_name.ilike(f"%{name.strip()}%"))
+        # Ism bo'yicha — har bir so'zni alohida qidirish (kirill/lotin, tartib muhim emas)
+        words = [w.strip() for w in name.strip().split() if len(w.strip()) >= 2]
+        if words:
+            conditions = [User.full_name.ilike(f"%{w}%") for w in words]
+            # Kamida bitta so'z mos kelsa
+            query = query.where(or_(*conditions))
     if grade > 0:
         query = query.where(User.grade == grade)
     if maktab.strip():
-        query = query.where(User.maktab.ilike(f"%{maktab.strip()}%"))
+        # Maktab filtri yumshoq — raqam bo'lsa faqat raqamni qidirish
+        mk = maktab.strip()
+        # Raqam ajratib olish: "17-maktab" → "17"
+        import re
+        num_match = re.search(r'\d+', mk)
+        if num_match:
+            query = query.where(User.maktab.ilike(f"%{num_match.group()}%"))
+        else:
+            query = query.where(User.maktab.ilike(f"%{mk}%"))
 
-    result = await db.execute(query.order_by(User.full_name).limit(20))
+    result = await db.execute(query.order_by(User.full_name).limit(30))
     students = result.scalars().all()
 
     return [
