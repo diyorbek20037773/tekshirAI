@@ -426,8 +426,10 @@ export default function StudentHome() {
                           <div className="flex flex-col gap-1 flex-shrink-0">
                             <button onClick={() => {
                                 setActiveAssignment(a)
-                                // Topshiriqning fanini avtomatik tanlash (agar kerak bo'lsa)
-                                if (a.subject && !selectedSubject) setSelectedSubject(a.subject)
+                                // Topshiriqning fanini tanlash (faqat agar shu sinfning fanlari ichida bo'lsa)
+                                if (a.subject && subjects.includes(a.subject) && !selectedSubject) {
+                                  setSelectedSubject(a.subject)
+                                }
                                 openCamera()
                               }}
                               className="text-[10px] bg-primary-500 text-white px-2 py-1 rounded-lg font-medium whitespace-nowrap">
@@ -697,7 +699,16 @@ export default function StudentHome() {
                         </div>
                       </div>
                       {!isDone && (
-                        <button onClick={() => { setActiveAssignment(a); setSelectedSubject(a.subject) }}
+                        <button onClick={() => {
+                          setActiveAssignment(a)
+                          // Faqat fan ushbu sinf ro'yxatida bo'lsa tanlash; aks holda foydalanuvchi o'zi tanlaydi
+                          if (a.subject && subjects.includes(a.subject)) {
+                            setSelectedSubject(a.subject)
+                          } else if (subjects.length > 0) {
+                            // Topshiriqning fani sinf ro'yxatida yo'q — birinchi mavjud fanga o'tish
+                            setSelectedSubject(subjects[0])
+                          }
+                        }}
                           className="text-[10px] bg-primary-500 text-white px-2 py-1 rounded-lg font-medium flex-shrink-0 whitespace-nowrap">
                           📸 Bajarish
                         </button>

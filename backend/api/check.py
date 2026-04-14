@@ -109,6 +109,7 @@ async def check_homework(
                     from uuid import UUID as _UUID
                     assignment_uuid = _UUID(assignment_id)
                 except (ValueError, TypeError):
+                    logger.warning(f"Noto'g'ri assignment_id format: {assignment_id!r} — bog'lanmadi")
                     assignment_uuid = None
 
             submission = Submission(

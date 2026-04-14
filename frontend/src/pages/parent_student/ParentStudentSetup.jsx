@@ -195,9 +195,9 @@ export default function ParentStudentSetup() {
             </div>
           )}
 
-          {selectedTuman && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Maktab</label>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Maktab</label>
+            {selectedTuman ? (
               <select value={selectedMaktab} onChange={e => setSelectedMaktab(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-teal-400">
                 <option value="">Maktab raqamini tanlang...</option>
@@ -205,8 +205,12 @@ export default function ParentStudentSetup() {
                   <option key={n} value={`${n}-sonli maktab`}>{n}-sonli maktab</option>
                 ))}
               </select>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-gray-400 italic px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200">
+                Avval Viloyat va Tumanni tanlang
+              </p>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>

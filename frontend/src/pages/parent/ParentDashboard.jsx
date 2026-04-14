@@ -29,7 +29,12 @@ export default function ParentDashboard() {
 
   // Setup dan kiritilgan farzandlar
   const parentChildren = (() => {
-    try { return JSON.parse(localStorage.getItem('parentChildren') || '[]') } catch { return [] }
+    try {
+      const parsed = JSON.parse(localStorage.getItem('parentChildren') || '[]')
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
   })()
 
   // Kasb yo'nalishi

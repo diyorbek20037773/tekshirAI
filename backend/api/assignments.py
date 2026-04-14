@@ -315,13 +315,24 @@ async def delete_assignment(
     telegram_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
-    """Topshiriqni o'chirish."""
-    result = await db.execute(
-        select(Assignment).where(Assignment.id == UUID(assignment_id))
-    )
+    """Topshiriqni o'chirish (faqat o'z topshirig'ini)."""
+    try:
+        aid = UUID(assignment_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Noto'g'ri assignment_id")
+
+    result = await db.execute(select(Assignment).where(Assignment.id == aid))
     assignment = result.scalar_one_or_none()
     if not assignment:
         raise HTTPException(status_code=404, detail="Topshiriq topilmadi")
+
+    # Egalik tekshiruvi — boshqa o'qituvchining ishini o'chirib bo'lmaydi
+    t_res = await db.execute(
+        select(User).where(User.telegram_id == telegram_id, User.role == "teacher")
+    )
+    teacher = t_res.scalars().first()
+    if not teacher or assignment.teacher_id != teacher.id:
+        raise HTTPException(status_code=403, detail="Bu topshiriq sizga tegishli emas")
 
     await db.delete(assignment)
     await db.flush()
