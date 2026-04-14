@@ -4,6 +4,7 @@ import { Users, BookCheck, TrendingUp, Clock, LogOut, Camera, X, Send, Loader2, 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getRandomTeacherQuote } from '../../data/quotes'
 import RatingModal from '../../components/RatingModal'
+import PullToRefresh from '../../components/PullToRefresh'
 
 function StatCard({ icon: Icon, title, value, color }) {
   const colors = {
@@ -477,6 +478,7 @@ export default function TeacherDashboard() {
   }
 
   return (
+    <PullToRefresh>
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
@@ -836,5 +838,6 @@ export default function TeacherDashboard() {
       </div>
       {showExitRating && <RatingModal onClose={() => { setShowExitRating(false); doExit() }} />}
     </div>
+    </PullToRefresh>
   )
 }

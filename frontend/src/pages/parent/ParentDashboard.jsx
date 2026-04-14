@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { getRandomParentQuote } from '../../data/quotes'
 import RatingModal from '../../components/RatingModal'
+import PullToRefresh from '../../components/PullToRefresh'
 
 export default function ParentDashboard() {
   const navigate = useNavigate()
@@ -156,6 +157,7 @@ export default function ParentDashboard() {
   )
 
   return (
+    <PullToRefresh>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4">
@@ -461,5 +463,6 @@ export default function ParentDashboard() {
       </div>
       {showExitRating && <RatingModal onClose={() => { setShowExitRating(false); doExit() }} />}
     </div>
+    </PullToRefresh>
   )
 }

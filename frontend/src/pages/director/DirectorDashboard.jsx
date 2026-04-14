@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, GraduationCap, BookOpen, TrendingUp, BarChart3, LogOut, RefreshCw } from 'lucide-react'
 import RatingModal from '../../components/RatingModal'
+import PullToRefresh from '../../components/PullToRefresh'
 
 export default function DirectorDashboard() {
   const navigate = useNavigate()
@@ -101,6 +102,7 @@ export default function DirectorDashboard() {
   )
 
   return (
+    <PullToRefresh>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-500 to-purple-700 text-white p-4 pb-6">
@@ -243,5 +245,6 @@ export default function DirectorDashboard() {
       </div>
       {showExitRating && <RatingModal onClose={() => { setShowExitRating(false); doExit() }} />}
     </div>
+    </PullToRefresh>
   )
 }

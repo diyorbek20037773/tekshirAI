@@ -6,6 +6,7 @@ import { GRADE_SUBJECTS } from '../../data/gradeSubjects'
 import RiskDashboard from '../../components/RiskDashboard'
 import AiChat from '../../components/AiChat'
 import RatingModal from '../../components/RatingModal'
+import PullToRefresh from '../../components/PullToRefresh'
 
 // Fan ranglari va ikonkalari
 const SUBJECT_STYLES = {
@@ -620,6 +621,7 @@ export default function StudentHome() {
 
   // === ASOSIY KO'RINISH — FANLAR GRID ===
   return (
+    <PullToRefresh>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-success-500 to-success-600 px-4 py-5 text-white">
@@ -771,5 +773,6 @@ export default function StudentHome() {
         if (pendingExit) doExit()
       }} />}
     </div>
+    </PullToRefresh>
   )
 }
