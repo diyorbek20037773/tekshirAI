@@ -14,13 +14,13 @@ export default function App() {
     localStorage.getItem('adminToken')
   );
 
-  // Eski tokenni tekshirish — agar 403 qaytarsa, login sahifasiga qaytarish
+  // Eski tokenni tekshirish — backend X-Admin-Token header kutadi
   useEffect(() => {
     if (!adminToken) return;
     fetch('/api/admin/stats', {
-      headers: { 'Authorization': `Bearer ${adminToken}` },
+      headers: { 'X-Admin-Token': adminToken },
     }).then(res => {
-      if (res.status === 401 || res.status === 403) {
+      if (res.status === 401 || res.status === 403 || res.status === 422) {
         localStorage.removeItem('adminToken');
         setAdminToken(null);
       }
