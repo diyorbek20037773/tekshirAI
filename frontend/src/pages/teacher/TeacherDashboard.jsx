@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { getRandomTeacherQuote } from '../../data/quotes'
 import RatingModal from '../../components/RatingModal'
 import PullToRefresh from '../../components/PullToRefresh'
+import { shouldShowRating, markRatingShown } from '../../utils/ratingHelper'
 
 function StatCard({ icon: Icon, title, value, color }) {
   const colors = {
@@ -499,7 +500,7 @@ export default function TeacherDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <Link to="/teacher/profile">
-              <img src="/avatars/teacher.jpg" alt="Profil" className="w-9 h-9 rounded-full object-cover border-2 border-gray-200" />
+              <img src={localStorage.getItem('teacherGender') === 'female' ? '/avatars/teacher_female.jpg' : '/avatars/teacher_male.jpg'} alt="Profil" className="w-9 h-9 rounded-full object-cover border-2 border-gray-200" />
             </Link>
             <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500">
               <LogOut className="w-5 h-5" />

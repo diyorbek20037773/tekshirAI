@@ -13,6 +13,11 @@ const CLASS_LETTER_ITEMS = [
   { value: 'F', label: 'F' },
 ]
 
+const GENDER_ITEMS = [
+  { value: 'male', label: 'Erkak' },
+  { value: 'female', label: 'Ayol' },
+]
+
 const SUBJECT_ITEMS = [
   'Ona tili', 'Adabiyot', 'Ingliz tili', 'Matematika', 'Algebra', 'Geometriya',
   'Fizika', 'Kimyo', 'Biologiya', 'Tabiatshunoslik', 'Geografiya', 'Tarix', 'Informatika',
@@ -40,6 +45,7 @@ export default function TeacherSetup() {
 
   const [grade, setGrade] = useState(5)
   const [classLetter, setClassLetter] = useState('A')
+  const [gender, setGender] = useState('male')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -87,7 +93,7 @@ export default function TeacherSetup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           telegram_id: telegramId, username: userUsername, full_name: fullName,
-          role: 'teacher', subject,
+          role: 'teacher', subject, gender,
           viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
           grade, class_letter: classLetter,
         }),
@@ -100,6 +106,7 @@ export default function TeacherSetup() {
       localStorage.setItem('teacherMaktab', selectedMaktab)
       localStorage.setItem('teacherGrade', String(grade))
       localStorage.setItem('teacherClassLetter', classLetter)
+      localStorage.setItem('teacherGender', gender)
       localStorage.setItem('teacherViloyat', selectedViloyat)
       localStorage.setItem('teacherTuman', selectedTuman)
       localStorage.setItem('userId', data.id)
@@ -121,7 +128,7 @@ export default function TeacherSetup() {
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <img src="/avatars/teacher.jpg" alt="Avatar"
+          <img src={gender === 'female' ? '/avatars/teacher_female.jpg' : '/avatars/teacher_male.jpg'} alt="Avatar"
             className="w-14 h-14 rounded-full object-cover border-2 border-blue-200 shadow-sm" />
           <div>
             <h1 className="text-lg font-bold text-gray-800">O'qituvchi</h1>
@@ -188,6 +195,12 @@ export default function TeacherSetup() {
                 Avval Viloyat va Tumanni tanlang
               </p>
             )}
+          </div>
+
+          {/* Jins */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Jinsingiz</label>
+            <WheelPicker items={GENDER_ITEMS} selectedValue={gender} onSelect={setGender} visibleItems={3} itemHeight={40} />
           </div>
 
           {/* Sinf va Harf */}
