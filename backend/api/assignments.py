@@ -139,7 +139,14 @@ async def get_student_assignments(
     telegram_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
-    """O'quvchi uchun topshiriqlar — uning sinfi va fani bo'yicha."""
+    """O'quvchi uchun topshiriqlar — MAKTAB + SINF-HARF + SINF RAQAMI bo'yicha.
+
+    Teacher topshiriq yaratganda, teacher'ning o'z maktabi va sinf-harfi
+    bilan bog'lanadi. O'quvchi faqat SHU maktabdagi va SHU sinfdagi
+    topshiriqlarni ko'radi. Boshqa maktab/sinf topshiriqlari aralashmaydi.
+    """
+    from sqlalchemy import or_
+
     result = await db.execute(
         select(User).where(User.telegram_id == telegram_id, User.role == "student")
     )
@@ -147,19 +154,37 @@ async def get_student_assignments(
     if not student:
         raise HTTPException(status_code=404, detail="O'quvchi topilmadi")
 
-    # O'quvchi qaysi sinflarga a'zo
+    # O'quvchi qaysi sinflarga a'zo (classroom_student orqali)
     classroom_ids_result = await db.execute(
         select(ClassroomStudent.classroom_id).where(ClassroomStudent.student_id == student.id)
     )
     classroom_ids = [row[0] for row in classroom_ids_result.all()]
 
-    # Topshiriqlar: shu sinflarga yoki umumiy (classroom_id=None, grade mos)
-    query = select(Assignment).where(
-        Assignment.grade == student.grade
+    # Asosiy filter: Teacher.maktab == Student.maktab, Assignment.grade == student.grade
+    from sqlalchemy.orm import aliased
+    Teacher = aliased(User)
+    query = (
+        select(Assignment)
+        .join(Teacher, Assignment.teacher_id == Teacher.id)
+        .where(Assignment.grade == student.grade)
     )
 
+    # Maktab mos kelishi kerak — boshqa maktab topshiriqlari aralashmasin
+    if student.maktab:
+        query = query.where(Teacher.maktab == student.maktab)
+
+    # Sinf-harf: agar o'quvchining harfi bor va o'qituvchining harfi bor bo'lsa — mos kelsin
+    # Agar o'qituvchining harfi yo'q (umumiy topshiriq) — hamma harfga tushadi
+    if student.class_letter:
+        query = query.where(
+            or_(
+                Teacher.class_letter == student.class_letter,
+                Teacher.class_letter.is_(None),
+            )
+        )
+
+    # Qo'shimcha: classroom_id bo'yicha aniq moslik (agar o'quvchi sinfga a'zo bo'lsa)
     if classroom_ids:
-        from sqlalchemy import or_
         query = query.where(
             or_(
                 Assignment.classroom_id.in_(classroom_ids),
