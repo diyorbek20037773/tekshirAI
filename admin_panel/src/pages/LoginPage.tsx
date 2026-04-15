@@ -97,7 +97,7 @@ export default function LoginPage({ onLogin }: Props) {
         </form>
 
         <p className="text-center text-slate-500 text-xs mt-6">
-          Parol va maxfiy so'z Railway Variables da sozlanadi
+          Bu joyga faqat adminlar kirish huquqi bor
         </p>
       </div>
     </div>
