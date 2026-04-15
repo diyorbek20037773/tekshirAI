@@ -474,7 +474,9 @@ async def get_all_students(
 @router.get("/student/{telegram_id}/submissions")
 async def get_student_submissions(telegram_id: int, db: AsyncSession = Depends(get_db)):
     """O'quvchining barcha submissionlari."""
-    user = await find_user_by_telegram_id(telegram_id, db)
+    # role="student" majburiy — agar bir telegram_id ostida parent+student bor bo'lsa,
+    # doim student recordini olamiz (teacher yoki parent emas)
+    user = await find_user_by_telegram_id(telegram_id, db, role="student")
     if not user:
         raise HTTPException(status_code=404, detail="O'quvchi topilmadi")
 

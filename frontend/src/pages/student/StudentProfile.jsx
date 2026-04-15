@@ -13,13 +13,7 @@ const LEVEL_INFO = [
 ]
 
 export default function StudentProfile() {
-  const name = localStorage.getItem('studentName') || "O'quvchi"
-  const username = localStorage.getItem('studentUsername') || ''
-  const subject = localStorage.getItem('studentSubject') || 'Matematika'
-  const grade = localStorage.getItem('studentGrade') || '7'
   const telegramId = localStorage.getItem('telegramId')
-  const studentGender = localStorage.getItem('studentGender') || 'male'
-  const avatarSrc = studentGender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'
 
   const [profile, setProfile] = useState(null)
   const [analysis, setAnalysis] = useState(null)
@@ -57,6 +51,15 @@ export default function StudentProfile() {
   const xp = profile?.xp || 0
   const xpProgress = nextLevel ? Math.min(100, ((xp - levelInfo.xp) / (nextLevel.xp - levelInfo.xp)) * 100) : 100
 
+  // Profil ma'lumotlari — avval backend'dan, keyin localStorage'dan
+  const name = profile?.full_name || localStorage.getItem('studentName') || "O'quvchi"
+  const username = profile?.username || localStorage.getItem('studentUsername') || ''
+  const subject = profile?.subject || localStorage.getItem('studentSubject') || ''
+  const grade = profile?.grade || localStorage.getItem('studentGrade') || '7'
+  const classLetter = profile?.class_letter || localStorage.getItem('studentClassLetter') || ''
+  const studentGender = profile?.gender || localStorage.getItem('studentGender') || 'male'
+  const avatarSrc = studentGender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-4 py-4">
@@ -82,9 +85,9 @@ export default function StudentProfile() {
                 <div>
                   <h2 className="text-xl font-bold">{name}</h2>
                   {username && <p className="text-primary-100 text-sm">@{username}</p>}
-                  <div className="flex gap-2 mt-1">
-                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{grade}-sinf</span>
-                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{subject}</span>
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{grade}-{classLetter ? `${classLetter} ` : ''}sinf</span>
+                    {subject && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{subject}</span>}
                   </div>
                 </div>
               </div>

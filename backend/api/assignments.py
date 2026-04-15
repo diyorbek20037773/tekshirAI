@@ -170,18 +170,13 @@ async def get_student_assignments(
     )
 
     # Maktab mos kelishi kerak — boshqa maktab topshiriqlari aralashmasin
+    # Yumshoq filter: bo'sh joylar va case farqlariga chidamli
     if student.maktab:
-        query = query.where(Teacher.maktab == student.maktab)
+        query = query.where(Teacher.maktab.ilike(student.maktab.strip()))
 
-    # Sinf-harf: agar o'quvchining harfi bor va o'qituvchining harfi bor bo'lsa — mos kelsin
-    # Agar o'qituvchining harfi yo'q (umumiy topshiriq) — hamma harfga tushadi
-    if student.class_letter:
-        query = query.where(
-            or_(
-                Teacher.class_letter == student.class_letter,
-                Teacher.class_letter.is_(None),
-            )
-        )
+    # Sinf-harf: yumshoqroq — agar mos kelmasa ham grade va maktab mos kelsa ko'rinadi
+    # Chunki o'qituvchi ko'pincha butun grade uchun topshiriq beradi
+    # Biz faqat grade + maktab bo'yicha filtrlashni majbur qilamiz
 
     # Qo'shimcha: classroom_id bo'yicha aniq moslik (agar o'quvchi sinfga a'zo bo'lsa)
     if classroom_ids:
