@@ -5,9 +5,17 @@ import WheelPicker from '../../components/WheelPicker'
 
 const GRADE_ITEMS = Array.from({ length: 11 }, (_, i) => ({ value: i + 1, label: `${i + 1}-sinf` }))
 
+const CLASS_LETTER_ITEMS = [
+  { value: 'A', label: 'A' },
+  { value: 'B', label: 'B' },
+  { value: 'C', label: 'C' },
+  { value: 'D', label: 'D' },
+  { value: 'F', label: 'F' },
+]
+
 const SUBJECT_ITEMS = [
-  'Ona tili', 'Ingliz tili', 'Matematika', 'Algebra', 'Geometriya',
-  'Fizika', 'Kimyo', 'Biologiya', 'Tabiatshunoslik', 'Informatika',
+  'Ona tili', 'Adabiyot', 'Ingliz tili', 'Matematika', 'Algebra', 'Geometriya',
+  'Fizika', 'Kimyo', 'Biologiya', 'Tabiatshunoslik', 'Geografiya', 'Tarix', 'Informatika',
 ].map(s => ({ value: s, label: s }))
 
 export default function TeacherSetup() {
@@ -31,6 +39,7 @@ export default function TeacherSetup() {
   const [geoStatus, setGeoStatus] = useState('')
 
   const [grade, setGrade] = useState(5)
+  const [classLetter, setClassLetter] = useState('A')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -79,7 +88,8 @@ export default function TeacherSetup() {
         body: JSON.stringify({
           telegram_id: telegramId, username: userUsername, full_name: fullName,
           role: 'teacher', subject,
-          viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab, grade,
+          viloyat: selectedViloyat, tuman: selectedTuman, maktab: selectedMaktab,
+          grade, class_letter: classLetter,
         }),
       })
       const data = await res.json()
@@ -88,6 +98,8 @@ export default function TeacherSetup() {
       localStorage.setItem('teacherName', data.full_name)
       localStorage.setItem('teacherSubject', subject)
       localStorage.setItem('teacherMaktab', selectedMaktab)
+      localStorage.setItem('teacherGrade', String(grade))
+      localStorage.setItem('teacherClassLetter', classLetter)
       localStorage.setItem('teacherViloyat', selectedViloyat)
       localStorage.setItem('teacherTuman', selectedTuman)
       localStorage.setItem('userId', data.id)
@@ -178,10 +190,16 @@ export default function TeacherSetup() {
             )}
           </div>
 
-          {/* Sinf */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Sinf</label>
-            <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={setGrade} visibleItems={3} itemHeight={40} />
+          {/* Sinf va Harf */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Sinf</label>
+              <WheelPicker items={GRADE_ITEMS} selectedValue={grade} onSelect={setGrade} visibleItems={3} itemHeight={40} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Harf</label>
+              <WheelPicker items={CLASS_LETTER_ITEMS} selectedValue={classLetter} onSelect={setClassLetter} visibleItems={3} itemHeight={40} />
+            </div>
           </div>
 
           {/* Fan */}

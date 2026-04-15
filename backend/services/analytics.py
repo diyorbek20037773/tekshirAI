@@ -264,13 +264,24 @@ class AnalyticsService:
         """Statistika (maktab/sinf/fan filtri bilan)."""
         today = date.today()
 
-        student_q = select(func.count()).select_from(User).where(User.role == "student")
-        if maktab:
-            student_q = student_q.where(User.maktab == maktab)
-        if grade:
-            student_q = student_q.where(User.grade == grade)
+        # Jami o'quvchilar — agar subject berilgan bo'lsa, faqat shu fandan submission qilganlar
         if subject:
-            student_q = student_q.where(User.subject == subject)
+            student_q = select(func.count(func.distinct(Submission.student_id))).select_from(Submission).join(
+                User, Submission.student_id == User.id
+            ).where(
+                User.role == "student",
+                Submission.subject.ilike(subject),
+            )
+            if maktab:
+                student_q = student_q.where(User.maktab == maktab)
+            if grade:
+                student_q = student_q.where(User.grade == grade)
+        else:
+            student_q = select(func.count()).select_from(User).where(User.role == "student")
+            if maktab:
+                student_q = student_q.where(User.maktab == maktab)
+            if grade:
+                student_q = student_q.where(User.grade == grade)
         total_students = await session.execute(student_q)
 
         sub_q = select(func.count()).select_from(Submission).join(User, Submission.student_id == User.id).where(

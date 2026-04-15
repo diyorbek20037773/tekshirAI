@@ -166,12 +166,23 @@ export default function TeacherDashboard() {
   }
 
   const fetchData = () => {
+    // O'qituvchi faqat o'z fani va maktabi bo'yicha ma'lumotlarni ko'radi
+    const params = new URLSearchParams()
+    if (teacherMaktab) params.append('maktab', teacherMaktab)
+    if (teacherSubject) params.append('subject', teacherSubject)
+    const q = params.toString() ? `&${params.toString()}` : ''
+    const qStart = params.toString() ? `?${params.toString()}` : ''
+    const studentsParams = new URLSearchParams()
+    if (teacherMaktab) studentsParams.append('maktab', teacherMaktab)
+    const risksParams = new URLSearchParams()
+    if (teacherSubject) risksParams.append('subject', teacherSubject)
+    const risksQ = risksParams.toString() ? `?${risksParams.toString()}` : ''
     Promise.all([
-      fetch(`/api/users/students${teacherMaktab ? `?maktab=${encodeURIComponent(teacherMaktab)}` : ''}`).then(r => r.json()).catch(() => ({ students: [] })),
-      fetch('/api/analysis/classroom-risks').then(r => r.json()).catch(() => null),
-      fetch('/api/dashboard/recent-all?limit=10').then(r => r.json()).catch(() => []),
-      fetch('/api/dashboard/topic-errors-all').then(r => r.json()).catch(() => []),
-      fetch('/api/dashboard/stats-all').then(r => r.json()).catch(() => null),
+      fetch(`/api/users/students${studentsParams.toString() ? `?${studentsParams.toString()}` : ''}`).then(r => r.json()).catch(() => ({ students: [] })),
+      fetch(`/api/analysis/classroom-risks${risksQ}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/dashboard/recent-all?limit=10${q}`).then(r => r.json()).catch(() => []),
+      fetch(`/api/dashboard/topic-errors-all${qStart}`).then(r => r.json()).catch(() => []),
+      fetch(`/api/dashboard/stats-all${qStart}`).then(r => r.json()).catch(() => null),
     ]).then(([studentsData, risksData, recent, errors, stats]) => {
       setStudents(studentsData.students || [])
       setRiskData(risksData)

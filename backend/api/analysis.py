@@ -171,24 +171,27 @@ async def get_classroom_risks(
 ):
     """O'quvchilarni 3 guruhga bo'lish — maktab/sinf/fan filtri bilan."""
 
+    # Subject filter: Submission.subject bo'yicha — o'quvchida subject yo'q endi
+    sub_join_conditions = [
+        Submission.student_id == User.id,
+        Submission.status == "completed",
+    ]
+    if subject:
+        sub_join_conditions.append(Submission.subject.ilike(subject))
+
     query = (
         select(
             User.id, User.telegram_id, User.full_name, User.grade, User.subject,
             func.avg(Submission.score).label("avg_score"),
             func.count(Submission.id).label("sub_count"),
         )
-        .outerjoin(Submission, and_(
-            Submission.student_id == User.id,
-            Submission.status == "completed",
-        ))
+        .outerjoin(Submission, and_(*sub_join_conditions))
         .where(User.role == "student")
     )
     if maktab:
         query = query.where(User.maktab == maktab)
     if grade:
         query = query.where(User.grade == grade)
-    if subject:
-        query = query.where(User.subject == subject)
 
     result = await db.execute(query.group_by(User.id))
     rows = result.all()
@@ -203,10 +206,13 @@ async def get_classroom_risks(
         if sub_count == 0:
             continue
 
-        # Zaif mavzular
+        # Zaif mavzular — shu fandagi submissionlardan
+        weak_conditions = [Submission.student_id == row.id, Submission.status == "completed"]
+        if subject:
+            weak_conditions.append(Submission.subject.ilike(subject))
         weak_result = await db.execute(
             select(Submission.ai_result)
-            .where(and_(Submission.student_id == row.id, Submission.status == "completed"))
+            .where(and_(*weak_conditions))
             .order_by(desc(Submission.created_at))
             .limit(10)
         )
