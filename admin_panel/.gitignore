@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist — Railway uchun git da saqlanadi (xuddi frontend/dist kabi)
 dist-ssr
 *.local
 
