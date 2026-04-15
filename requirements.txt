@@ -36,5 +36,8 @@ aiofiles==23.2.1
 # Geolocation
 shapely==2.0.2
 
+# Excel templates (admin bulk upload)
+openpyxl==3.1.2
+
 # Utilities
 python-dateutil>=2.9.0

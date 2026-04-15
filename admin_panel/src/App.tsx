@@ -7,6 +7,7 @@ import TekshiruvlarPage from './pages/TekshiruvlarPage';
 import DirektorlarPage from './pages/DirektorlarPage';
 import ProfilPage from './pages/ProfilPage';
 import LoginPage from './pages/LoginPage';
+import MaktabYuklashPage from './pages/MaktabYuklashPage';
 
 export default function App() {
   const [adminToken, setAdminToken] = useState<string | null>(
@@ -49,6 +50,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout adminId={adminToken} onLogout={handleLogout} />}>
           <Route index element={<DashboardPage adminId={adminToken} />} />
+          <Route path="maktab-yuklash" element={<MaktabYuklashPage adminId={adminToken} />} />
           <Route path="foydalanuvchilar" element={<FoydalanuvchilarPage adminId={adminToken} />} />
           <Route path="tekshiruvlar" element={<TekshiruvlarPage adminId={adminToken} />} />
           <Route path="direktorlar" element={<DirektorlarPage adminId={adminToken} />} />
