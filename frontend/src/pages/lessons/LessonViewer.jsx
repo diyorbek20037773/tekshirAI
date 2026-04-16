@@ -220,36 +220,38 @@ export default function LessonViewer() {
 
   const switcherModels = topics.map(t => ({ id: String(t.id), label: t.title_uz, icon: t.icon || '📦' }))
 
-  if (loadErr) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <p className="text-red-500 text-sm mb-4">Xato: {loadErr}</p>
-        <button onClick={() => navigate(`/teacher/lessons/${subject}`)} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm">Orqaga</button>
-      </div>
-    )
-  }
-
-  if (!activeModel) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-cyan-400 font-mono text-sm">
-        Yuklanmoqda…
-      </div>
-    )
-  }
-
   return (
     <div style={{ width: '100vw', height: '100vh', background: 'radial-gradient(ellipse at 30% 40%, #081828 0%, #050d1a 100%)', position: 'relative', overflow: 'hidden' }}>
-      {showGuide && <GuideOverlay onDone={() => setShowGuide(false)} />}
+      {/* CameraFeed always mounted so videoRef.current exists when useHandTracking effect runs.
+          Agar activeModel yuklangunicha render qilinmasa, kamera so'rovi hech qachon chaqirilmaydi. */}
+      <CameraFeed videoRef={videoRef} landmarks={hand.landmarks} gesture={hand.gesture} pinchNorm={hand.h1PinchNorm} isTracking={hand.isTracking} handsCount={hand.handsCount} fps={hand.fps} error={hand.error} status={hand.status} />
+
+      {loadErr && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+          <p style={{ color: '#ff6666', fontSize: 14, marginBottom: 16 }}>Xato: {loadErr}</p>
+          <button onClick={() => navigate(`/teacher/lessons/${subject}`)} style={{ background: '#00d4ff', color: '#000', padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13 }}>Orqaga</button>
+        </div>
+      )}
+
+      {!activeModel && !loadErr && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(5,13,26,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00d4ff', fontFamily: 'monospace', fontSize: 14 }}>
+          Yuklanmoqda…
+        </div>
+      )}
+
+      {showGuide && activeModel && <GuideOverlay onDone={() => setShowGuide(false)} />}
 
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 72 }}>
-        <ModelScene
-          modelCfg={activeModel} rotation={rotation} scale={scale}
-          highlightPart={highlightPart}
-          onPartHover={handlePartHover} onPartClick={handlePartClick}
-          explodeOpen={explodeOpen}
-          selectedMeshKey={selectedPart?.key}
-          pinchPoint={pinchPoint}
-        />
+        {activeModel && (
+          <ModelScene
+            modelCfg={activeModel} rotation={rotation} scale={scale}
+            highlightPart={highlightPart}
+            onPartHover={handlePartHover} onPartClick={handlePartClick}
+            explodeOpen={explodeOpen}
+            selectedMeshKey={selectedPart?.key}
+            pinchPoint={pinchPoint}
+          />
+        )}
       </div>
 
       <HandOverlay landmarks={hand.landmarks} gesture={hand.gesture} pinchHoldMs={pinchHoldMs} hand1PinchMid={hand.h1PinchMid} thumbPinkyHoldMs={thumbPinkyHoldMs} />
@@ -300,7 +302,6 @@ export default function LessonViewer() {
         ⌨ E ajrat · R reset · Esc bekor
       </div>
 
-      <CameraFeed videoRef={videoRef} landmarks={hand.landmarks} gesture={hand.gesture} pinchNorm={hand.h1PinchNorm} isTracking={hand.isTracking} handsCount={hand.handsCount} fps={hand.fps} error={hand.error} status={hand.status} />
       {topics.length > 1 && <ModelSwitcher models={switcherModels} activeId={String(topics[activeIdx]?.id)} onSwitch={handleModelSwitch} />}
     </div>
   )
