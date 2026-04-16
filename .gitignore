@@ -42,3 +42,16 @@ uploads/
 
 # Alembic
 alembic/versions/__pycache__/
+
+# Vendored 3D lesson source (extracted into frontend/src/components/lesson3d)
+AIcenna-code-main/
+glb_formats/
+frontend/public/lesson-models/
+
+# Video files (too large for git)
+*.mp4
+*.MOV
+*.mov
+
+# Local env
+.env

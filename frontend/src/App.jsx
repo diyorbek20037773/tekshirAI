@@ -16,6 +16,9 @@ import DirectorSetup from './pages/director/DirectorSetup'
 import DirectorDashboard from './pages/director/DirectorDashboard'
 import DirectorProfile from './pages/director/DirectorProfile'
 import ParentStudentSetup from './pages/parent_student/ParentStudentSetup'
+import LessonsIndex from './pages/lessons/LessonsIndex'
+import TopicList from './pages/lessons/TopicList'
+import LessonViewer from './pages/lessons/LessonViewer'
 
 function RoleGuard({ role, children }) {
   const savedRole = localStorage.getItem('userRole')
@@ -226,6 +229,9 @@ export default function App() {
       <Route path="/student/setup" element={<StudentSetup />} />
       <Route path="/student" element={<RoleGuard role="student"><StudentHome /></RoleGuard>} />
       <Route path="/student/profile" element={<RoleGuard role="student"><StudentProfile /></RoleGuard>} />
+      <Route path="/teacher/lessons" element={<RoleGuard role="teacher"><LessonsIndex /></RoleGuard>} />
+      <Route path="/teacher/lessons/:subject" element={<RoleGuard role="teacher"><TopicList /></RoleGuard>} />
+      <Route path="/teacher/lessons/:subject/:topicId" element={<RoleGuard role="teacher"><LessonViewer /></RoleGuard>} />
 
       {/* Ota-ona */}
       <Route path="/parent/setup" element={<ParentSetup />} />

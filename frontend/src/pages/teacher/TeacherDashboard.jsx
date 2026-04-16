@@ -613,6 +613,21 @@ export default function TeacherDashboard() {
           )}
         </div>
 
+        {/* === INTERAKTIV 3D DARSLAR === */}
+        <button
+          onClick={() => navigate('/teacher/lessons')}
+          className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl p-4 text-left hover:shadow-lg transition-all active:scale-[0.98] flex items-center gap-3 mb-1"
+        >
+          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+            🧬
+          </div>
+          <div className="flex-1 min-w-0 text-white">
+            <div className="text-sm font-bold">Interaktiv 3D darslar</div>
+            <div className="text-xs text-white/80 mt-0.5">Biologiya, kimyo, fizika, astronomiya</div>
+          </div>
+          <span className="text-white/70 text-xl">→</span>
+        </button>
+
         {/* === TOPSHIRIQ YUBORISH === */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-3">

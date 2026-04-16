@@ -15,6 +15,7 @@ from backend.api.admin import router as admin_router
 from backend.api.admin_upload import router as admin_upload_router
 from backend.api.director import router as director_router
 from backend.api.assignments import router as assignments_router
+from backend.api.lessons import router as lessons_router
 
 api_router = APIRouter()
 
@@ -31,3 +32,4 @@ api_router.include_router(admin_router)
 api_router.include_router(admin_upload_router)
 api_router.include_router(director_router)
 api_router.include_router(assignments_router)
+api_router.include_router(lessons_router)

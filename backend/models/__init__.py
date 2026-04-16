@@ -5,6 +5,7 @@ from backend.models.submission import Submission
 from backend.models.classroom import Classroom, ClassroomStudent
 from backend.models.conversation import Conversation
 from backend.models.directory import School, ClassroomDirectory, TeacherDirectory, StudentDirectory
+from backend.models.lesson import LessonSubject, LessonTopic, LessonPart
 
 __all__ = [
     "User",
@@ -17,4 +18,7 @@ __all__ = [
     "ClassroomDirectory",
     "TeacherDirectory",
     "StudentDirectory",
+    "LessonSubject",
+    "LessonTopic",
+    "LessonPart",
 ]

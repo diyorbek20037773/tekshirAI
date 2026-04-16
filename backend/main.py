@@ -56,6 +56,7 @@ async def lifespan(app: FastAPI):
             import backend.models.conversation
             import backend.models.rating
             import backend.models.assignment
+            import backend.models.lesson
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
                 # Yangi ustunlar qo'shish (create_all mavjud jadvalga ustun qo'shmaydi)
@@ -84,6 +85,15 @@ async def lifespan(app: FastAPI):
                     except Exception:
                         pass
             logger.info("DB jadvallar tekshirildi / yaratildi")
+            # Lessons seed (idempotent)
+            try:
+                from backend.database import async_session
+                from backend.services.lesson_seed import seed_lessons
+                async with async_session() as session:
+                    await seed_lessons(session)
+                logger.info("Lessons seed tekshirildi")
+            except Exception as e:
+                logger.warning(f"Lessons seed xato: {e}")
             break
         except Exception as e:
             logger.error(f"DB yaratishda xato (urinish {attempt + 1}/3): {e}")
