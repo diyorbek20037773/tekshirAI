@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Star, X } from 'lucide-react'
 
 export default function RatingModal({ onClose }) {
@@ -7,6 +7,13 @@ export default function RatingModal({ onClose }) {
   const [comment, setComment] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  // Body scroll lock — modal ochiq paytda background skroll qilinmasin
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
 
   const handleSubmit = async () => {
     if (stars === 0) return
@@ -24,10 +31,22 @@ export default function RatingModal({ onClose }) {
     setTimeout(onClose, 2000)
   }
 
+  // Markaz uchun aniq fixed positioning — inset-0 + absolute center via transform
+  const overlayStyle = {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.55)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: '16px',
+  }
+
   if (submitted) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" style={{ alignItems: 'center' }}>
-        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center">
+      <div style={overlayStyle} onClick={onClose}>
+        <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
           <p className="text-4xl mb-3">🎉</p>
           <p className="text-lg font-bold text-gray-800">Rahmat!</p>
           <p className="text-sm text-gray-500 mt-1">Bahoyingiz qabul qilindi</p>
@@ -37,8 +56,8 @@ export default function RatingModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+    <div style={overlayStyle} onClick={onClose}>
+      <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-800">Ilovani baholang</h3>
           <button onClick={onClose}
