@@ -274,25 +274,27 @@ export default function LessonViewer() {
         </div>
       </div>
 
-      <div style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <div style={{ background: 'rgba(0,212,255,0.07)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 20, padding: '5px 16px', fontSize: 12, color: 'rgba(0,212,255,0.75)', fontFamily: 'monospace' }}>
-          {activeModel.icon} {activeModel.label.toUpperCase()}
-          {selectedPart && <span style={{ color: '#ffd700', marginLeft: 8 }}>★ {partDetail.name || selectedPart.label}</span>}
+      {activeModel && (
+        <div style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ background: 'rgba(0,212,255,0.07)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 20, padding: '5px 16px', fontSize: 12, color: 'rgba(0,212,255,0.75)', fontFamily: 'monospace' }}>
+            {activeModel.icon} {activeModel.label.toUpperCase()}
+            {selectedPart && <span style={{ color: '#ffd700', marginLeft: 8 }}>★ {partDetail.name || selectedPart.label}</span>}
+          </div>
+          <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '4px 10px', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
+            ×{scale.toFixed(2)}
+          </div>
+          {canExplode && (
+            <button onClick={() => setExplodeOpen(o => !o)} style={{ background: explodeOpen ? 'rgba(255,165,0,0.18)' : 'rgba(0,212,255,0.07)', border: `1px solid ${explodeOpen ? '#ffa500' : 'rgba(0,212,255,0.3)'}`, borderRadius: 12, padding: '4px 14px', fontSize: 11, color: explodeOpen ? '#ffa500' : 'rgba(0,212,255,0.7)', fontFamily: 'monospace', cursor: 'pointer', transition: 'all 0.2s' }}>
+              {explodeOpen ? '🔴 Yig' : '💥 Ajrat'} [E]
+            </button>
+          )}
+          {selectedPart && (
+            <button onClick={doDeselect} style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.4)', borderRadius: 12, padding: '4px 12px', fontSize: 11, color: '#ffd700', fontFamily: 'monospace', cursor: 'pointer' }}>
+              ✕ [Esc]
+            </button>
+          )}
         </div>
-        <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '4px 10px', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
-          ×{scale.toFixed(2)}
-        </div>
-        {canExplode && (
-          <button onClick={() => setExplodeOpen(o => !o)} style={{ background: explodeOpen ? 'rgba(255,165,0,0.18)' : 'rgba(0,212,255,0.07)', border: `1px solid ${explodeOpen ? '#ffa500' : 'rgba(0,212,255,0.3)'}`, borderRadius: 12, padding: '4px 14px', fontSize: 11, color: explodeOpen ? '#ffa500' : 'rgba(0,212,255,0.7)', fontFamily: 'monospace', cursor: 'pointer', transition: 'all 0.2s' }}>
-            {explodeOpen ? '🔴 Yig' : '💥 Ajrat'} [E]
-          </button>
-        )}
-        {selectedPart && (
-          <button onClick={doDeselect} style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.4)', borderRadius: 12, padding: '4px 12px', fontSize: 11, color: '#ffd700', fontFamily: 'monospace', cursor: 'pointer' }}>
-            ✕ [Esc]
-          </button>
-        )}
-      </div>
+      )}
 
       <div style={{ position: 'fixed', top: 18, right: 270, zIndex: 100, fontFamily: 'monospace', fontSize: 10, color: 'rgba(255,255,255,0.18)', textAlign: 'right', lineHeight: 2.0 }}>
         🖐 Kaft → aylantirish<br />
