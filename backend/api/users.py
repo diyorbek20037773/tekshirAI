@@ -246,9 +246,26 @@ async def get_user_roles(telegram_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me")
-async def get_me(telegram_id: int, role: str = None, db: AsyncSession = Depends(get_db)):
-    """Telegram ID bo'yicha profil olish."""
-    user = await find_user_by_telegram_id(telegram_id, db, role=role)
+async def get_me(
+    telegram_id: int | None = None,
+    user_id: str | None = None,
+    role: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Profil olish. user_id ustun — bitta telegram_id ostida bir nechta hisob bo'lganda kerak."""
+    user = None
+    if user_id:
+        from uuid import UUID
+        try:
+            uid = UUID(user_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Noto'g'ri user_id")
+        result = await db.execute(select(User).where(User.id == uid))
+        user = result.scalar_one_or_none()
+    elif telegram_id is not None:
+        user = await find_user_by_telegram_id(telegram_id, db, role=role)
+    else:
+        raise HTTPException(status_code=400, detail="user_id yoki telegram_id kerak")
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
     return user_to_response(user)
@@ -472,11 +489,25 @@ async def get_all_students(
 
 
 @router.get("/student/{telegram_id}/submissions")
-async def get_student_submissions(telegram_id: int, db: AsyncSession = Depends(get_db)):
-    """O'quvchining barcha submissionlari."""
-    # role="student" majburiy — agar bir telegram_id ostida parent+student bor bo'lsa,
-    # doim student recordini olamiz (teacher yoki parent emas)
-    user = await find_user_by_telegram_id(telegram_id, db, role="student")
+async def get_student_submissions(
+    telegram_id: int,
+    user_id: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """O'quvchining barcha submissionlari. user_id berilsa — u ustun (bitta telegram_id ostida bir nechta hisob bo'lganda)."""
+    user = None
+    if user_id:
+        from uuid import UUID
+        try:
+            uid = UUID(user_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Noto'g'ri user_id")
+        result = await db.execute(select(User).where(User.id == uid))
+        user = result.scalar_one_or_none()
+    if not user:
+        # role="student" majburiy — agar bir telegram_id ostida parent+student bor bo'lsa,
+        # doim student recordini olamiz (teacher yoki parent emas)
+        user = await find_user_by_telegram_id(telegram_id, db, role="student")
     if not user:
         raise HTTPException(status_code=404, detail="O'quvchi topilmadi")
 

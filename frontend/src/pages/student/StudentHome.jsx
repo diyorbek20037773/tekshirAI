@@ -66,6 +66,7 @@ export default function StudentHome() {
   const [assignments, setAssignments] = useState([])
   const [showDetails, setShowDetails] = useState(false)
   const [activeAssignment, setActiveAssignment] = useState(null)  // Bajarish rejimi: tanlangan topshiriq
+  const [recentSubs, setRecentSubs] = useState([])
 
   // Abort controller for fetch cleanup
   const abortControllerRef = useRef(null)
@@ -92,6 +93,17 @@ export default function StudentHome() {
     fetch(`/api/analysis/student/${telegramId}`)
       .then(r => r.json())
       .then(data => { if (data.total_submissions > 0) setAnalysis(data) })
+      .catch(() => {})
+  }, [telegramId, result])
+
+  // So'ngi tekshiruvlarni yuklash
+  useEffect(() => {
+    if (!telegramId || telegramId === '0') return
+    const userId = localStorage.getItem('userId')
+    const url = `/api/users/student/${telegramId}/submissions${userId ? `?user_id=${userId}` : ''}`
+    fetch(url)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data?.submissions)) setRecentSubs(data.submissions) })
       .catch(() => {})
   }, [telegramId, result])
 
@@ -751,6 +763,36 @@ export default function StudentHome() {
             })}
           </div>
         </div>
+
+        {/* SO'NGI TEKSHIRILGANLAR */}
+        {recentSubs.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">So'ngi tekshirilganlar</h2>
+            <div className="space-y-2">
+              {recentSubs.slice(0, 8).map(sub => {
+                const style = getSubjectStyle(sub.subject)
+                const score = sub.score || 0
+                return (
+                  <div key={sub.id} className={`p-3 rounded-xl border ${style.border} ${style.bg}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xl">{style.icon}</span>
+                        <div className="min-w-0">
+                          <p className={`text-sm font-medium truncate ${style.text}`}>{sub.subject}</p>
+                          <p className="text-[10px] text-gray-500">{new Date(sub.created_at).toLocaleString('uz')}</p>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className={`text-lg font-bold ${score >= 80 ? 'text-success-600' : score >= 60 ? 'text-accent-600' : 'text-danger-500'}`}>{score}%</span>
+                        <p className="text-[10px] text-gray-400">{sub.correct_count}/{sub.total_problems}</p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* BILIM TAHLILI */}
         {analysis && (

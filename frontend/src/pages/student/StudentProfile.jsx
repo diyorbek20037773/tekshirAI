@@ -14,6 +14,7 @@ const LEVEL_INFO = [
 
 export default function StudentProfile() {
   const telegramId = localStorage.getItem('telegramId')
+  const userId = localStorage.getItem('userId')
 
   const [profile, setProfile] = useState(null)
   const [analysis, setAnalysis] = useState(null)
@@ -26,14 +27,18 @@ export default function StudentProfile() {
       setLoading(false)
       return
     }
+    // user_id orqali olamiz — bitta telegram_id ostida bir nechta hisob bo'lsa to'g'ri kelsin
+    const meUrl = userId
+      ? `/api/users/me?user_id=${userId}`
+      : `/api/users/me?telegram_id=${telegramId}&role=student`
     Promise.all([
-      fetch(`/api/users/me?telegram_id=${telegramId}`).then(r => r.json()).catch(() => null),
+      fetch(meUrl).then(r => r.json()).catch(() => null),
       fetch(`/api/analysis/student/${telegramId}`).then(r => r.json()).catch(() => null),
     ]).then(([profileData, analysisData]) => {
-      if (profileData) setProfile(profileData)
+      if (profileData && !profileData.detail) setProfile(profileData)
       if (analysisData?.total_submissions > 0) setAnalysis(analysisData)
     }).finally(() => setLoading(false))
-  }, [telegramId])
+  }, [telegramId, userId])
 
   const fetchCareer = async () => {
     if (!telegramId || telegramId === '0') return
@@ -54,9 +59,9 @@ export default function StudentProfile() {
   // Profil ma'lumotlari — avval backend'dan, keyin localStorage'dan
   const name = profile?.full_name || localStorage.getItem('studentName') || "O'quvchi"
   const username = profile?.username || localStorage.getItem('studentUsername') || ''
-  const subject = profile?.subject || localStorage.getItem('studentSubject') || ''
   const grade = profile?.grade || localStorage.getItem('studentGrade') || '7'
   const classLetter = profile?.class_letter || localStorage.getItem('studentClassLetter') || ''
+  const maktab = profile?.maktab || localStorage.getItem('studentMaktab') || ''
   const studentGender = profile?.gender || localStorage.getItem('studentGender') || 'male'
   const avatarSrc = studentGender === 'female' ? '/avatars/girl.jpg' : '/avatars/boy.jpg'
 
@@ -87,7 +92,7 @@ export default function StudentProfile() {
                   {username && <p className="text-primary-100 text-sm">@{username}</p>}
                   <div className="flex gap-2 mt-1 flex-wrap">
                     <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{grade}-{classLetter ? `${classLetter} ` : ''}sinf</span>
-                    {subject && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{subject}</span>}
+                    {maktab && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{maktab}</span>}
                   </div>
                 </div>
               </div>
