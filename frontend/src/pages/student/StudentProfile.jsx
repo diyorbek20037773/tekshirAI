@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, BookOpen, Trophy, Flame, Star, Target, Compass, RefreshCw, Lightbulb, GraduationCap, Shield, Crown } from 'lucide-react'
+import BiometricEnroll from '../../components/BiometricEnroll'
 
 const LEVEL_INFO = [
   { level: 1, name: "Boshlang'ich", emoji: '🌱', xp: 0 },
@@ -103,6 +104,9 @@ export default function StudentProfile() {
                 </div>
               )}
             </div>
+
+            {/* Biometrika (faqat brauzer/PWA) */}
+            <BiometricEnroll />
 
             {/* Gamification */}
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">

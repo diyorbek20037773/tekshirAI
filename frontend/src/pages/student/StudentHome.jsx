@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Camera, LogOut, AlertCircle, RotateCcw, UserCheck, X, ClipboardList, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
+import { browserLogout } from '../../utils/session'
 import { getQuoteByScore, getDailyQuote, getRandomErrorMotivation, POINTS } from '../../data/quotes'
 import { GRADE_SUBJECTS } from '../../data/gradeSubjects'
 import RiskDashboard from '../../components/RiskDashboard'
@@ -310,6 +311,7 @@ export default function StudentHome() {
   }
 
   const handleLogout = () => {
+    if (browserLogout()) return
     if (localStorage.getItem('hasSubmittedBefore')) {
       setPendingExit(true)
       setShowRating(true)

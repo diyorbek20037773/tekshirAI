@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Heart, BookCheck, TrendingUp, AlertCircle, Shield, Bell } from 'lucide-react'
+import BiometricEnroll from '../../components/BiometricEnroll'
 
 export default function ParentProfile() {
   const parentName = localStorage.getItem('parentName') || 'Ota-ona'
@@ -60,6 +61,9 @@ export default function ParentProfile() {
             </div>
           </div>
         </div>
+
+        {/* Biometrika (faqat brauzer/PWA) */}
+        <BiometricEnroll />
 
         {loading ? (
           <div className="bg-white rounded-xl p-8 text-center">

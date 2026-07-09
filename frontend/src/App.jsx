@@ -19,6 +19,9 @@ import ParentStudentSetup from './pages/parent_student/ParentStudentSetup'
 import LessonsIndex from './pages/lessons/LessonsIndex'
 import TopicList from './pages/lessons/TopicList'
 import LessonViewer from './pages/lessons/LessonViewer'
+import InstallPrompt from './components/InstallPrompt'
+import BrowserLogin from './pages/browser/BrowserLogin'
+import BrowserRegister from './pages/browser/BrowserRegister'
 
 function RoleGuard({ role, children }) {
   const savedRole = localStorage.getItem('userRole')
@@ -65,6 +68,11 @@ function AutoLogin() {
     const checkAuth = async () => {
       // Agar logout qilingan bo'lsa — auto-login qilma
       if (sessionStorage.getItem('loggedOut')) {
+        // Brauzerda (Telegram yo'q) logout — login sahifasiga
+        if (!window.Telegram?.WebApp?.initDataUnsafe?.user) {
+          navigate('/login', { replace: true })
+          return
+        }
         setChecked(true)
         return
       }
@@ -125,6 +133,12 @@ function AutoLogin() {
       const userId = localStorage.getItem('userId')
       if (savedRole && userId) {
         window.location.replace(`/${savedRole}`)
+        return
+      }
+
+      // Brauzer (Telegram yo'q) va sessiya yo'q — login sahifasiga yo'naltiramiz
+      if (!tgUser) {
+        navigate('/login', { replace: true })
         return
       }
 
@@ -215,8 +229,14 @@ function AutoLogin() {
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <InstallPrompt />
+      <Routes>
       <Route path="/" element={<AutoLogin />} />
+
+      {/* Brauzer (PWA) auth — Telegramsiz kirish */}
+      <Route path="/login" element={<BrowserLogin />} />
+      <Route path="/register" element={<BrowserRegister />} />
 
       {/* O'qituvchi */}
       <Route path="/teacher/setup" element={<TeacherSetup />} />
@@ -245,6 +265,7 @@ export default function App() {
       <Route path="/director/setup" element={<DirectorSetup />} />
       <Route path="/director" element={<RoleGuard role="director"><DirectorDashboard /></RoleGuard>} />
       <Route path="/director/profile" element={<RoleGuard role="director"><DirectorProfile /></RoleGuard>} />
-    </Routes>
+      </Routes>
+    </>
   )
 }

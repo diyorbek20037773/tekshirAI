@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = ""
     ADMIN_SECRET: str = ""
 
+    # WebAuthn (biometrika — Face ID / Touch ID / barmoq izi)
+    # Prod'da Railway env'ga o'rnatiladi: WEBAUTHN_RP_ID=<domen>, WEBAUTHN_ORIGIN=https://<domen>
+    WEBAUTHN_RP_ID: str = "localhost"
+    WEBAUTHN_RP_NAME: str = "TekshirAI"
+    WEBAUTHN_ORIGIN: str = "http://localhost:5173"
+
     # Limits
     FREE_DAILY_LIMIT: int = 3
     PREMIUM_DAILY_LIMIT: int = 999

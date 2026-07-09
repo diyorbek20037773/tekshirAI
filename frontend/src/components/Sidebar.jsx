@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Users, LogOut, GraduationCap } from 'lucide-react'
+import { logoutSession } from '../utils/session'
 
 export default function Sidebar() {
   const navigate = useNavigate()
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
+    logoutSession()
     navigate('/login')
   }
 

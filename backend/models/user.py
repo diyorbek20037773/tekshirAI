@@ -25,6 +25,7 @@ class User(Base):
     tuman: Mapped[str | None] = mapped_column(String(100))  # Termiz Tumani
     maktab: Mapped[str | None] = mapped_column(String(200))  # 1-sonli umumta'lim maktabi
     phone_number: Mapped[str | None] = mapped_column(String(20))  # Telegram dan olingan telefon raqam
+    password_hash: Mapped[str | None] = mapped_column(String(255))  # bcrypt; brauzer login uchun. Telegram userlarda NULL
 
     # Premium
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False)

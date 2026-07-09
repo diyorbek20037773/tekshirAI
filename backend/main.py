@@ -34,6 +34,18 @@ async def lifespan(app: FastAPI):
 
     logger.info("TekshirAI backend ishga tushmoqda...")
     logger.info(f"Environment: {settings.APP_ENV}")
+
+    # Xavfsizlik: SECRET_KEY default qolsa JWT'lar soxtalashtiriladi.
+    if settings.SECRET_KEY == "change-this-secret-key":
+        if settings.APP_ENV in ("production", "prod"):
+            raise RuntimeError(
+                "SECRET_KEY o'rnatilmagan! Productionda SECRET_KEY env majburiy — "
+                "Railway'da SECRET_KEY o'zgaruvchisini o'rnating."
+            )
+        logger.critical(
+            "XAVFSIZLIK: SECRET_KEY default qiymatda! Productionda Railway env'ga "
+            "SECRET_KEY o'rnating (aks holda JWT'lar soxtalashtiriladi)."
+        )
     logger.info(f"Frontend dir: {FRONTEND_DIR} (exists: {FRONTEND_DIR.exists()})")
     logger.info(f"Admin dir: {ADMIN_DIR} (exists: {ADMIN_DIR.exists()})")
 
@@ -57,6 +69,7 @@ async def lifespan(app: FastAPI):
             import backend.models.rating
             import backend.models.assignment
             import backend.models.lesson
+            import backend.models.webauthn
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
                 # Yangi ustunlar qo'shish (create_all mavjud jadvalga ustun qo'shmaydi)
@@ -69,6 +82,8 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT true",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS class_letter VARCHAR(5)",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20)",
+                    # Brauzer login uchun parol hash (Telegram userlarda NULL)
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)",
                     # Bitta telegram_id dan bir nechta rol (ota-ona + farzand)
                     "DROP INDEX IF EXISTS ix_users_telegram_id",
                     "CREATE INDEX IF NOT EXISTS ix_users_telegram_id ON users (telegram_id)",

@@ -5,6 +5,7 @@ import {
   Star, Lightbulb, RefreshCw, Search, UserPlus, CheckCircle, XCircle, Link2
 } from 'lucide-react'
 import { getRandomParentQuote } from '../../data/quotes'
+import { browserLogout } from '../../utils/session'
 import RatingModal from '../../components/RatingModal'
 import PullToRefresh from '../../components/PullToRefresh'
 
@@ -147,6 +148,7 @@ export default function ParentDashboard() {
     window.location.href = '/'
   }
   const handleLogout = () => {
+    if (browserLogout()) return
     setShowExitRating(true)
   }
 

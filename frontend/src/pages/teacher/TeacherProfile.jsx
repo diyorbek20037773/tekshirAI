@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, BookOpen, Users, School, TrendingUp, Award, BarChart3 } from 'lucide-react'
+import BiometricEnroll from '../../components/BiometricEnroll'
 
 export default function TeacherProfile() {
   const name = localStorage.getItem('teacherName') || "O'qituvchi"
@@ -59,6 +60,9 @@ export default function TeacherProfile() {
             </div>
           </div>
         </div>
+
+        {/* Biometrika (faqat brauzer/PWA) */}
+        <BiometricEnroll />
 
         {loading ? (
           <div className="bg-white rounded-xl p-8 text-center">

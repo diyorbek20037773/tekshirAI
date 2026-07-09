@@ -16,11 +16,14 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Response interceptor — 401 da login sahifasiga yo'naltirish
+// Response interceptor — 401 da login sahifasiga yo'naltirish.
+// Auth chaqiruvlarida (login/register) redirect qilmaymiz — sahifa xatoni ko'rsatsin.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url || ''
+    const isAuthCall = url.includes('/auth/')
+    if (error.response?.status === 401 && !isAuthCall) {
       localStorage.removeItem('token')
       window.location.href = '/login'
     }

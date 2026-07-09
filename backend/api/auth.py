@@ -8,12 +8,13 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import settings
 from backend.database import get_db
-from backend.models.user import User
+from backend.models.user import User, UserGameProfile
+from backend.api.users import user_to_response
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -113,3 +114,99 @@ async def login(form: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
 
     token = create_access_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
+
+
+# === Brauzer (PWA) auth — username + parol, barcha rollar uchun ===
+# Telegramsiz foydalanuvchilar manfiy synthetic telegram_id oladi (real ID'lar musbat,
+# to'qnashuv bo'lmaydi). Shunda mavjud telegram_id-ga bog'langan endpointlar o'zgarmasdan ishlaydi.
+
+class BrowserRegister(BaseModel):
+    username: str
+    password: str
+    full_name: str
+    role: str  # student, teacher, parent, director
+    gender: str | None = None
+    grade: int | None = None
+    class_letter: str | None = None
+    subject: str | None = None
+    viloyat: str | None = None
+    tuman: str | None = None
+    maktab: str | None = None
+
+
+class BrowserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class AuthResult(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: dict
+
+
+@router.post("/browser-register", response_model=AuthResult)
+async def browser_register(data: BrowserRegister, db: AsyncSession = Depends(get_db)):
+    """Brauzerdan ro'yxatdan o'tish (barcha rollar). Parol bcrypt bilan hash qilinadi."""
+    if data.role not in ("student", "teacher", "parent", "director"):
+        raise HTTPException(status_code=400, detail="Noto'g'ri rol")
+
+    uname = data.username.strip().lower()
+    if not uname or len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Username va kamida 6 belgili parol kerak")
+
+    # Faqat brauzer akkauntlar (password_hash bor) orasida username band emasligi
+    existing = await db.execute(
+        select(User).where(func.lower(User.username) == uname, User.password_hash.is_not(None))
+    )
+    if existing.scalars().first():
+        raise HTTPException(status_code=400, detail="Bu username band")
+
+    # Synthetic manfiy telegram_id (real ID'lar musbat)
+    row = await db.execute(select(func.min(User.telegram_id)))
+    synthetic_id = min(row.scalar() or 0, 0) - 1
+
+    user = User(
+        telegram_id=synthetic_id,
+        username=uname,
+        password_hash=pwd_context.hash(data.password),
+        full_name=data.full_name,
+        role=data.role,
+        gender=data.gender,
+        grade=data.grade,
+        class_letter=data.class_letter,
+        subject=data.subject,
+        viloyat=data.viloyat,
+        tuman=data.tuman,
+        maktab=data.maktab,
+        is_approved=(data.role != "director"),  # direktorni admin tasdiqlaydi
+    )
+    db.add(user)
+    await db.flush()
+
+    if data.role == "student":
+        db.add(UserGameProfile(user_id=user.id))
+        await db.flush()
+
+    # game_profile relationship yuklanishi uchun qayta o'qiymiz
+    result = await db.execute(select(User).where(User.id == user.id))
+    user = result.scalar_one()
+
+    token = create_access_token({"sub": str(user.id)})
+    return {"access_token": token, "token_type": "bearer", "user": user_to_response(user)}
+
+
+@router.post("/browser-login", response_model=AuthResult)
+async def browser_login(data: BrowserLogin, db: AsyncSession = Depends(get_db)):
+    """Brauzerdan kirish — username + parol."""
+    uname = data.username.strip().lower()
+    result = await db.execute(
+        select(User).where(func.lower(User.username) == uname, User.password_hash.is_not(None))
+    )
+    user = result.scalars().first()
+
+    if not user or not user.password_hash or not pwd_context.verify(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Noto'g'ri login yoki parol")
+
+    token = create_access_token({"sub": str(user.id)})
+    return {"access_token": token, "token_type": "bearer", "user": user_to_response(user)}

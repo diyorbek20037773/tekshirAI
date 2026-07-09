@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, GraduationCap, BookOpen, TrendingUp, BarChart3, LogOut, RefreshCw } from 'lucide-react'
+import { browserLogout } from '../../utils/session'
 import RatingModal from '../../components/RatingModal'
 import PullToRefresh from '../../components/PullToRefresh'
 
@@ -68,6 +69,7 @@ export default function DirectorDashboard() {
     window.location.href = '/'
   }
   const logout = () => {
+    if (browserLogout()) return
     setShowExitRating(true)
   }
 

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Users, BookCheck, TrendingUp, Clock, LogOut, Camera, X, Send, Loader2, Image, Compass, ClipboardList, Plus, Trash2, ArrowLeft, Eye } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getRandomTeacherQuote } from '../../data/quotes'
+import { browserLogout } from '../../utils/session'
 import RatingModal from '../../components/RatingModal'
 import PullToRefresh from '../../components/PullToRefresh'
 import { shouldShowRating, markRatingShown } from '../../utils/ratingHelper'
@@ -308,6 +309,7 @@ export default function TeacherDashboard() {
     window.location.href = '/'
   }
   const handleLogout = () => {
+    if (browserLogout()) return
     setShowExitRating(true)
   }
 

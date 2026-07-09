@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, LogOut } from 'lucide-react'
+import BiometricEnroll from '../../components/BiometricEnroll'
 
 export default function DirectorProfile() {
   const navigate = useNavigate()
@@ -24,6 +25,11 @@ export default function DirectorProfile() {
           <h2 className="text-lg font-bold text-gray-800">{localStorage.getItem('directorName') || 'Direktor'}</h2>
           <p className="text-sm text-gray-500">{localStorage.getItem('directorMaktab') || ''}</p>
           <p className="text-xs text-gray-400 mt-1">Maktab direktori</p>
+        </div>
+
+        {/* Biometrika (faqat brauzer/PWA) */}
+        <div className="mt-4">
+          <BiometricEnroll />
         </div>
 
         <button onClick={logout}
