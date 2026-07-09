@@ -31,6 +31,8 @@ export default function BrowserRegister() {
   const [selectedViloyat, setSelectedViloyat] = useState('')
   const [selectedTuman, setSelectedTuman] = useState('')
   const [selectedMaktab, setSelectedMaktab] = useState('')
+  const [geoLoading, setGeoLoading] = useState(false)
+  const [geoStatus, setGeoStatus] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -40,6 +42,37 @@ export default function BrowserRegister() {
   useEffect(() => {
     if (!cfg?.geo) return
     fetch('/api/geo/viloyatlar').then(r => r.json()).then(setViloyatlar).catch(() => {})
+  }, [cfg?.geo])
+
+  // Geolokatsiya — fon da aniqlash, foydalanuvchi doim qo'lda o'zgartira oladi
+  useEffect(() => {
+    if (!cfg?.geo || !navigator.geolocation) return
+    setGeoLoading(true)
+    setGeoStatus('Joylashuv aniqlanmoqda...')
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude, accuracy } = pos.coords
+          if (accuracy > 1000) {
+            setGeoStatus("GPS aniqlik past — qo'lda tanlang")
+            setGeoLoading(false)
+            return
+          }
+          const r = await fetch(`/api/geo/detect?lat=${latitude}&lng=${longitude}`)
+          const data = await r.json()
+          if (data.found) {
+            setSelectedViloyat(data.viloyat)
+            setSelectedTuman(data.tuman)
+            setGeoStatus(`${data.tuman}, ${data.viloyat}`)
+          } else {
+            setGeoStatus("Aniqlanmadi — qo'lda tanlang")
+          }
+        } catch { setGeoStatus("Xatolik — qo'lda tanlang") }
+        setGeoLoading(false)
+      },
+      () => { setGeoStatus(''); setGeoLoading(false) },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
   }, [cfg?.geo])
 
   useEffect(() => {
@@ -192,6 +225,12 @@ export default function BrowserRegister() {
                   <option value="">Tanlang...</option>
                   {viloyatlar.map(v => <option key={v.kod} value={v.nom}>{v.nom}</option>)}
                 </select>
+                {geoStatus && (
+                  <p className={`text-xs mt-1 ${geoLoading ? 'text-gray-400' : 'text-primary-600'}`}>
+                    {geoLoading && <Loader2 className="w-3 h-3 inline animate-spin mr-1" />}
+                    {geoStatus}
+                  </p>
+                )}
               </div>
               {selectedViloyat && (
                 <div>
