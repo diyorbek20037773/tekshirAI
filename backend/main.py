@@ -177,7 +177,7 @@ if ADMIN_DIR.exists() and (ADMIN_DIR / "assets").exists():
 if FRONTEND_DIR.exists() and (FRONTEND_DIR / "assets").exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
 
-    @app.get("/admin/{full_path:path}")
+    @app.api_route("/admin/{full_path:path}", methods=["GET", "HEAD"])
     async def serve_admin(request: Request, full_path: str = ""):
         """Admin panel SPA serve"""
         if not ADMIN_DIR.exists():
@@ -187,7 +187,7 @@ if FRONTEND_DIR.exists() and (FRONTEND_DIR / "assets").exists():
             return FileResponse(file_path)
         return FileResponse(ADMIN_DIR / "index.html")
 
-    @app.get("/{full_path:path}")
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
     async def serve_frontend(request: Request, full_path: str):
         if full_path.startswith("api/"):
             return {"detail": "Not found"}
@@ -210,7 +210,7 @@ if FRONTEND_DIR.exists() and (FRONTEND_DIR / "assets").exists():
 
         return FileResponse(FRONTEND_DIR / "index.html")
 else:
-    @app.get("/")
+    @app.api_route("/", methods=["GET", "HEAD"])
     async def root():
         return {
             "name": "TekshirAI API",
