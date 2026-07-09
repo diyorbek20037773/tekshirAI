@@ -10,7 +10,7 @@ export default defineConfig({
       registerType: 'prompt',
       // SW ni QO'LDA ro'yxatga olamiz (main.jsx) — Telegram webview ichida o'chirish uchun.
       injectRegister: null,
-      includeAssets: ['favicon.svg', 'apple-touch-icon-180x180.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'TekshirAI',
         short_name: 'TekshirAI',
