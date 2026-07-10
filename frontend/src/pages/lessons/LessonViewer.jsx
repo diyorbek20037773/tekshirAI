@@ -270,17 +270,17 @@ export default function LessonViewer() {
         </button>
         <div>
           <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '0.18em', color: '#00d4ff', fontFamily: 'monospace', textShadow: '0 0 18px rgba(0,212,255,0.4)' }}>TEKSHIR<span style={{ color: '#fff' }}>AI</span></div>
-          <div style={{ fontSize: 9, color: 'rgba(0,212,255,0.45)', letterSpacing: '0.14em', fontFamily: 'monospace' }}>3D INTERAKTIV DARS</div>
+          <div style={{ fontSize: 9, color: 'rgba(0,212,255,0.8)', letterSpacing: '0.14em', fontFamily: 'monospace' }}>3D INTERAKTIV DARS</div>
         </div>
       </div>
 
       {activeModel && (
         <div style={{ position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <div style={{ background: 'rgba(0,212,255,0.07)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 20, padding: '5px 16px', fontSize: 12, color: 'rgba(0,212,255,0.75)', fontFamily: 'monospace' }}>
+          <div style={{ background: 'rgba(0,212,255,0.14)', border: '1px solid rgba(0,212,255,0.35)', borderRadius: 20, padding: '5px 16px', fontSize: 12, color: 'rgba(180,240,255,0.98)', fontFamily: 'monospace' }}>
             {activeModel.icon} {activeModel.label.toUpperCase()}
             {selectedPart && <span style={{ color: '#ffd700', marginLeft: 8 }}>★ {partDetail.name || selectedPart.label}</span>}
           </div>
-          <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '4px 10px', fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
+          <div style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 12, padding: '4px 10px', fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: 'monospace' }}>
             ×{scale.toFixed(2)}
           </div>
           {canExplode && (
@@ -296,12 +296,12 @@ export default function LessonViewer() {
         </div>
       )}
 
-      <div style={{ position: 'fixed', top: 18, right: 270, zIndex: 100, fontFamily: 'monospace', fontSize: 10, color: 'rgba(255,255,255,0.18)', textAlign: 'right', lineHeight: 2.0 }}>
-        🖐 Kaft → aylantirish<br />
-        🤏 Pinch 0.4s → tanlash<br />
-        🤙 O'rta+bosh → bekor<br />
-        ✊ Musht → ajrat/yig'<br />
-        ⌨ E ajrat · R reset · Esc bekor
+      <div style={{ position: 'fixed', top: 18, right: 270, zIndex: 100, fontFamily: 'monospace', fontSize: 12, color: 'rgba(255,255,255,0.92)', textAlign: 'left', lineHeight: 1.85, background: 'rgba(6,16,32,0.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(0,212,255,0.22)', borderRadius: 14, padding: '10px 14px', boxShadow: '0 8px 30px rgba(0,0,0,0.35)' }}>
+        <span style={{ color: '#00d4ff' }}>🖐 Kaft</span> → aylantirish<br />
+        <span style={{ color: '#00d4ff' }}>🤏 Pinch 0.4s</span> → tanlash<br />
+        <span style={{ color: '#00d4ff' }}>🤙 O'rta+bosh</span> → bekor<br />
+        <span style={{ color: '#00d4ff' }}>✊ Musht</span> → ajrat/yig'<br />
+        <span style={{ color: 'rgba(255,255,255,0.55)' }}>⌨ E ajrat · R reset · Esc bekor</span>
       </div>
 
       {topics.length > 1 && <ModelSwitcher models={switcherModels} activeId={String(topics[activeIdx]?.id)} onSwitch={handleModelSwitch} />}

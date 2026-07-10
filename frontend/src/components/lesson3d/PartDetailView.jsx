@@ -110,7 +110,7 @@ export default function PartDetailView({ partName, partInfo, onClose, meshRawDat
         <div style={{ padding: '8px 12px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ffd700', boxShadow: '0 0 6px #ffd700' }} />
-            <span style={{ fontSize: 8, fontFamily: 'monospace', color: 'rgba(255,215,0,0.6)', letterSpacing: '2px' }}>TANLANGAN QISM</span>
+            <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'rgba(255,215,0,0.9)', letterSpacing: '2px' }}>TANLANGAN QISM</span>
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50%', width: 18, height: 18, color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
@@ -141,7 +141,7 @@ export default function PartDetailView({ partName, partInfo, onClose, meshRawDat
               {partInfo}
             </div>
           ) : (
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', fontFamily: 'monospace', fontStyle: 'italic' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace', fontStyle: 'italic' }}>
               Ma'lumot yo'q
             </div>
           )}

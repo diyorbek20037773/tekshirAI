@@ -13,9 +13,9 @@ export default function ModelSwitcher({ models, activeId, onSwitch }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
               padding: '7px 16px', borderRadius: 30,
-              border: active ? '1px solid #00d4ff' : '1px solid rgba(255,255,255,0.1)',
-              background: active ? 'rgba(0,212,255,0.15)' : 'transparent',
-              color: active ? '#00d4ff' : 'rgba(255,255,255,0.45)',
+              border: active ? '1px solid #00d4ff' : '1px solid rgba(255,255,255,0.16)',
+              background: active ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.04)',
+              color: active ? '#00d4ff' : 'rgba(255,255,255,0.78)',
               cursor: 'pointer', fontSize: 12, fontFamily: 'monospace',
               fontWeight: active ? 700 : 400, transition: 'all 0.2s',
               boxShadow: active ? '0 0 14px rgba(0,212,255,0.25)' : 'none',
