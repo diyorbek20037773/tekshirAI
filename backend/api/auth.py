@@ -9,6 +9,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import settings
@@ -182,7 +183,11 @@ async def browser_register(data: BrowserRegister, db: AsyncSession = Depends(get
         is_approved=(data.role != "director"),  # direktorni admin tasdiqlaydi
     )
     db.add(user)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Bu username band")
 
     if data.role == "student":
         db.add(UserGameProfile(user_id=user.id))
@@ -207,6 +212,10 @@ async def browser_login(data: BrowserLogin, db: AsyncSession = Depends(get_db)):
 
     if not user or not user.password_hash or not pwd_context.verify(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Noto'g'ri login yoki parol")
+
+    # Direktor admin tasdig'idan o'tmaguncha kira olmaydi
+    if user.role == "director" and not user.is_approved:
+        raise HTTPException(status_code=403, detail="Direktor hisobingiz hali admin tomonidan tasdiqlanmagan")
 
     token = create_access_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer", "user": user_to_response(user)}

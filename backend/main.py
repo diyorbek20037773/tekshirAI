@@ -84,6 +84,8 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20)",
                     # Brauzer login uchun parol hash (Telegram userlarda NULL)
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)",
+                    # Brauzer akkauntlar username'i noyob bo'lsin (Telegram userlarga tegmaydi)
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ux_users_browser_username ON users (LOWER(username)) WHERE password_hash IS NOT NULL",
                     # Bitta telegram_id dan bir nechta rol (ota-ona + farzand)
                     "DROP INDEX IF EXISTS ix_users_telegram_id",
                     "CREATE INDEX IF NOT EXISTS ix_users_telegram_id ON users (telegram_id)",
